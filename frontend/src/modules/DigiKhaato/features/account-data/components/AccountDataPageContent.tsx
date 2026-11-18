@@ -2,15 +2,17 @@
 
 import {
   UbButton,
+  UbDisclosure,
   UbEmptyState,
   UbPageHeader,
-  UbPageShell,
   UbSkeleton,
   UbStack,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveRole } from 'src/redux/slice/sessionSlice';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useAccountData } from '../hooks/useAccountData';
 
@@ -40,12 +42,25 @@ function OwnerDataPage(): React.JSX.Element {
     );
   }
   if (!data.deletion) return <UbSkeleton variant="form" count={3} />;
+  const supportNeedsOwner = data.support.some((row) => row.status === 'requested' || row.status === 'granted');
 
   return (
     <UbStack gap={4}>
+      {/* Design S9: download, then delete; support access, which the design has
+          no place for, stays closed below (owner: "build to the design"). */}
       <DataExportPanel data={data} />
-      <SupportAccessPanel data={data} />
       <DeleteBusinessPanel data={data} />
+      {/* Opens by itself while support is waiting for the owner's answer, or
+          while an access is live: neither may sit behind a closed section. */}
+      <UbDisclosure
+        label={t('data.more.title')}
+        hint={t('data.more.hint')}
+        // Re-made when one arrives, so it opens even though the list loads later.
+        key={supportNeedsOwner ? 'open' : 'closed'}
+        defaultOpen={supportNeedsOwner}
+      >
+        <SupportAccessPanel data={data} />
+      </UbDisclosure>
     </UbStack>
   );
 }
@@ -74,7 +89,7 @@ function AccountDataPage(): React.JSX.Element {
   const header = <UbPageHeader title={t('data.title')} subtitle={t('data.subtitle')} />;
 
   return (
-    <UbPageShell header={header} width="measure">
+    <SettingsFrame page="data" header={header}>
       {role === 'owner' ? (
         <OwnerDataPage />
       ) : (
@@ -84,6 +99,6 @@ function AccountDataPage(): React.JSX.Element {
           description={t('data.ownerOnly.body')}
         />
       )}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

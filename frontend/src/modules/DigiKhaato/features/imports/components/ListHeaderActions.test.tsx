@@ -40,7 +40,7 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
       activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
       permissions: [...permissions],
-      enabledModules: ['parties', 'ledger', 'inventory', 'import_export'],
+      enabledModules: ['parties', 'ledger', 'inventory', 'sales', 'import_export'],
       version: 1,
     })
   );
@@ -90,7 +90,7 @@ describe('ListExportButton', () => {
     service.requestListExport.mockResolvedValue({
       kind: 'file',
       blob: new Blob(['name\r\n']),
-      filename: 'digikhaato-parties-20260924-1142.csv',
+      filename: 'yourkhata-parties-20260924-1142.csv',
     });
     renderWithProviders(
       <ListExportButton

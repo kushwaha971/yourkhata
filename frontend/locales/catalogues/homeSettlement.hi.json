@@ -1,0 +1,7 @@
+{
+  "homeSettlement.action": "बराबर करें…",
+  "homeSettlement.actionLabel": "{name} के दोनों हिसाब बराबर करें",
+  "homeSettlement.body": "ग्राहक के रूप में आपको उनसे {owed} लेना है और सप्लायर के रूप में उन्हें {owing} देना है। जब तक आप बराबर न करें, ये अलग रहते हैं।",
+  "homeSettlement.more": "{count} और लोग दोनों सूचियों में हैं।",
+  "homeSettlement.title": "{name} दोनों सूचियों में हैं।"
+}

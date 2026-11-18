@@ -9,6 +9,7 @@ import { Trash2 } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbPanel,
   UbPanelSection,
   UbStack,
@@ -24,7 +25,8 @@ import type { UseAccountDataResult } from '../hooks/useAccountData';
 
 const DeleteBusinessDialog = dynamic(
   () => import('./DeleteBusinessDialog').then((module) => module.DeleteBusinessDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -51,7 +53,7 @@ export function DeleteBusinessPanel({
   const pending = deletion.status === 'pending_deletion';
 
   return (
-    <UbPanel as="section">
+    <UbPanel as="section" className="border-error">
       <UbPanelSection title={t('data.delete.title')}>
         {pending ? (
           <UbStack gap={3}>

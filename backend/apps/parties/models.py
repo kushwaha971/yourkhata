@@ -7,13 +7,21 @@ from __future__ import annotations
 
 from django.contrib.postgres.indexes import GinIndex, OpClass
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Q
 from django.db.models.functions import Lower, Upper
 
 from apps.common.db.fields import MoneyField, uuid7_pk
 from apps.common.managers import AllObjectsManager, SoftDeleteManager
 from apps.common.models import SoftDeleteModel, TenantModel
-from apps.parties.constants import ConsentSource, GstRegistration, OpeningDirection, PartyStatus
+from apps.parties.constants import (
+    ConsentSource,
+    GstRegistration,
+    OpeningDirection,
+    PartyStatus,
+    RelationKind,
+    ShopPromiseRole,
+    ShopPromiseState,
+)
 
 
 class Party(TenantModel, SoftDeleteModel):
@@ -43,6 +51,20 @@ class Party(TenantModel, SoftDeleteModel):
     balance = MoneyField(default=0)
     receivable_total = MoneyField(default=0)
     payable_total = MoneyField(default=0)
+    # ── A2 — the bucket caches (ADR-043, ADR-044, contracts §1.3) ───────────
+    #
+    # More caches, with the same one writer as `balance`
+    # (`parties.services.balance.apply_entry`) and the same replay
+    # (`manage.py recalc_balances`). DEC-019: each app's money is its own —
+    # `balance` is Σ main (the udhaar book: what its aging, credit limit and
+    # write-off read), `shop_balance` Σ shop (bills and their payments),
+    # `loan_balance` Σ loan, `library_balance` Σ library, and none of them
+    # includes another. `deposit_held` is money held for the party and
+    # returnable: a liability, never negative.
+    shop_balance = MoneyField(default=0, db_default=0)
+    loan_balance = MoneyField(default=0, db_default=0)
+    library_balance = MoneyField(default=0, db_default=0)
+    deposit_held = MoneyField(default=0, db_default=0)
     last_activity_at = models.DateTimeField(null=True, blank=True)
 
     # ── The opening balance, STORED AND UNAPPLIED (TSK-PTY-01-05) ───────────
@@ -98,6 +120,12 @@ class Party(TenantModel, SoftDeleteModel):
                 fields=["tenant", "mobile"],
                 condition=models.Q(mobile__isnull=False) & models.Q(deleted_at__isnull=True),
                 name="uq_party_tenant_mobile",
+            ),
+            # A2 — a deposit is never handed back beyond what is held. The deposits
+            # service refuses first (`deposit_insufficient`); this is the last line.
+            models.CheckConstraint(
+                condition=models.Q(deposit_held__gte=0),
+                name="ck_party_deposit_held_non_negative",
             ),
         ]
         indexes = [
@@ -306,3 +334,141 @@ class PartyTag(models.Model):
             # join row in the tenant, once per tag.
             models.Index(fields=["tag"], name="ix_party_tag_tag"),
         ]
+
+
+# ── A6 ── PLT-X04: a guardian or payer linked to a person (ADR-046) ──────────
+
+
+class PartyRelation(TenantModel):
+    """`party` is the person; `related_party` is their guardian or payer.
+
+    Both ends are parties of the same tenant and both are `RESTRICT`: a party
+    is archived, never deleted, and a relation that silently lost one end would
+    send a reminder to nobody. A relation that has been USED (a reminder went to
+    `related_party`) is ended with `to_on` rather than deleted, so "who was told"
+    stays answerable; one that was never used is deleted outright
+    (`services/relations.py`).
+
+    `receives_messages` is a preference and sends nothing (BR-7): a reminder
+    source reads it when it chooses a recipient (PLT-X06 `recipient_party_id`).
+    """
+
+    id = uuid7_pk()
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, related_name="relations_as_person"
+    )
+    related_party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, related_name="relations_as_related"
+    )
+    kind = models.CharField(max_length=12, choices=RelationKind.choices)
+    receives_messages = models.BooleanField(default=False, db_default=False)
+    from_on = models.DateField()
+    to_on = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = "parties_relation"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "party", "related_party", "kind"], name="uq_party_relation"
+            ),
+            models.CheckConstraint(
+                condition=~Q(party=F("related_party")), name="ck_party_relation_not_self"
+            ),
+            models.CheckConstraint(
+                condition=Q(kind__in=[choice.value for choice in RelationKind]),
+                name="ck_party_relation_kind",
+            ),
+            models.CheckConstraint(
+                condition=Q(to_on__isnull=True) | Q(to_on__gte=F("from_on")),
+                name="ck_party_relation_dates",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "party"], name="ix_party_relation_party"),
+            models.Index(fields=["tenant", "related_party"], name="ix_party_relation_related"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"{self.related_party_id} {self.kind} of {self.party_id}"
+
+
+class ShopPromise(TenantModel):
+    """BP-16 (R-DEC-26) — a Shop follow-up: "Sharma will pay ₹1,500 on Friday".
+
+    Separate from `Party.collection_date`, which is the Udhaar book's personal
+    promise (DEC-019): a Shop promise belongs to the Shop and to ONE of its two
+    roles, so a person who is both a customer and a supplier can carry one of
+    each and neither reads the other's.
+
+    A promise moves no money. Keeping it is something a person says (Mark as
+    kept); a payment is not matched to it automatically, because a part payment
+    may or may not be what was promised and only the shopkeeper knows which.
+    Bills, due dates and balances are untouched by every write here.
+
+    One OPEN promise per contact and role, enforced by the database: two staff
+    adding a promise for the same customer at the same moment cannot leave two
+    open dates for one debt. Closed promises stay as the contact's history; the
+    audit log holds every change of date or amount with who made it.
+
+    `version` is the optimistic lock a change sends back: an edit made on a
+    screen loaded before somebody else's edit is refused rather than silently
+    undoing it.
+    """
+
+    party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name="+")
+    role = models.CharField(max_length=8, choices=ShopPromiseRole.choices)
+    promised_on = models.DateField()
+    #: Optional: "will pay on Friday" is a promise without a figure.
+    amount = MoneyField(null=True, blank=True)
+    note = models.CharField(max_length=200, blank=True, default="")
+    state = models.CharField(
+        max_length=10, choices=ShopPromiseState.choices, default=ShopPromiseState.OPEN
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    updated_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "parties_shop_promise"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "party", "role"],
+                condition=Q(state="open"),
+                name="uq_shop_promise_one_open",
+            ),
+            models.CheckConstraint(
+                condition=Q(role__in=["customer", "supplier"]), name="ck_shop_promise_role"
+            ),
+            models.CheckConstraint(
+                condition=Q(state__in=["open", "kept", "cancelled"]),
+                name="ck_shop_promise_state",
+            ),
+            models.CheckConstraint(
+                condition=Q(amount__isnull=True) | Q(amount__gt=0),
+                name="ck_shop_promise_amount_positive",
+            ),
+            models.CheckConstraint(
+                condition=Q(state="open", closed_at__isnull=True)
+                | (~Q(state="open") & Q(closed_at__isnull=False)),
+                name="ck_shop_promise_closed_at",
+            ),
+        ]
+        indexes = [
+            # Home's Follow-ups: the open promises by date.
+            models.Index(
+                fields=["tenant", "promised_on"],
+                condition=Q(state="open"),
+                name="ix_shop_promise_open_date",
+            ),
+            models.Index(
+                fields=["tenant", "party", "role", "-created_at"], name="ix_shop_promise_party"
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"{self.role} promise {self.promised_on}"

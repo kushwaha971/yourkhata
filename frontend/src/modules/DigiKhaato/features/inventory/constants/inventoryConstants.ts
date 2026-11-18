@@ -7,6 +7,8 @@
 
 /** The item form's fields, for anchoring server errors (`applyServerErrors`). */
 export const ITEM_FORM_FIELDS = [
+  // G2a — the first tag (nested; the error helper anchors by the root).
+  'tag',
   'name',
   'itemType',
   'categoryId',
@@ -33,6 +35,17 @@ export const SERVER_FIELD_TO_ITEM_FORM: Readonly<Record<string, string>> = {
   'opening_stock.unit_cost': 'openingCost',
   'opening_stock.as_of': 'openingAsOf',
   opening_stock: 'openingQty',
+  // G2a — the first tag's refusals, under its own boxes.
+  'tag.tag_no': 'tag.tagNo',
+  'tag.purity': 'tag.purity',
+  'tag.gross_g': 'tag.grossG',
+  'tag.stone_g': 'tag.stoneG',
+  'tag.net_g': 'tag.netG',
+  'tag.making_type': 'tag.makingType',
+  'tag.making_value': 'tag.makingValue',
+  'tag.wastage_pct': 'tag.wastagePct',
+  'tag.huid': 'tag.huid',
+  tag: 'tag.tagNo',
 };
 
 export const ADJUSTMENT_FORM_FIELDS = ['adjustmentDate', 'reason', 'note', 'lines'] as const;
@@ -63,9 +76,8 @@ export const ITEM_LIST_PAGE_SIZE = 25;
 export const SCANNER_MIN_LENGTH = 4;
 export const SCANNER_MAX_GAP_MS = 50;
 
-/** The picker's debounce and minimum query (as `usePartySearch`). */
+/** The picker's debounce (as `usePartySearch`); it lists on open, so there is no minimum. */
 export const ITEM_SEARCH_DEBOUNCE_MS = 250;
-export const ITEM_SEARCH_MIN_CHARS = 1;
 
 /** Movement type → locale key (INV-03 §7 "label map in constants/movementTypes"). */
 export const MOVEMENT_TYPE_LABEL_ID: Readonly<Record<string, string>> = {

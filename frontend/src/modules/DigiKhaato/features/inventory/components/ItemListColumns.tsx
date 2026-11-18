@@ -1,131 +1,132 @@
-import { UbLink, UbStack, UbText } from 'src/design-system';
+import { UbStack, UbText } from 'src/design-system';
 import type { UbDataGridColumn, UbGridTier } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { itemPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
+import { formatQuantity } from 'src/utils/quantity';
 
-import { onHandText } from '../view-model/itemDisplay';
 
-import { StockBadge } from './StockBadge';
+import type { ItemListRow, KindColumn, KindLine } from '../types/item.types';
 
-import type { ItemListRow } from '../types/item.types';
+const kindText = (key: KindColumn, line: KindLine | null | undefined, t: TranslateFn): string | null => {
+  if (!line) return null;
+  if (typeof line === 'string') return line;
+  if (key === 'batches') return t('items.kind.batches.line', { expiry: String(line.expiry), n: Number(line.batches) });
+  if (key === 'serials') return t('items.kind.serials.line', { n: Number(line.count) });
+  if (key === 'part_numbers') return `${line.part ?? '—'} · ${line.rack ?? '—'}`;
+  if (key === 'godowns') return `${line.shop} · ${line.godown}`;
+  return Object.values(line).join(' · ');
+};
+
+/** The design's Stock cell: "32 in stock", "6 left", "Out of stock", "Made fresh". */
+const stockCell = (row: ItemListRow, t: TranslateFn): { text: string; tone: 'primary' | 'warning' | 'error' | 'secondary' } => {
+  if (row.stockStatus === null || row.onHand === null)
+    return { text: row.itemType === 'service' ? t('items.list.card.service') : '—', tone: 'secondary' };
+  if (row.stockStatus === 'out')
+    return { text: t('items.stock.out'), tone: 'error' };
+  const qty = formatQuantity(row.onHand);
+  return row.stockStatus === 'low'
+    ? { text: t('items.list.stock.left', { qty }), tone: 'warning' }
+    : { text: t('items.list.card.inStock', { qty }), tone: 'primary' };
+};
 
 /**
- * INV-02 §7 — Item (name + SKU) · Category · Unit · Selling · Purchase · GST ·
- * On hand (badge + quantity). On a phone card: name, SKU and category as meta,
- * the badge and quantity trailing (FR-11).
+ * The design's Items register (dItems / pItems), the same for every kind:
+ * Item · Category · the kind's own column · Stock · Selling price. A phone row
+ * reads the name, the category (or the kind's line) under it, and the price
+ * over the stock at the right. Unit, cost and GST live on the item's page.
  */
 export const createItemColumns = ({
   t,
   tier,
-  valuation = true,
+  kindColumn = null,
 }: {
   readonly t: TranslateFn;
   readonly tier: UbGridTier;
-  /** INV-08 EC-4 — without `reports.financial.read` the Purchase column goes. */
+  /** Kept for callers; the design's register shows no cost column. */
   readonly valuation?: boolean;
+  /** The kind's own column (design D4), between Category and Stock. */
+  readonly kindColumn?: KindColumn | null;
 }): readonly UbDataGridColumn<ItemListRow>[] => {
   const isCards = tier === 'cards';
-  const columns: UbDataGridColumn<ItemListRow>[] = [
+  const kind = (row: ItemListRow) => (kindColumn ? kindText(kindColumn, row.kindLine, t) : null);
+  return [
     {
       id: 'item',
       header: t('items.list.col.item'),
       priority: 1,
       cardSlot: 'title',
       sortField: 'name',
-      widthShare: 28,
-      cell: (row) =>
-        isCards ? (
-          row.name
-        ) : (
-          <UbStack gap={0} className="min-w-0">
-            <UbLink href={itemPath(row.id)} variant="body-sm-medium" className="line-clamp-2">
-              {row.name}
-            </UbLink>
-            <UbText as="span" variant="caption" tone="tertiary" className="ds-mono truncate">
-              {row.sku}
-            </UbText>
-          </UbStack>
-        ),
+      widthShare: 30,
+      cell: (row) => (
+        <UbText as="span" variant={isCards ? 'body-sm-medium' : 'body-sm'} className="line-clamp-2 break-words">
+          {row.name}
+        </UbText>
+      ),
     },
     {
       id: 'category',
       header: t('items.list.col.category'),
-      priority: 3,
-      /* On a phone card this is the meta line: the SKU disambiguates two
-         items of one name (EC-11), the category says which shelf. */
+      priority: 2,
       cardSlot: 'meta',
-      widthShare: 14,
-      cell: (row) =>
-        isCards
-          ? [row.sku, row.category?.name].filter(Boolean).join(' · ')
-          : (row.category?.name ?? '—'),
+      widthShare: 22,
+      cell: (row) => (isCards ? (kind(row) ?? row.category?.name ?? null) : (row.category?.name ?? '—')),
     },
+    ...(kindColumn && !isCards
+      ? ([
+          {
+            id: 'kind',
+            header: t(`items.kind.${kindColumn}.col`),
+            priority: 2,
+            cardSlot: 'none',
+            widthShare: 20,
+            cell: (row: ItemListRow) => (
+              <UbText as="span" variant="body-sm" className="font-semibold text-primary">
+                {kind(row) ?? '—'}
+              </UbText>
+            ),
+          },
+        ] satisfies UbDataGridColumn<ItemListRow>[])
+      : []),
     {
-      id: 'unit',
-      header: t('items.list.col.unit'),
-      priority: 4,
+      id: 'onHand',
+      header: t('items.list.col.stock'),
+      priority: 1,
+      align: 'end',
       cardSlot: 'none',
-      widthShare: 8,
-      cell: (row) => row.unit.code,
+      sortField: 'on_hand',
+      widthShare: 14,
+      cell: (row) => {
+        const stock = stockCell(row, t);
+        return (
+          <UbText as="span" variant="body-sm" tone={stock.tone} className="ds-num whitespace-nowrap">
+            {stock.text}
+          </UbText>
+        );
+      },
     },
     {
       id: 'sellingPrice',
       header: t('items.list.col.selling'),
-      priority: 2,
-      align: 'end',
-      cardSlot: 'none',
-      sortField: 'selling_price',
-      widthShare: 12,
-      cell: (row) => (
-        <UbText as="span" variant="body-sm" className="ds-num">
-          {formatInr(row.sellingPrice)}
-        </UbText>
-      ),
-    },
-    {
-      id: 'purchasePrice',
-      header: t('items.list.col.purchase'),
-      priority: 4,
-      align: 'end',
-      cardSlot: 'none',
-      widthShare: 12,
-      cell: (row) => (
-        <UbText as="span" variant="body-sm" className="ds-num">
-          {formatInr(row.purchasePrice)}
-        </UbText>
-      ),
-    },
-    {
-      id: 'tax',
-      header: t('items.list.col.gst'),
-      priority: 4,
-      cardSlot: 'none',
-      widthShare: 8,
-      cell: (row) => row.taxCode,
-    },
-    {
-      id: 'onHand',
-      header: t('items.list.col.onHand'),
       priority: 1,
       align: 'end',
       cardSlot: 'trailing',
-      sortField: 'on_hand',
-      widthShare: 18,
-      cell: (row) => (
-        <UbStack gap={1} align="end">
-          <UbText
-            as="span"
-            variant="body-sm"
-            tone={row.onHand === null ? 'muted' : row.onHand.startsWith('-') ? 'error' : 'primary'}
-            className="ds-num whitespace-nowrap"
-          >
-            {onHandText(row)}
+      sortField: 'selling_price',
+      widthShare: 14,
+      cell: (row) =>
+        isCards ? (
+          <UbStack gap={0} align="end">
+            <UbText as="span" variant="body-sm" className="ds-num font-semibold">
+              {formatInr(row.sellingPrice)}
+            </UbText>
+            <UbText as="span" variant="caption" tone={stockCell(row, t).tone === 'primary' ? 'tertiary' : stockCell(row, t).tone} className="whitespace-nowrap">
+              {stockCell(row, t).text}
+            </UbText>
+          </UbStack>
+        ) : (
+          <UbText as="span" variant="body-sm" className="ds-num font-semibold">
+            {formatInr(row.sellingPrice)}
           </UbText>
-          <StockBadge status={row.stockStatus} onHand={row.onHand} unitCode={row.unit.code} />
-        </UbStack>
-      ),
+        ),
     },
   ];
-  return valuation ? columns : columns.filter((column) => column.id !== 'purchasePrice');
 };

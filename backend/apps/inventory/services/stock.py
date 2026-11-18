@@ -34,6 +34,7 @@ from decimal import Decimal
 from typing import Any, Iterable
 
 from django.db import transaction
+from django.db.models import Min, Q, Sum
 from django.utils import timezone
 
 from apps.common.context import Ctx
@@ -48,7 +49,7 @@ from apps.inventory.constants import (
     MovementType,
 )
 from apps.inventory.models import Item, ItemStock, Location, StockMovement
-from apps.inventory.services.costing import ZERO3, ZERO4, apply_weighted_average
+from apps.inventory.services.costing import ZERO3, ZERO4, ZERO7, apply_weighted_average, exact_value
 
 
 @dataclass
@@ -75,6 +76,7 @@ class PostedLine:
     on_hand_before: Decimal
     avg_cost_before: Decimal
     stock: ItemStock = field(repr=False)
+    date_shortage: dict | None = None
 
 
 def allow_negative_stock(tenant: Any) -> bool:
@@ -182,22 +184,72 @@ def post_movements(
     if allow_negative is None:
         allow_negative = allow_negative_stock(ctx.tenant)
     running = {pair: row.on_hand for pair, row in stock_rows.items()}
+    # B38: arrival-order costing stays intact, but a sale cannot borrow stock
+    # dated after that sale. Only backdated sales need this historical read.
+    dates = {
+        line.movement_date
+        for line in lines
+        if line.movement_type == MovementType.SALE_OUT
+        and stock_rows[(line.item.id, line.location.id)].max_movement_date is not None
+        and line.movement_date < stock_rows[(line.item.id, line.location.id)].max_movement_date
+    }
+    dated: dict[tuple, Decimal] = {}
+    first_stock: dict[tuple, dt.date | None] = {}
+    for as_of in dates:
+        snapshots = (
+            StockMovement.objects.filter(
+                tenant=ctx.tenant,
+                item_id__in=[pair[0] for pair in pairs],
+                location_id__in=[pair[1] for pair in pairs],
+            )
+            .values("item_id", "location_id")
+            .annotate(
+                available=Sum("qty", filter=Q(movement_date__lte=as_of)),
+                opening_date=Min(
+                    "movement_date", filter=Q(qty__gt=0, movement_type=MovementType.OPENING)
+                ),
+            )
+        )
+        for snapshot in snapshots:
+            pair = (snapshot["item_id"], snapshot["location_id"])
+            dated[(*pair, as_of)] = snapshot["available"] or ZERO3
+            first_stock[pair] = snapshot["opening_date"]
+    date_shortages: dict[int, dict] = {}
     short: list[dict] = []
     for line in lines:
         pair = (line.item.id, line.location.id)
         before = running[pair]
         running[pair] = before + line.qty
-        if line.qty < 0 and not allow_negative and before + line.qty < 0:
-            short.append(
-                {
-                    "index": line.index,
-                    "item_id": str(line.item.id),
-                    "item_name": line.item.name,
-                    "requested": str(q3(-line.qty)),
-                    "available": str(q3(max(before, ZERO3))),
-                    "unit_code": line.item.unit.code,
-                }
-            )
+        date_key = (*pair, line.movement_date)
+        available_on_date = dated.get(date_key, before)
+        # Earlier lines in this request count only when dated on/before
+        # this snapshot, including repeated item lines in a bill.
+        for key in dated:
+            if key[:2] == pair and line.movement_date <= key[2]:
+                dated[key] += line.qty
+        date_short = (
+            line.movement_type == MovementType.SALE_OUT
+            and line.movement_date in dates
+            and available_on_date + line.qty < 0
+        )
+        if line.qty < 0 and (date_short or before + line.qty < 0):
+            detail = {
+                "index": line.index,
+                "item_id": str(line.item.id),
+                "item_name": line.item.name,
+                "requested": str(q3(-line.qty)),
+                "available": str(q3(max(available_on_date if date_short else before, ZERO3))),
+                "unit_code": line.item.unit.code,
+            }
+            if date_short:
+                opening = first_stock.get(pair)
+                detail.update(
+                    as_of=line.movement_date.isoformat(),
+                    opening_date=opening.isoformat() if opening else None,
+                )
+                date_shortages[id(line)] = detail
+            if not allow_negative:
+                short.append(detail)
     if short:
         raise BusinessRuleViolation(
             "insufficient_stock",
@@ -220,6 +272,7 @@ def post_movements(
             unit_cost=line.unit_cost,
             reversed_qty=line.reverses.qty if line.reverses is not None else None,
             reversed_unit_cost=line.reverses.unit_cost if line.reverses is not None else None,
+            value=stock.stock_value,
         )
         stock.last_sequence_no += 1
         movement = StockMovement.objects.create(
@@ -233,6 +286,7 @@ def post_movements(
             unit_cost=step.unit_cost,
             avg_cost_after=step.avg_after,
             on_hand_after=step.on_hand_after,
+            value_after=step.value_after,
             reason=line.reason,
             source_type=line.source_type,
             source_id=line.source_id,
@@ -241,16 +295,22 @@ def post_movements(
         )
         stock.on_hand = step.on_hand_after
         stock.avg_cost = step.avg_after
+        stock.stock_value = step.value_after
         stock.last_movement_at = now
         if stock.max_movement_date is None or line.movement_date > stock.max_movement_date:
             stock.max_movement_date = line.movement_date
         touched[pair] = stock
-        posted.append(PostedLine(line, movement, on_hand_before, avg_before, stock))
+        posted.append(
+            PostedLine(
+                line, movement, on_hand_before, avg_before, stock, date_shortages.get(id(line))
+            )
+        )
 
     for stock in touched.values():
         ItemStock.objects.filter(pk=stock.pk).update(
             on_hand=stock.on_hand,
             avg_cost=stock.avg_cost,
+            stock_value=stock.stock_value,
             last_movement_at=stock.last_movement_at,
             last_sequence_no=stock.last_sequence_no,
             max_movement_date=stock.max_movement_date,
@@ -279,7 +339,21 @@ def replay(movements: Iterable[StockMovement]) -> tuple[Decimal, Decimal, list[t
     `(movement, expected_on_hand_after, expected_avg_after)`. A pure function of
     the immutable columns — it never reads the caches it is checking.
     """
-    on_hand, avg = ZERO3, ZERO4
+    on_hand, avg, _value, per_row = replay_with_value(movements)
+    return on_hand, avg, [(m, oh, a) for m, oh, a, _v in per_row]
+
+
+def replay_with_value(
+    movements: Iterable[StockMovement],
+) -> tuple[Decimal, Decimal, Decimal, list[tuple]]:
+    """`replay`, also carrying the exact stock value (H3).
+
+    Returns `(on_hand, avg_cost, stock_value, per_row)`, `per_row` being
+    `(movement, on_hand_after, avg_after, value_after)`. A row written before
+    value carrying (`value_after` NULL) is folded as the old step folded it —
+    from `on_hand × avg` — so history that was right stays right.
+    """
+    on_hand, avg, value = ZERO3, ZERO4, ZERO7
     per_row: list[tuple] = []
     by_id: dict[Any, StockMovement] = {}
     for movement in movements:
@@ -291,11 +365,16 @@ def replay(movements: Iterable[StockMovement]) -> tuple[Decimal, Decimal, list[t
             unit_cost=movement.unit_cost if movement.qty > 0 else None,
             reversed_qty=reversed_row.qty if reversed_row is not None else None,
             reversed_unit_cost=reversed_row.unit_cost if reversed_row is not None else None,
+            value=None if movement.value_after is None else value,
         )
-        on_hand, avg = step.on_hand_after, step.avg_after
-        per_row.append((movement, on_hand, avg))
+        on_hand, avg, value = step.on_hand_after, step.avg_after, step.value_after
+        if movement.value_after is None:
+            # What the old step carried forward, and what migration 0005
+            # backfilled into the cache: the pair's own product.
+            value = exact_value(on_hand * avg)
+        per_row.append((movement, on_hand, avg, value))
         by_id[movement.id] = movement
-    return on_hand, avg, per_row
+    return on_hand, avg, value, per_row
 
 
 __all__ = [
@@ -307,4 +386,5 @@ __all__ = [
     "post_movement",
     "post_movements",
     "replay",
+    "replay_with_value",
 ]

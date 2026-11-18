@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+import { track } from 'src/analytics/track';
 import type { SessionPayload } from 'src/redux/slice/sessionSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { toApiError } from 'src/utils/apiError';
@@ -9,6 +10,7 @@ import { getSession } from '../../auth/api/authService';
 import * as onboardingService from '../api/onboardingService';
 
 import type {
+  OfferedApp,
   OnboardingAddressStep,
   OnboardingBusinessStep,
   OnboardingGstStep,
@@ -96,6 +98,30 @@ export const findResumableBusiness = createAsyncThunk<
 );
 
 /**
+ * QUERY — which apps a new business may choose (owner, 11 Oct 2026). Read once
+ * per wizard, before step 1 is drawn. Rejected means "no choice to offer", and
+ * step 1 falls back to the Shop the server gives by default.
+ */
+export const loadOfferedApps = createAsyncThunk<
+  readonly OfferedApp[],
+  void,
+  { rejectValue: ApiErrorShape }
+>(
+  'onboarding/loadOfferedApps',
+  async (_arg, { rejectWithValue }) => {
+    try {
+      return await onboardingService.fetchOfferedApps();
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'onboarding.error.resume'));
+    }
+  },
+  {
+    condition: (_arg, { getState }) =>
+      (getState() as { onboarding: { offeredStatus: string } }).onboarding.offeredStatus === 'idle',
+  }
+);
+
+/**
  * Defect L8 — how long step 1 waits for ANOTHER tab's identical submit.
  *
  * The persisted `Idempotency-Key` is device-wide, so two tabs submitting step
@@ -121,11 +147,13 @@ export const createTenant = createAsyncThunk<
     // L8 — the SAME key every time: a retry is a replay request, never a
     // second create. The status stays `loading` throughout, so Continue
     // cannot be pressed again while it waits.
-    return await retryWhile(
+    const result = await retryWhile(
       () => onboardingService.createTenant(input, idempotencyKey),
       isInProgress,
       CREATE_IN_PROGRESS_RETRY_DELAYS_MS
     );
+    track('business_created');
+    return result;
   } catch (error) {
     return rejectWithValue(toApiError(error, 'onboarding.error.create'));
   }

@@ -5,7 +5,6 @@ import { toApiError } from 'src/utils/apiError';
 
 import { listParties } from '../api/partyService';
 
-
 import type { PartyListParams, PartyListResult } from '../types/party.types';
 
 export interface FetchPartyListArg {
@@ -32,6 +31,20 @@ export const fetchPartyList = createAsyncThunk<
   try {
     const result = await listParties(params, signal);
     return { ...result, mode };
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'parties.list.error.title'));
+  }
+});
+
+/** Read-only preview for a draft filter. It never replaces the applied list. */
+export const fetchPartyFilterCount = createAsyncThunk<
+  number,
+  PartyListParams,
+  { rejectValue: ApiErrorShape }
+>('partyList/filterCount', async (params, { signal, rejectWithValue }) => {
+  try {
+    const result = await listParties({ ...params, page: 1, pageSize: 1 }, signal);
+    return result.meta.total;
   } catch (error) {
     return rejectWithValue(toApiError(error, 'parties.list.error.title'));
   }

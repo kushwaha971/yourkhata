@@ -19,7 +19,55 @@ class PlatformConfig(AppConfig):
     verbose_name = "Platform"
 
     def ready(self) -> None:
+        from apps.common.throttling import register_durable_throttle
         from apps.platform_app import signals, tasks  # noqa: F401
+        from apps.platform_app.throttling import durable_factory
+
+        register_durable_throttle(durable_factory)
+
+        # docs/platform/14 §4.2 — the Shop is an app like the others, registered
+        # here because its capabilities are the core ones, not a vertical's.
+        from apps.platform_app.apps_registry import AppSpec, register_app
+
+        register_app(AppSpec(
+            code="shop",
+            label_id="nav.workspace.shop",
+            anchor="sales",
+            capabilities=frozenset(
+                {
+                    "parties",
+                    "ledger",
+                    "inventory",
+                    "sales",
+                    "purchases",
+                    "payments",
+                    "expenses",
+                    "reports",
+                    "import_export",
+                }
+                ),  # fmt: skip
+                entry_permission="parties.party.read",
+                home_path="/dashboard",
+                order=90,
+            ),
+        )
+
+        # The Money Book (code name `khata`), rebuilt 11 Nov 2026 as an app that
+        # stands alone: its own tables (`apps/moneybook`), owned by the signed-in
+        # person, and nothing of the Shop's — no parties, no ledger.
+        register_app(
+            AppSpec(
+                code="khata",
+                label_id="nav.workspace.khata",
+                anchor="khata",
+                capabilities=frozenset({"khata"}),
+                entry_permission="khata.book.read",
+                home_path="/money-book",
+                # After the Shop (90): a business that ran the Shop before this app
+                # existed keeps landing where it always did.
+                order=95,
+            )
+        )
 
         register(Tags.security, deploy=True)(check_console_sms_backend)
 
@@ -44,17 +92,19 @@ def check_console_sms_backend(app_configs: object = None, **kwargs: object) -> l
     if not getattr(settings, "UB_AUTH_OTP_ENABLED", False):
         return []
 
-    backend = getattr(settings, "UB_SMS_BACKEND", "") or ""
-    if settings.DEBUG or not backend.endswith("ConsoleSmsBackend"):
+    # Owner, 14 Nov 2026: the code goes by WhatsApp (`meta_whatsapp`).
+    # `console` means it is only printed in this server's log.
+    provider = getattr(settings, "UB_OTP_PROVIDER", "console") or "console"
+    if settings.DEBUG or provider != "console":
         return []
     if getattr(settings, "UB_ALLOW_CONSOLE_SMS", False):
         return []
     return [
         Error(
-            "UB_SMS_BACKEND is the console backend and DEBUG is off: no OTP would "
+            "The OTP provider is the console and DEBUG is off: no sign-in code would "
             "be delivered to any merchant.",
-            hint="Configure a real SMS provider, or set UB_ALLOW_CONSOLE_SMS=1 "
-            "for a single-user local deployment.",
+            hint="Set the META_WHATSAPP_* values and UB_OTP_PROVIDER=meta_whatsapp, or set "
+            "UB_ALLOW_CONSOLE_SMS=1 for a single-user local deployment.",
             id="platform.E001",
         )
     ]

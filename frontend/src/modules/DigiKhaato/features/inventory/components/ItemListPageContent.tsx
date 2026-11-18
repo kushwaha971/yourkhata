@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import {
   BarChart3,
-  Boxes,
+  ListOrdered,
   Package,
   PackageMinus,
   Plus,
+  ScanLine,
   Tags,
   TriangleAlert,
   Wrench,
@@ -18,18 +19,29 @@ import {
 
 import {
   UbActionLink,
+  UbCountLine,
+  UbActiveFilters,
   UbButton,
-  UbCombobox,
+  UbChoiceChips,
+  UbDialog,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbFilterSelect,
+  UbFilterSheet,
+  type UbFilterSingleSpec,
+  type UbFilterSpec,
+  type UbFilterValues,
+  UbLoadMore,
   UbPageHeader,
+  UbPageHeaderMobileActions,
   UbPageShell,
+  UbScanButton,
   UbSearchInput,
-  UbSelect,
   UbStack,
-  UbStatCard,
-  UbStatGrid,
   UbStatusBanner,
-  UbTabs,
+  UbText,
+  UbViewportPageShell,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -38,14 +50,18 @@ import {
   type UbGridSort,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useScannerListener } from 'src/hooks/useScannerListener';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES, itemPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
+import { scanFeedback } from 'src/utils/scanFeedback';
 
 import {
   ImportActionLink,
@@ -53,23 +69,38 @@ import {
 } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
 
 import { itemExportPath, lookupItemByBarcode } from '../api/itemService';
+import { getTagsInStock } from '../api/tagService';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useItemForm } from '../hooks/useItemForm';
 import { useItemList } from '../hooks/useItemList';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
+import { KIND_COLUMNS } from '../types/item.types';
 import { inventoryGridLabels } from '../view-model/gridLabels';
+import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
 import { createItemColumns } from './ItemListColumns';
 
 import type { ItemListRow, StockTab } from '../types/item.types';
 
 /* The form and the adjustment drawer belong to the chunk that OPENS them. */
+/* C2: the camera loads when its button is first tapped. */
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+});
+
 const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.ItemFormDrawer), {
   ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
+);
+/* 09 §8.4 — the saved snackbar's View opens this, so every screen that
+   mounts the drawer mounts it too. */
+const AdjustmentDetailDialog = dynamic(
+  () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /** The phone card's disc: what KIND of item this is, not initials — an item
@@ -88,17 +119,69 @@ const itemIcon = (row: ItemListRow): React.ReactNode =>
  */
 export function ItemListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const tier = useGridTier();
-  const list = useItemList();
+  const list = useItemList(tier === 'cards' ? 'append' : 'replace');
   const itemForm = useItemForm();
+  /* `/items?add=1` opens Add item over the list, so the action has an address
+     a merchant can bookmark and the design's dItemForm can be reached. */
+  const askedToAdd = useSearchParams()?.get('add') === '1';
+  const { openCreate } = itemForm;
+  const openedFromUrl = useRef(false);
+  useEffect(() => {
+    if (!askedToAdd || openedFromUrl.current) return;
+    openedFromUrl.current = true;
+    openCreate();
+  }, [askedToAdd, openCreate]);
   const adjustment = useStockAdjustment();
   const { can } = usePermissions();
   const masters = useInventoryMasters();
   const [unknownCode, setUnknownCode] = useState<string | null>(null);
+  /** C2: how the unknown code arrived — the phone's sheet says which. */
+  const [unknownBy, setUnknownBy] = useState<'camera' | 'scanner'>('scanner');
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const { filters, update } = list;
+  const phone = tier === 'cards';
+  const sheetSpecs: UbFilterSpec[] = [
+    {
+      kind: 'single',
+      key: 'type',
+      label: t('items.list.filter.type'),
+      anyLabel: t('items.list.filter.typeAny'),
+      options: [
+        { value: 'goods', label: t('items.form.type.goods') },
+        { value: 'service', label: t('items.form.type.service') },
+      ],
+    },
+    {
+      kind: 'single',
+      key: 'categoryId',
+      label: t('items.list.filter.category'),
+      anyLabel: t('items.list.filter.categoryAny'),
+      options: masters.categoryOptions,
+    },
+    {
+      kind: 'single',
+      key: 'status',
+      label: t('items.list.filter.status'),
+      anyLabel: t('items.list.filter.active'),
+      options: [{ value: 'archived', label: t('items.list.filter.archived') }],
+    },
+  ];
+  // "Active" is the list's default, so to the sheet it is "no filter".
+  const sheetValues: UbFilterValues = {
+    type: filters.type,
+    categoryId: filters.categoryId ?? '',
+    status: filters.status === 'archived' ? 'archived' : '',
+  };
+  const applySheet = (next: UbFilterValues) =>
+    update({
+      type: (next.type ?? '') as '' | 'goods' | 'service',
+      categoryId: next.categoryId ?? '',
+      status: next.status === 'archived' ? 'archived' : 'active',
+    });
   const [draft, setDraft] = useState(filters.q);
   const settled = useDebounce(draft, 300);
   /* The typed text reaches the URL once it has settled (300 ms, INV-02 FR-2).
@@ -122,30 +205,53 @@ export function ItemListPageContent(): React.JSX.Element {
   }
 
   const openScan = useCallback(
-    async (code: string) => {
+    async (code: string, by: 'camera' | 'scanner' = 'scanner') => {
       const hit = await lookupItemByBarcode(code).catch(() => null);
       if (hit) {
+        scanFeedback('added');
         router.push(itemPath(hit.id));
         return true;
       }
+      scanFeedback('notFound');
       setUnknownCode(code);
-      dispatch(showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } }));
+      setUnknownBy(by);
+      // C2 (design pScanNF): a phone answers with its own sheet; the snackbar
+      // would only repeat it underneath.
+      if (!phone)
+        dispatch(
+          showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } })
+        );
       return false;
     },
-    [router, dispatch]
+    [router, dispatch, phone]
+  );
+  /* C2: a single read — the first code closes the camera and is looked up. */
+  const cameraCode = useCallback(
+    (code: string) => {
+      setCameraOpen(false);
+      void openScan(code, 'camera');
+    },
+    [openScan]
   );
 
   /* FR-6 — a scan anywhere on the page (focus outside a text field) opens the item. */
   useScannerListener((code) => void openScan(code), {
-    enabled: !itemForm.open && !adjustment.open,
+    enabled: !itemForm.open && !adjustment.open && !cameraOpen,
   });
 
+  const features = useAppSelector(selectActiveTenant)?.features;
+  const kindColumn = KIND_COLUMNS.find((key) => features?.includes(key)) ?? null;
   const columns = useMemo(
-    () => createItemColumns({ t, tier, valuation: can('reports.financial.read') }),
-    [t, tier, can]
+    () => createItemColumns({ t, tier, valuation: can('reports.financial.read'), kindColumn }),
+    [t, tier, can, kindColumn]
   );
   const labels = useMemo(
-    () => inventoryGridLabels(t, 'items.list.loading', 'items.list.open'),
+    () =>
+      inventoryGridLabels(t, {
+        loading: 'items.list.loading',
+        open: 'items.list.open',
+        ...ITEM_SELECT_IDS,
+      }),
     [t]
   );
 
@@ -192,8 +298,11 @@ export function ItemListPageContent(): React.JSX.Element {
     [t, canWrite, itemForm, filters.type, filters.tab, list.clearFilters, list.error, list.refetch]
   );
 
-  const gridState: UbGridState =
-    list.status === 'loading' || (list.status === 'idle' && list.rows.length === 0)
+  // The next page loading (or failing) under the cards keeps the cards on screen.
+  const keepingCards = phone && filters.page > 1 && list.rows.length > 0;
+  const gridState: UbGridState = keepingCards
+    ? 'rows'
+    : list.status === 'loading' || (list.status === 'idle' && list.rows.length === 0)
       ? 'loading'
       : list.status === 'failed'
         ? 'error'
@@ -225,14 +334,28 @@ export function ItemListPageContent(): React.JSX.Element {
   );
 
   const counts = list.counts;
-  const tabs = useMemo(
+  const keepsTags = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
+  const [tagsInStock, setTagsInStock] = useState<number | null>(null);
+  useEffect(() => {
+    if (!keepsTags) return undefined;
+    const controller = new AbortController();
+    void getTagsInStock(controller.signal)
+      .then(setTagsInStock)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [keepsTags]);
+
+  /* 09 §8.1 — on a phone the stock states are chips, not a sheet: All · Low · Out of
+     stock, with the server's counts. "Low" holds out-of-stock too, as the tab does. */
+  const chips = useMemo(
     () =>
-      (['all', 'in', 'low', 'out'] as const).map((tab) => ({
-        value: tab,
-        label: counts
-          ? t('items.list.tab.withCount', { label: t(`items.list.tab.${tab}`), count: counts[tab] })
-          : t(`items.list.tab.${tab}`),
-      })),
+      (['all', 'low'] as const).map((tab) => {
+        const label = t(tab === 'low' ? 'items.list.lowStock' : `items.list.tab.${tab}`);
+        return {
+          value: tab,
+          label: counts ? t('items.list.tab.withCount', { label, count: counts[tab] }) : label,
+        };
+      }),
     [counts, t]
   );
 
@@ -254,13 +377,164 @@ export function ItemListPageContent(): React.JSX.Element {
 
   const lowOut = counts ? counts.low + counts.out : null;
 
+  /** No item at all, archived included (the server's `hasAny`). */
+  const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
+  const searchBox = (
+    <UbSearchInput
+      value={draft}
+      onChange={setDraft}
+      // C2 design pScanNF: "Name, code or barcode" (the longer one was cut at 390 px).
+      placeholder={t('items.list.search.items')}
+      aria-label={t('items.list.search.items')}
+      className={phone ? 'min-w-0 flex-1' : undefined}
+      onKeyDown={(event) => {
+        /* FR-7 — a code typed or scanned into the search box plus
+           Enter tries the exact lookup first. */
+        if (event.key === 'Enter' && draft.trim().length >= 4) {
+          event.preventDefault();
+          void openScan(draft.trim()).then((found) => {
+            if (!found) update({ q: draft.trim() });
+          });
+        }
+      }}
+    />
+  );
+  /* Owner, 6 Oct 2026: type, category and status behind ONE Filters button
+     (they took three selects, and three rows on a phone); what is on shows
+     beside it as pills. */
+  const categorySpec = sheetSpecs.find(
+    (spec): spec is UbFilterSingleSpec => spec.key === 'categoryId' && spec.kind === 'single'
+  );
+  const otherSpecs = sheetSpecs.filter((spec) => spec.key !== 'categoryId');
+  const filterControls = phone ? (
+    <>
+      <UbFilterSheet
+        compact
+        specs={sheetSpecs}
+        values={sheetValues}
+        onApply={applySheet}
+        labels={{
+          title: t('common.filters.title'),
+          apply: t('common.action.apply'),
+          reset: t('common.action.reset'),
+          close: t('common.action.close'),
+        }}
+      />
+      <UbActiveFilters
+        specs={sheetSpecs}
+        values={sheetValues}
+        onChange={applySheet}
+        labels={{
+          remove: (pill) => t('common.filters.remove', { filter: pill }),
+          clearAll: t('common.filters.clearAll'),
+        }}
+      />
+    </>
+  ) : (
+    /* The design's register tool is "Category: All"; type and archived stay
+       behind one Filters button beside it, and categories are edited from here. */
+    <UbStack direction="row" align="center" className="gap-2">
+      {categorySpec && (
+        <UbFilterSelect
+          spec={categorySpec}
+          value={filters.categoryId ?? ''}
+          onChange={(value) => update({ categoryId: value })}
+          closeLabel={t('common.action.close')}
+        />
+      )}
+      <UbFilterSheet
+        compact
+        specs={otherSpecs}
+        values={sheetValues}
+        onApply={applySheet}
+        labels={{
+          title: t('common.filters.title'),
+          apply: t('common.action.apply'),
+          reset: t('common.action.reset'),
+          close: t('common.action.close'),
+        }}
+      />
+      <UbActionLink href={ROUTES.ITEM_MASTERS} variant="ghost">
+        {t('items.list.masters')}
+      </UbActionLink>
+    </UbStack>
+  );
+  const grid = (
+    <UbDataGrid
+      rows={list.rows}
+      columns={columns}
+      rowId={rowId}
+      rowName={rowName}
+      state={gridState}
+      labels={labels}
+      emptyStates={emptyStates}
+      caption={t('items.list.caption')}
+      storageId="items.list"
+      cardAvatarIcon={itemIcon}
+      /* A phone card is the register shape every list shares (R-DEC-33): the
+         name owns its line and wraps, the price moves under it below 360 px.
+         The kind disc stays on the desktop tier; at 320 px it cost the name. */
+      cardAvatar={!phone}
+      cardLayout={phone ? 'stacked' : 'inline'}
+      page={{
+        page: list.page,
+        pageSize: list.pageSize,
+        total: list.total,
+        totalPages: Math.max(list.totalPages, 1),
+      }}
+      onPageChange={(page) => update({ page })}
+      sort={sort}
+      onSortChange={handleSort}
+      /* Every width: on a desktop the grid puts its open control on the name
+         (the first cell). The 6 Nov register rebuild removed the name's link and
+         kept this for cards only, so a desktop could not open an item from Items
+         at all (G round, 10 Nov; a4-money "could not open … from the items list"). */
+      onRowOpen={handleOpen}
+      /* R-DEC-33: a phone joins the next page under the cards as the merchant
+         scrolls, with Try again in place when it fails; a desktop pages. */
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        filters.q,
+        filters.tab,
+        filters.type,
+        filters.categoryId,
+        filters.status,
+        filters.ordering,
+      ])}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') update({ page: list.page + 1 });
+            }}
+          />
+        ) : undefined
+      }
+      fillHeight
+      busy={list.status === 'refreshing'}
+      search={phone ? undefined : searchBox}
+      filters={phone ? undefined : filterControls}
+    />
+  );
+
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
         title={t('items.list.title')}
+        subtitle={t('items.list.subtitle')}
         actions={
           <>
-            {canReadStock && (
+            {phone && canReadStock && (
               <UbActionLink
                 href={ROUTES.STOCK_SUMMARY}
                 variant="secondary"
@@ -270,14 +544,38 @@ export function ItemListPageContent(): React.JSX.Element {
                 {t('items.list.stockSummary')}
               </UbActionLink>
             )}
-            <UbActionLink
-              href={ROUTES.ITEM_MASTERS}
-              variant="secondary"
-              icon={<Tags className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-            >
-              {t('items.list.masters')}
-            </UbActionLink>
+            {/* The phone's ⋯ reaches Low stock and Price lists (09 §8.1); a desktop
+                has both in the sidebar, and two more header buttons wrapped it. */}
+            {phone && canReadStock && (
+              <UbActionLink
+                href={ROUTES.STOCK_LOW}
+                variant="secondary"
+                icon={<TriangleAlert className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.lowStock')}
+              </UbActionLink>
+            )}
+            {phone && (
+              <UbActionLink
+                href={ROUTES.ITEM_PRICE_LISTS}
+                variant="secondary"
+                icon={<ListOrdered className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.priceLists')}
+              </UbActionLink>
+            )}
+            {phone && (
+              <UbActionLink
+                href={ROUTES.ITEM_MASTERS}
+                variant="secondary"
+                icon={<Tags className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.masters')}
+              </UbActionLink>
+            )}
             {/* IMP-01 FR-14 / IMP-02 FR-13 — see the party list's header. */}
             <ImportActionLink kind="items" />
             <ListExportButton
@@ -285,7 +583,9 @@ export function ItemListPageContent(): React.JSX.Element {
               permission="reports.export"
               empty={list.status === 'succeeded' && list.total === 0}
             />
-            {canAdjust && (
+            {/* The design's desktop header is Import, Export, Add item; adjusting
+                stock is on an item's own page and the phone's ⋯. */}
+            {canAdjust && phone && (
               <UbButton
                 variant="secondary"
                 icon={<PackageMinus className="h-4 w-4" aria-hidden />}
@@ -295,22 +595,49 @@ export function ItemListPageContent(): React.JSX.Element {
                 {t('items.list.adjust')}
               </UbButton>
             )}
-            {canWrite && (
-              <UbButton
-                icon={<Plus className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                onClick={() => itemForm.openCreate()}
-                data-testid="item-add"
-              >
-                {t('items.list.add')}
-              </UbButton>
-            )}
           </>
         }
+        primaryAction={
+          canWrite && !emptyBook ? (
+            <UbButton
+              icon={<Plus className="h-4 w-4" aria-hidden />}
+              iconOnly="mobile"
+              onClick={() => itemForm.openCreate()}
+              data-testid="item-add"
+            >
+              {t('items.list.add')}
+            </UbButton>
+          ) : undefined
+        }
+        /* docs/mobile-redesign (A3) — six icon squares became a worded ⋯
+           sheet on a phone, and Add item the floating button. */
+        renderMobileActions={(actions) => (
+          <UbPageHeaderMobileActions
+            actions={actions}
+            mobile={{
+              primaryPlacement: 'header',
+              menuLabel: t('common.action.moreActions'),
+              closeLabel: t('common.action.close'),
+              // The empty catalogue's one button is in the middle of the screen.
+              primary:
+                canWrite && !emptyBook
+                  ? {
+                      label: t('items.list.add'),
+                      icon: <Plus className="h-6 w-6" aria-hidden />,
+                      onClick: () => itemForm.openCreate(),
+                    }
+                  : undefined,
+            }}
+          />
+        )}
       />
 
-      <UbStack gap={4} data-testid="item-list-screen">
-        {unknownCode && (
+      <UbStack
+        gap={4}
+        className="min-h-0 flex-1 !shrink max-md:gap-2"
+        data-testid="item-list-screen"
+      >
+        {unknownCode && !phone && (
           <UbStatusBanner
             tone="warning"
             title={t('items.scan.notFound', { code: unknownCode })}
@@ -331,140 +658,160 @@ export function ItemListPageContent(): React.JSX.Element {
           />
         )}
 
-        {list.totals && (
-          <UbStatGrid>
-            <UbStatCard
-              icon={<Boxes className="h-4 w-4" aria-hidden />}
-              label={t('items.list.stat.items')}
-              value={String(list.totals.items)}
-              /* The phone fold (CR-130): the count is already on the "All"
-                 tab, and a third tile would sit alone on its own row. */
-              className="max-md:hidden"
-            />
-            {canSeeValuation && list.totals.stockValue !== null && (
-              <UbStatCard
-                label={t('items.list.stat.value')}
-                value={formatInr(list.totals.stockValue)}
-                subtext={t('items.list.stat.valueHint')}
-              />
-            )}
-            {lowOut !== null && (
-              <UbStatCard
-                icon={<TriangleAlert className="h-4 w-4" aria-hidden />}
-                label={t('items.list.stat.lowOut')}
-                value={String(lowOut)}
-                tone={lowOut > 0 ? 'warning' : 'default'}
-                onClick={() => update({ tab: 'low' })}
-                pressed={filters.tab === 'low'}
-              />
-            )}
-          </UbStatGrid>
+        {/* 09 §8.1 — a phone goes straight from the search to the items; the
+            low/out count is on its chip and the stock value on Stock summary. */}
+        {list.totals && !emptyBook && (
+          <UbCountLine
+            label={t('items.list.tabs')}
+            data-testid="items-count-line"
+            items={[
+              ...(canSeeValuation && list.totals.stockValue !== null
+                ? [
+                    {
+                      id: 'value',
+                      template: t('items.list.count.value'),
+                      values: { amount: { text: formatInr(list.totals.stockValue) } },
+                    },
+                  ]
+                : []),
+              ...(lowOut !== null && !phone
+                ? [
+                    {
+                      id: 'low',
+                      template: t('items.list.count.low'),
+                      values: { n: { text: String(lowOut) } },
+                    },
+                  ]
+                : []),
+              {
+                id: 'showing',
+                template: t('items.list.count.showing'),
+                values: {
+                  n: { text: String(list.rows.length) },
+                  total: { text: String(list.total) },
+                },
+              },
+            ]}
+          />
         )}
 
-        <UbTabs<StockTab>
-          value={filters.tab}
-          onValueChange={(tab) => update({ tab })}
-          tabs={tabs}
-          ariaLabel={t('items.list.tabs')}
-          layout="fit"
-        >
-          <UbDataGrid
-            rows={list.rows}
-            columns={columns}
-            rowId={rowId}
-            rowName={rowName}
-            state={gridState}
-            labels={labels}
-            emptyStates={emptyStates}
-            caption={t('items.list.caption')}
-            storageId="items.list"
-            cardAvatarIcon={itemIcon}
-            page={{
-              page: list.page,
-              pageSize: list.pageSize,
-              total: list.total,
-              totalPages: Math.max(list.totalPages, 1),
-            }}
-            onPageChange={(page) => update({ page })}
-            sort={sort}
-            onSortChange={handleSort}
-            onRowOpen={tier === 'cards' ? handleOpen : undefined}
-            search={
-              <UbSearchInput
-                value={draft}
-                onChange={setDraft}
-                placeholder={t('items.list.searchPlaceholder')}
-                aria-label={t('items.list.searchPlaceholder')}
-                onKeyDown={(event) => {
-                  /* FR-7 — a code typed or scanned into the search box plus
-                     Enter tries the exact lookup first. */
-                  if (event.key === 'Enter' && draft.trim().length >= 4) {
-                    event.preventDefault();
-                    void openScan(draft.trim()).then((found) => {
-                      if (!found) update({ q: draft.trim() });
-                    });
-                  }
-                }}
-              />
-            }
-            filters={
-              /* QA at 360–390 px: three fixed-width selects wrapped onto three
-                 lines above the list. On a phone they share ONE row as equal
-                 thirds (each label truncates rather than wraps); from `md` up
-                 they keep their natural widths. */
-              <UbStack
-                direction="row"
-                gap={2}
-                data-ub-filters="fill"
-                className="max-md:grid max-md:w-full max-md:grid-cols-3"
-              >
-                <UbSelect
-                  aria-label={t('items.list.filter.type')}
-                  value={filters.type || 'any'}
-                  onChange={(value) =>
-                    update({ type: value === 'any' ? '' : (value as 'goods' | 'service') })
-                  }
-                  options={[
-                    { value: 'any', label: t('items.list.filter.typeAny') },
-                    { value: 'goods', label: t('items.form.type.goods') },
-                    { value: 'service', label: t('items.form.type.service') },
-                  ]}
-                  className="w-44 max-md:w-full max-md:min-w-0"
-                />
-                <UbCombobox
-                  aria-label={t('items.list.filter.category')}
-                  /* '' selects the "All categories" option itself, so it reads
-                     in the same ink as "All types" and "Active" beside it —
-                     null showed the grey placeholder instead. */
-                  value={filters.categoryId}
-                  onChange={(value) => update({ categoryId: value })}
-                  options={[
-                    { value: '', label: t('items.list.filter.categoryAny') },
-                    ...masters.categoryOptions,
-                  ]}
-                  placeholder={t('items.list.filter.categoryAny')}
-                  searchPlaceholder={t('items.form.category.search')}
-                  emptyLabel={t('items.form.category.empty')}
-                  className="w-44 max-md:w-full max-md:min-w-0"
-                />
-                <UbSelect
-                  aria-label={t('items.list.filter.status')}
-                  value={filters.status}
-                  onChange={(value) => update({ status: value as 'active' | 'archived' })}
-                  options={[
-                    { value: 'active', label: t('items.list.filter.active') },
-                    { value: 'archived', label: t('items.list.filter.archived') },
-                  ]}
-                  className="w-36 max-md:w-full max-md:min-w-0"
-                />
-              </UbStack>
-            }
+        {tagsInStock !== null && !emptyBook && (
+          // G2a — design D4 for a jeweller: "Tags in stock · N", from the server.
+          <UbText as="p" variant="body-sm-medium" tone="secondary" data-testid="tags-in-stock">
+            {t('items.tagsInStock', { n: tagsInStock })}
+          </UbText>
+        )}
+        {emptyBook ? (
+          /* Owner, 12 Oct 2026: "I don't want that type of screen in case of
+             empty" — one sentence and one button on the page; no ₹0 totals,
+             tabs, search or Filters over an empty catalogue. */
+          <UbEmptyState
+            variant="firstUse"
+            title={emptyStates.firstUse.title}
+            description={emptyStates.firstUse.description}
+            action={emptyStates.firstUse.action}
           />
-        </UbTabs>
+        ) : phone ? (
+          <>
+            <UbStack
+              direction="row"
+              align="center"
+              className="shrink-0 flex-wrap gap-2"
+              data-testid="item-list-toolbar"
+            >
+              {searchBox}
+              <UbScanButton label={t('items.scan.camera')} onClick={() => setCameraOpen(true)} />
+              {filterControls}
+            </UbStack>
+            <UbChoiceChips<StockTab>
+              value={filters.tab === 'in' ? 'all' : filters.tab}
+              onChange={(tab) => update({ tab })}
+              options={chips}
+              ariaLabel={t('items.list.tabs')}
+              className="shrink-0 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+            />
+            {grid}
+          </>
+        ) : (
+          grid
+        )}
       </UbStack>
 
       {itemForm.open && <ItemFormDrawer form={itemForm} />}
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
-    </UbPageShell>
+      {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={adjustment.canAdjust} />}
+      {cameraOpen && (
+        <UbScanSheet
+          open
+          onClose={() => setCameraOpen(false)}
+          onCode={cameraCode}
+          title={t('items.scan.camera.title')}
+          hint={t('items.scan.camera.hint')}
+          labels={{
+            close: t('common.action.close'),
+            torch: t('items.scan.camera.torch'),
+            done: t('common.action.close'),
+            blockedTitle: t('items.scan.camera.blockedTitle'),
+            blockedBody: t('items.scan.camera.blockedBody'),
+            barcode: t('items.scan.camera.barcode'),
+            add: t('items.scan.camera.find'),
+            keepsWorking: t('items.scan.camera.keepsWorking'),
+          }}
+        />
+      )}
+      {/* C2 (design pScanNF): a phone's unknown code is a sheet, the code big
+          enough to check against the pack, then add it or scan again. */}
+      {phone && (
+        <UbDialog
+          open={unknownCode !== null}
+          onOpenChange={(next) => {
+            if (!next) setUnknownCode(null);
+          }}
+          title={t('items.scan.nf.title')}
+          closeLabel={t('common.action.close')}
+        >
+          <UbStack gap={4} data-testid="scan-not-in-items">
+            <UbStack gap={1.5} align="center" className="text-center">
+              <UbText
+                as="span"
+                variant="inherit"
+                className="text-xl font-bold tabular-nums tracking-[0.04em] text-text-primary"
+              >
+                {unknownCode}
+              </UbText>
+              <UbText as="span" variant="body-sm" tone="tertiary">
+                {t(unknownBy === 'camera' ? 'items.scan.nf.byCamera' : 'items.scan.nf.byScanner')}
+              </UbText>
+            </UbStack>
+            {canWrite && (
+              <UbButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => {
+                  itemForm.openCreate({ barcode: unknownCode ?? '' });
+                  setUnknownCode(null);
+                }}
+              >
+                {t('items.scan.nf.add')}
+              </UbButton>
+            )}
+            <UbButton
+              variant="outlineNeutral"
+              size="lg"
+              fullWidth
+              icon={<ScanLine className="h-4 w-4" aria-hidden />}
+              onClick={() => {
+                setUnknownCode(null);
+                setCameraOpen(true);
+              }}
+            >
+              {t('items.scan.nf.again')}
+            </UbButton>
+          </UbStack>
+        </UbDialog>
+      )}
+    </UbViewportPageShell>
   );
 }

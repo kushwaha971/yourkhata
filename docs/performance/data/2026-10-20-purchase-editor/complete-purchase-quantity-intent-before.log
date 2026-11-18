@@ -1,0 +1,98 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx
+  ● never turns invalid NOS quantity 1.5 into a different positive whole number
+
+    expect(element).toHaveValue(1.5)
+
+    Expected the element to have value:
+      1.5
+    Received:
+      15
+
+      1216 |   const input=await screen.findByLabelText('Qty, line 1');
+      1217 |   await user.clear(input);await user.type(input,quantity);
+    > 1218 |   expect(input).toHaveValue(quantity);
+           |                 ^
+      1219 |   await user.click(screen.getByTestId('purchase-record'));
+      1220 |   expect(input).toHaveAttribute('aria-invalid','true');
+      1221 |   expect(service.updatePurchaseBill).not.toHaveBeenCalled();
+
+      at src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:1218:17
+
+  ● never turns invalid NOS quantity -5 into a different positive whole number
+
+    expect(element).toHaveValue(-5)
+
+    Expected the element to have value:
+      -5
+    Received:
+      5
+
+      1216 |   const input=await screen.findByLabelText('Qty, line 1');
+      1217 |   await user.clear(input);await user.type(input,quantity);
+    > 1218 |   expect(input).toHaveValue(quantity);
+           |                 ^
+      1219 |   await user.click(screen.getByTestId('purchase-record'));
+      1220 |   expect(input).toHaveAttribute('aria-invalid','true');
+      1221 |   expect(service.updatePurchaseBill).not.toHaveBeenCalled();
+
+      at src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:1218:17
+
+FAIL src/design-system/UbQuantityInput/UbQuantityInput.test.tsx
+  ● sanitiseQuantity › keeps an invalid fraction so whole-number validation can refuse it
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1.5"
+    Received: "15"
+
+      18 |
+      19 |   it('keeps an invalid fraction so whole-number validation can refuse it', () => {
+    > 20 |     expect(sanitiseQuantity('1.5', 0, false)).toBe('1.5');
+         |                                               ^
+      21 |   });
+      22 |
+      23 |   it('preserves a leading minus instead of turning an invalid negative into positive stock', () => {
+
+      at Object.<anonymous> (src/design-system/UbQuantityInput/UbQuantityInput.test.tsx:20:47)
+
+  ● sanitiseQuantity › preserves a leading minus instead of turning an invalid negative into positive stock
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "-3"
+    Received: "3"
+
+      23 |   it('preserves a leading minus instead of turning an invalid negative into positive stock', () => {
+      24 |     expect(sanitiseQuantity('-3', 0, true)).toBe('-3');
+    > 25 |     expect(sanitiseQuantity('-3', 0, false)).toBe('-3');
+         |                                              ^
+      26 |     expect(sanitiseQuantity('3-', 0, true)).toBe('3');
+      27 |   });
+      28 | });
+
+      at Object.<anonymous> (src/design-system/UbQuantityInput/UbQuantityInput.test.tsx:25:46)
+
+  ● UbQuantityInput › keeps the typed value a string and shows the unit beside it
+
+    expect(element).toHaveValue(12.5)
+
+    Expected the element to have value:
+      12.5
+    Received:
+      125
+
+      46 |     render(<Harness decimals={0} />);
+      47 |     await user.type(screen.getByLabelText('Qty'), '12.5');
+    > 48 |     expect(screen.getByLabelText('Qty')).toHaveValue('12.5');
+         |                                          ^
+      49 |     expect(screen.getByText('NOS')).toBeInTheDocument();
+      50 |   });
+      51 | });
+
+      at Object.<anonymous> (src/design-system/UbQuantityInput/UbQuantityInput.test.tsx:48:42)
+
+Test Suites: 2 failed, 2 total
+Tests:       5 failed, 49 skipped, 54 total
+Snapshots:   0 total
+Time:        1.602 s, estimated 6 s
+Ran all test suites matching /UbQuantityInput.test.tsx|PurchaseBillEditor.test.tsx/i with tests matching "whole-number validation|leading minus|typed value a string|never turns invalid NOS".

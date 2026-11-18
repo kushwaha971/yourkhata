@@ -1,0 +1,342 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "ready",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "paid",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "filters",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "long-name-large-amount",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "offline",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 463
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "filtered-empty",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "loading",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "first-use",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "locale": "hi",
+    "state": "error",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "ready",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "paid",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "filters",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "long-name-large-amount",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 396
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "offline",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 463
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "filtered-empty",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "loading",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "first-use",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "error",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "ready",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "paid",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "long-name-large-amount",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "offline",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 394
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "filtered-empty",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "loading",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "first-use",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "locale": "hi",
+    "state": "error",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "ready",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "paid",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "long-name-large-amount",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 327
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "offline",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 394
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "filtered-empty",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "loading",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "first-use",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "locale": "hi",
+    "state": "error",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  }
+]

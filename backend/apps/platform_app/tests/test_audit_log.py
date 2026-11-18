@@ -159,7 +159,7 @@ def test_csv_export_streams_the_filtered_rows_and_is_itself_audited(
     response = client.get(reverse(URL), {"format": "csv", "group": "parties"})
     assert response.status_code == 200
     body = b"".join(response.streaming_content).decode()
-    assert "Added party" in body and "Changed settings" not in body
+    assert "Added contact" in body and "Changed settings" not in body
     assert "'=HYPERLINK" in body  # CSV injection neutralised
     exported = AuditLog.objects.get(action="audit.exported", tenant=tenant)
     assert exported.metadata["row_count"] == 1

@@ -1,0 +1,224 @@
+import { createSlice, type Draft, type PayloadAction, type WithSlice } from '@reduxjs/toolkit';
+
+import { resetAllFeatureState } from 'src/redux/actions';
+import { rootReducer, type RootState } from 'src/redux/store';
+import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { draftReplyOutcome, type DraftReply } from 'src/utils/draftCreation';
+
+import {
+  checkDuplicateSupplierInvoice,
+  deletePurchaseBillDraft,
+  fetchPurchaseBill,
+  fetchPurchaseContext,
+  recordPurchaseBill,
+  savePurchaseBillDraft,
+  type PurchaseContext,
+} from './purchaseBillThunk';
+
+import type {
+  DuplicateSupplierInvoice,
+  PurchaseBill,
+  PurchaseBillEnvelope,
+  PurchaseWarning,
+} from '../types/purchase.types';
+
+/**
+ * PUR-01 §7 `purchaseBillEditorSlice` — the editor's SERVER-derived state. The
+ * form (React Hook Form) owns every editable value; this slice owns what only
+ * the server can say: the draft's id and version, warnings, the save
+ * indicator, the recorded bill, and the duplicate-invoice warning (FR-7).
+ * Route-local, injected lazily (CR-134).
+ */
+export type PurchaseSaveState = 'idle' | 'saving' | 'saved' | 'error' | 'conflict';
+
+export interface PurchaseBillEditorState {
+  documentId: string | null;
+  version: number | null;
+  document: PurchaseBill | null;
+  loadStatus: RequestStatus;
+  /** The latest load/save request; an older one's late reply is ignored (ADR-063). */
+  loadRequestId: string | null;
+  saveRequestId: string | null;
+  context: PurchaseContext | null;
+  contextStatus: RequestStatus;
+  contextRequestId: string | null;
+  saveState: PurchaseSaveState;
+  savedAt: string | null;
+  recording: boolean;
+  recordRequestId: string | null;
+  recorded: PurchaseBillEnvelope | null;
+  warnings: PurchaseWarning[];
+  duplicate: DuplicateSupplierInvoice | null;
+  error: ApiErrorShape | null;
+}
+
+const initialState: PurchaseBillEditorState = {
+  documentId: null,
+  version: null,
+  document: null,
+  loadStatus: 'idle',
+  loadRequestId: null,
+  saveRequestId: null,
+  context: null,
+  contextStatus: 'idle',
+  contextRequestId: null,
+  saveState: 'idle',
+  savedAt: null,
+  recording: false,
+  recordRequestId: null,
+  recorded: null,
+  warnings: [],
+  duplicate: null,
+  error: null,
+};
+
+const accept = (state: Draft<PurchaseBillEditorState>, envelope: PurchaseBillEnvelope) => {
+  state.documentId = envelope.bill.id;
+  state.version = envelope.bill.version;
+  state.document = envelope.bill as Draft<PurchaseBill>;
+  state.warnings = envelope.warnings as Draft<PurchaseWarning>[];
+};
+
+/** ADR-063 — a purchase envelope in the shared recovery decision's terms. */
+export const purchaseDraftReply = (envelope: PurchaseBillEnvelope): DraftReply => ({
+  recovered: envelope.draftRecovered === true,
+  isDraft: envelope.bill.status === 'draft',
+  version: envelope.bill.version,
+});
+
+/** The 409's `details.existing` → the same shape the blur check produces. */
+const duplicateFrom = (error: ApiErrorShape | undefined): DuplicateSupplierInvoice | null => {
+  if (error?.code !== 'duplicate_supplier_invoice') return null;
+  const existing = (error.details as Record<string, unknown> | undefined)?.existing as
+    Record<string, unknown> | undefined;
+  if (!existing) return null;
+  return {
+    id: String(existing.id ?? ''),
+    number: String(existing.number ?? ''),
+    documentDate: String(existing.document_date ?? ''),
+  };
+};
+
+const purchaseBillEditorSlice = createSlice({
+  name: 'purchaseBillEditor',
+  initialState,
+  reducers: {
+    /** A fresh editor: everything but the loaded context goes. */
+    purchaseEditorReset(state) {
+      return { ...initialState, context: state.context };
+    },
+    /** "Keep mine" after a stale-version conflict: the next save carries the current version. */
+    purchaseConflictResolved(state, action: PayloadAction<{ version: number }>) {
+      state.version = action.payload.version;
+      state.saveState = 'idle';
+    },
+    purchaseRecordRecovered(state, action: PayloadAction<PurchaseBillEnvelope>) {
+      accept(state, action.payload);
+      state.recorded = action.payload as Draft<PurchaseBillEnvelope>;
+      state.error = null;
+    },
+    purchaseDuplicateCleared(state) {
+      state.duplicate = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchPurchaseContext.pending, (state, action) => {
+        state.contextStatus = 'loading';
+        state.contextRequestId = action.meta.requestId;
+      })
+      .addCase(fetchPurchaseContext.rejected, (state, action) => {
+        if (action.meta.aborted || state.contextRequestId !== action.meta.requestId) return;
+        state.contextStatus = 'failed';
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
+      .addCase(fetchPurchaseContext.fulfilled, (state, action) => {
+        if (state.contextRequestId !== action.meta.requestId) return;
+        state.contextStatus = 'succeeded';
+        state.context = action.payload as Draft<PurchaseContext>;
+      })
+      .addCase(fetchPurchaseBill.pending, (state, action) => {
+        state.loadRequestId = action.meta.requestId;
+        state.loadStatus = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchPurchaseBill.fulfilled, (state, action) => {
+        if (state.loadRequestId !== action.meta.requestId) return;
+        accept(state, action.payload);
+        state.loadStatus = 'succeeded';
+      })
+      .addCase(fetchPurchaseBill.rejected, (state, action) => {
+        if (action.meta.aborted || state.loadRequestId !== action.meta.requestId) return;
+        state.loadStatus = 'failed';
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
+      .addCase(savePurchaseBillDraft.pending, (state, action) => {
+        state.saveRequestId = action.meta.requestId;
+        state.saveState = 'saving';
+      })
+      .addCase(savePurchaseBillDraft.fulfilled, (state, action) => {
+        if (state.saveRequestId !== action.meta.requestId) return;
+        accept(state, action.payload);
+        const outcome = draftReplyOutcome(purchaseDraftReply(action.payload));
+        // A retried first save found the bill already recorded (or the order sent):
+        // the editor locks on it and never records it a second time.
+        if (outcome === 'posted') state.recorded = action.payload as Draft<PurchaseBillEnvelope>;
+        if (outcome === 'conflict') {
+          // Edited elsewhere since its create: review before any PATCH overwrites it.
+          state.saveState = 'conflict';
+          state.error = null;
+          return;
+        }
+        state.saveState = 'saved';
+        state.savedAt = action.payload.bill.updatedAt;
+      })
+      .addCase(savePurchaseBillDraft.rejected, (state, action) => {
+        if (state.saveRequestId !== action.meta.requestId) return;
+        state.saveState = action.payload?.code === 'stale_version' ? 'conflict' : 'error';
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
+      .addCase(recordPurchaseBill.pending, (state, action) => {
+        state.recordRequestId = action.meta.requestId;
+        state.recording = true;
+        state.error = null;
+      })
+      .addCase(recordPurchaseBill.fulfilled, (state, action) => {
+        if (state.recordRequestId !== action.meta.requestId) return;
+        accept(state, action.payload);
+        state.recording = false;
+        state.recorded = action.payload as Draft<PurchaseBillEnvelope>;
+        state.duplicate = null;
+      })
+      .addCase(recordPurchaseBill.rejected, (state, action) => {
+        if (action.meta.aborted || state.recordRequestId !== action.meta.requestId) return;
+        state.recording = false;
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+        state.duplicate = duplicateFrom(action.payload) ?? state.duplicate;
+      })
+      .addCase(checkDuplicateSupplierInvoice.fulfilled, (state, action) => {
+        state.duplicate = action.payload;
+      })
+      .addCase(deletePurchaseBillDraft.fulfilled, (state) => ({
+        ...initialState,
+        context: state.context,
+      }))
+      .addCase(resetAllFeatureState, () => initialState);
+  },
+});
+
+export const {
+  purchaseEditorReset,
+  purchaseConflictResolved,
+  purchaseDuplicateCleared,
+  purchaseRecordRecovered,
+} = purchaseBillEditorSlice.actions;
+export const purchaseBillEditorReducer = purchaseBillEditorSlice.reducer;
+
+declare module 'src/redux/store' {
+  export interface LazyLoadedSlices extends WithSlice<typeof purchaseBillEditorSlice> {}
+}
+
+const injected = purchaseBillEditorSlice.injectInto(rootReducer);
+
+export const selectPurchaseBillEditor = (state: RootState): PurchaseBillEditorState =>
+  injected.selectSlice(state);

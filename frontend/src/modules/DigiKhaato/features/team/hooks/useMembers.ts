@@ -37,6 +37,8 @@ import {
 import { addMember, fetchMembers, regenerateCredentials } from '../redux/memberThunk';
 import { ADD_MEMBER_FIELDS } from '../validation/memberSchemas';
 
+import { useTeamApp } from './useTeamApp';
+
 import type { IssuedCredentials, Member } from '../types/member.types';
 import type { AddMemberFormValues } from '../validation/memberSchemas';
 import type { UseFormSetError } from 'react-hook-form';
@@ -110,6 +112,9 @@ export function useMembers(): UseMembersResult {
   const regenerateStatus = useAppSelector(selectRegenerateStatus);
 
   const { canWrite } = useDegradedNetwork();
+  // Owner, 14 Nov 2026 — Team follows the open app: the list carries each
+  // member's access there, and Add member gives that app.
+  const teamAppCode = useTeamApp()?.code;
 
   const { key: addKey, rotate: rotateAddKey } = useIdempotencyKey();
   const { key: regenerateKey, rotate: rotateRegenerateKey } = useIdempotencyKey();
@@ -118,15 +123,15 @@ export function useMembers(): UseMembersResult {
 
   useEffect(() => {
     if (!canManage) return undefined;
-    const promise = dispatch(fetchMembers({ page, pageSize }));
+    const promise = dispatch(fetchMembers({ page, pageSize, app: teamAppCode }));
     return () => promise.abort();
-  }, [dispatch, canManage, page, pageSize]);
+  }, [dispatch, canManage, page, pageSize, teamAppCode]);
 
   useEffect(() => {
     if (!stale || !canManage || isImpaired) return undefined;
-    const promise = dispatch(fetchMembers({ page, pageSize }));
+    const promise = dispatch(fetchMembers({ page, pageSize, app: teamAppCode }));
     return () => promise.abort();
-  }, [stale, canManage, isImpaired, dispatch, page, pageSize]);
+  }, [stale, canManage, isImpaired, dispatch, page, pageSize, teamAppCode]);
 
   const openAdd = useCallback(() => {
     setAddFormErrors([]);
@@ -144,10 +149,11 @@ export function useMembers(): UseMembersResult {
       try {
         await dispatch(
           addMember({
-            email: values.email,
             fullName: values.fullName,
             role: values.role,
             mobile: values.mobile ?? null,
+            app: teamAppCode,
+            groupId: values.groupId && values.groupId !== 'none' ? values.groupId : null,
             idempotencyKey: addKey,
           })
         ).unwrap();
@@ -167,7 +173,7 @@ export function useMembers(): UseMembersResult {
         }
       }
     },
-    [dispatch, addKey, rotateAddKey, t]
+    [dispatch, addKey, rotateAddKey, t, teamAppCode]
   );
 
   const dismissCredentials = useCallback(() => {
@@ -223,8 +229,8 @@ export function useMembers(): UseMembersResult {
 
   const refetch = useCallback(() => {
     if (!canManage) return;
-    void dispatch(fetchMembers({ page, pageSize }));
-  }, [dispatch, canManage, page, pageSize]);
+    void dispatch(fetchMembers({ page, pageSize, app: teamAppCode }));
+  }, [dispatch, canManage, page, pageSize, teamAppCode]);
 
   return {
     canManage,

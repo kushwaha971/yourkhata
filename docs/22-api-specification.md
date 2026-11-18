@@ -101,11 +101,14 @@ Ownership is recorded as **T-16** in Part 0 §0.12.2. No other chapter may carry
 | `tenant_suspended` | 403 | E | The tenant is suspended by its partner or by Metis ops. | "This business is suspended. Contact support." | `errors.tenant_suspended` | no |
 | `partner_suspended` | 403 | E | The owning partner is suspended, which suspends every tenant under it. | "This service is suspended. Contact support." | `errors.partner_suspended` | no |
 | `tenant_pending_deletion` | 409 | E | A write was attempted during the 30-day deletion cool-off. | "This business is being closed. Cancel the closure to continue." | `errors.tenant_pending_deletion` | no |
+| `session_context_changed` | 409 | E | Optional expected user differs from the authenticated token user; refused before the view acts (R-DEC-18/BP-13). | "Your account changed. Reload before continuing." | `auth.session.changed` | no |
+| `tenant_context_changed` | 409 | E | Optional expected business differs from the token-resolved business; this never selects a tenant. | "Your business changed. Reload before continuing." | `tenant.switcher.staleTab` | no |
 | `plan_in_use` | 409 | D `tenant_count` | A plan with live tenants was archived or deleted. | "This plan is in use." | `errors.plan_in_use` | no |
 | `module_has_data` | 409 | D `module`, `row_count` | A module with business rows was switched off. | "This module has data and cannot be switched off." | `errors.module_has_data` | no |
 | `gst_type_locked` | 409 | D `issued_invoice_count` | `gst_type` was changed away from `regular` while tax invoices exist in the current financial year. | "You have already issued tax invoices this year." | `errors.gst_type_locked` | no |
 | `gstin_in_use` | 409 | D `tenant_id` | The GSTIN is already registered to another tenant on the platform. | "This GSTIN is already registered." | `errors.gstin_in_use` | no |
 | `sequence_backwards` | 409 | D `current`, `requested` | A document-sequence `next_number` was set below the highest allocated number. | "Numbering cannot go backwards." | `errors.sequence_backwards` | no |
+| `sequence_exhausted` | 409 | D `kind`, `max` | B05 (A8): a perpetual counter reached its last value (2,147,483,647); its integer column cannot hold the next, and the last value is never handed out. | "This number series has reached its last number." | `errors.sequence_exhausted` | no |
 | `branding_locked` | 403 | E | A tenant edited a branding field its partner has locked (Part 24 §24.4). | "Your provider manages this setting." | `errors.branding_locked` | no |
 | `low_contrast` | 400 | D `contrast_ratio`, `suggested_hex` | A branding primary colour fails the ≥ 3:1 contrast check against white. | "This colour is too light to read. Try the suggested one." | `errors.low_contrast` | no |
 | `theme_invalid` | 400 | F | A partner theme payload fails its JSON schema, or names a token outside the overridable subset (Part 24 §24.4.2). | "This theme is not valid." | `errors.theme_invalid` | no |
@@ -188,6 +191,10 @@ Ownership is recorded as **T-16** in Part 0 §0.12.2. No other chapter may carry
 | `nothing_to_return` | 409 | E | A credit or debit note was raised where nothing remains returnable on the source document. | "There is nothing left to return." | `errors.nothing_to_return` | no |
 | `refund_exists` | 409 | D `payment_id` | A credit note with a refund already recorded was voided or re-settled. | "A refund was already paid against this note." | `errors.refund_exists` | no |
 | `gst_not_registered` | 409 | E | A tax invoice or a GST report was requested for an unregistered tenant. | "Your business is not registered for GST." | `errors.gst_not_registered` | no |
+| `document_origin_locked` | 409 | D `origin_type`, `reason` | A document the document port issued (it has an origin) was voided and the origin's listener refused it (`check_void` → `block`, R55). `reason` is the module's own words. | "This document belongs to another module and cannot be voided here." | `errors.document_origin_locked` | no |
+| `document_origin_confirm` | 409 | D `origin_type`, `message` | As above, the origin asked for confirmation (`check_void` → `confirm`) and the void request did not carry `confirm_origin: true`. Resend with it to proceed. | "Voiding this also changes a record in another module. Confirm to continue." | `errors.document_origin_confirm` | no |
+
+<!-- ── A5 ── the last two rows of table F (`document_origin_locked`, `document_origin_confirm`), contracts §4 -->
 
 **G — Payments and expenses**
 
@@ -198,6 +205,12 @@ Ownership is recorded as **T-16** in Part 0 §0.12.2. No other chapter may carry
 | `split_amount_mismatch` | 400 | D `expected`, `received` | A split or settlement payload's parts do not sum to its whole. | "The amounts do not add up." | `errors.split_amount_mismatch` | no |
 | `payment_already_void` | 409 | E | `void` was called on a payment already void. | "This payment is already cancelled." | `errors.payment_already_void` | no |
 | `payment_not_unmatched` | 409 | D `status` | A match was attempted on a payment that is not in the unmatched queue. | "This payment is already matched." | `errors.payment_not_unmatched` | no |
+| `deposit_insufficient` | 409 | D `held_amount` | A4b (PLT-X02 BR-4, BR-8): applying or returning more of a held deposit than is held, or voiding a deposit receipt that would leave less than nothing held. | "Only ₹{held_amount} of the deposit is held." | `errors.deposit_insufficient` | no |
+| `schedule_backdated_unconfirmed` | 409 | D `dues`, `total` | DUE-01 (BR-7): a dues schedule would add dues dated before today; resend with `confirm_backdated: true`. | "This adds dues dated before today." | `errors.schedule_backdated_unconfirmed` | no |
+| `attendance_blocked` | 409 | D `reason`, `override_permission` | ATT-02 (contracts §4): the check-in policy a vertical registered blocks this party; resend with `override_reason` as a member holding `override_permission` (null: nobody may override). | "{reason}" | `errors.attendance_blocked` | no |
+| `attendance_duplicate` | 409 | D `mark_id` | ATT-02 BR-3: a visit by the same party and context inside the group's dedupe window, or a second visit that day with one-per-day. | "Already checked in." | `errors.attendance_duplicate` | no |
+| `entitlement_exhausted` | 409 | D `total`, `used` (+ `expired: true`) | ATT-04 BR-3: no use left on a session pack, or the mark's date is outside the pack's validity. | "This pack is used up." | `errors.entitlement_exhausted` | no |
+| `deposit_released` | 409 | E | A4b (PLT-X02 BR-2): receiving into, applying or returning a deposit that is released (nothing held; closed). | "This deposit is already settled." | `errors.deposit_released` | no |
 | `payment_already_matched` | 409 | D `party_id` | A second match was attempted on a matched payment. | "This payment is already matched." | `errors.payment_already_matched` | no |
 | `payment_request_linked` | 409 | D `request_id` | A payment carrying a live aggregator request was voided. | "Cancel the payment request first." | `errors.payment_request_linked` | no |
 | `upi_vpa_missing` | 409 | E | A UPI intent or QR was requested and the tenant has no VPA configured. | "Add your UPI ID in settings." | `errors.upi_vpa_missing` | no |
@@ -245,6 +258,44 @@ Ownership is recorded as **T-16** in Part 0 §0.12.2. No other chapter may carry
 | `gstr1_warnings_unacknowledged` | 409 | D `warning_count` | A GSTR-1 export was requested with unacknowledged warnings. | "Review the warnings before exporting." | `errors.gstr1_warnings_unacknowledged` | no |
 | `schema_validation_failed` | 400 | F | A settings or template payload failed its registered JSON schema. | "These settings are not valid." | `errors.schema_validation_failed` | no |
 | `confirmation_required` | 409 | D `confirm_token`, `impact` | A destructive or large-blast-radius action needs an explicit second call carrying the token returned here. | "Please confirm this action." | `errors.confirmation_required` | no |
+
+<!-- ── B02 ── library (LIB-14) ── table L, FRD library Appendix A; CR drafted in docs/platform/progress/wave-b-track-l.md -->
+
+**L — Library** (the module is unreleased; these are emitted only while `UB_UNRELEASED_MODULES` is on until its release CR. The `hi` copy lands with the library catalogue in F01.)
+
+| Code | HTTP | Envelope | Raised when | English message | `hi` key | Retryable |
+|---|---|---|---|---|---|---|
+| `library_accession_taken` | 409 | D `number`, `copy_id`, `title` | LIB-02 FR-5: a typed accession number is already a copy's, including a withdrawn copy's (numbers are never reused). | "Accession number {number} is already used." | `errors.library_accession_taken` | no |
+| `library_accession_frozen` | 409 | D `copy_id` | LIB-02: the accession number of a copy that has ever been issued was edited. | "This copy has been issued, so its number cannot change." | `errors.library_accession_frozen` | no |
+| `library_code_ambiguous` | 409 | D `code`, `matches` | LIB-02 BR-8: a record was created or edited with a code that clashes with an existing record's (an accession number against a barcode or member number). A lookup never raises it: the first hit in BR-8's order wins. | "This code is already used by another record." | `errors.library_code_ambiguous` | no |
+| `library_copy_on_loan` | 409 | D `loan_id` | LIB-02 BR-7: a copy on loan was withdrawn. | "This copy is on loan. Take it back first." | `errors.library_copy_on_loan` | no |
+| `library_copy_unavailable` | 409 | D `status`, `with?`, `held_for?` | LIB-02, LIB-06: a copy's status does not allow the action (repair, back to shelf, set aside, issue). | "This copy is not available." | `errors.library_copy_unavailable` | no |
+| `library_title_has_copies` | 409 | D `count` | LIB-02 FR-12: a title was archived by hand while any copy is not withdrawn (available, on loan, in repair, lost or missing). | "Withdraw this title's copies first." | `errors.library_title_has_copies` | no |
+| `library_category_in_use` | 409 | D `count` | LIB-02: a category that titles still use was deleted. | "Titles still use this category." | `errors.library_category_in_use` | no |
+| `library_location_in_use` | 409 | D `count` | LIB-02: a location that copies still use was deleted. | "Copies are still kept here." | `errors.library_location_in_use` | no |
+| `library_membership_exists` | 409 | D `membership_id`, `status` | LIB-04: a party who is already a member was enrolled, or a member who is not closed re-joined. | "This person is already a member." | `errors.library_membership_exists` | no |
+| `library_plan_no_end` | 409 | D `membership_type_id` | LIB-04 FR-5 (QA B5): Renew on a membership whose plan has no end date. | "This plan has no end date, so there is nothing to renew. Change the plan instead." | `errors.library_plan_no_end` | no |
+| `library_member_number_taken` | 409 | D `number`, `membership_id` | LIB-04: a typed member number is already another member's. | "Member number {number} is already used." | `errors.library_member_number_taken` | no |
+| `library_membership_closed` | 409 | D `closed_on` | LIB-04: a closed membership was renewed or changed (re-join is the way back). | "This membership is closed." | `errors.library_membership_closed` | no |
+| `library_membership_has_loans` | 409 | D `count` | LIB-04: a membership with books still out was closed. | "This member still has books out." | `errors.library_membership_has_loans` | no |
+| `library_membership_inactive` | 409 | D `effective_status`, `valid_until` | LIB-06: an issue to a member who is expired, suspended or closed (not overridable, LIB-04 BR-10). | "This membership is not active." | `errors.library_membership_inactive` | no |
+| `library_member_blocked` | 409 | D `blocks`, `override_permission` | LIB-06: an issue refused by one or more member blocks (copy limit, overdue books, dues, deposit). | "This member cannot borrow right now." | `errors.library_member_blocked` | no |
+| `library_copy_not_loanable` | 409 | D `material_type`, `overridable` | LIB-06: a reference or other non-lending copy was issued. | "This copy is not for lending." | `errors.library_copy_not_loanable` | no |
+| `library_copy_not_on_loan` | 409 | D `status`, `offer_found` | LIB-06 BR-2: a return of a copy that has no open loan. | "This copy is not on loan." | `errors.library_copy_not_on_loan` | no |
+| `library_renewal_refused` | 409 | D `reason`, `overridable` | LIB-06: a renewal refused (`max_renewals`, `hold_waiting`, `overdue_blocked`, `member_blocked`, or `no_gain` when the due date would not move later). | "This loan cannot be renewed." | `errors.library_renewal_refused` | no |
+| `library_cancel_window_passed` | 409 | D `issued_on` | LIB-06: an issue was cancelled after its cancel window. | "It is too late to cancel this issue." | `errors.library_cancel_window_passed` | no |
+| `library_calendar_all_closed` | 409 | E | LIB-05: a due date was computed against a calendar with every weekday closed (a misconfiguration). | "Every day is marked closed. Open at least one day." | `errors.library_calendar_all_closed` | no |
+| `library_loan_not_open` | 409 | D `status` | LIB-07: a loan that is returned, lost or cancelled was marked lost or changed. | "This loan is already closed." | `errors.library_loan_not_open` | no |
+| `library_charge_not_open` | 409 | D `status` | LIB-07: a waiver, payment or change on a charge that is paid, waived, refunded or reversed. | "Nothing is owed on this charge." | `errors.library_charge_not_open` | no |
+| `library_charge_has_payments` | 409 | D `payment_ids` | LIB-07: a charge with payments against it was reversed (void the payments first). | "Cancel the payments on this charge first." | `errors.library_charge_has_payments` | no |
+| `library_waiver_over_ceiling` | 403 | D `ceiling` | LIB-07 (D27): a waiver above the waiver ceiling by a member who is not the owner or an admin. A role check, never grantable; shown inline in the waive dialog. | "Waivers above ₹{ceiling} need the owner or an admin." | `errors.library_waiver_over_ceiling` | no |
+| `library_hold_refused` | 409 | D `reason` | LIB-08: a hold refused (`max_holds`, `already_holding`, `already_on_loan`, `membership_inactive`, `no_loanable_copy`). | "This hold cannot be placed." | `errors.library_hold_refused` | no |
+| `library_hold_not_open` | 409 | D `status` | LIB-08: a hold that is collected, expired or cancelled was set aside, cancelled or changed. | "This hold is no longer open." | `errors.library_hold_not_open` | no |
+| `library_nothing_overdue` | 409 | E | LIB-09, LIB-13: an overdue reminder or notice for a member with nothing overdue. | "Nothing is overdue for this member." | `errors.library_nothing_overdue` | no |
+| `library_verification_closed` | 409 | E | LIB-10: a scan or close on a stock check that is closed. | "This stock check is closed." | `errors.library_verification_closed` | no |
+| `library_verification_open` | 409 | E | LIB-10: copies were marked missing from a stock check that is still open (missing is known only at close). | "Close this stock check first." | `errors.library_verification_open` | no |
+| `library_verification_reopen_used` | 409 | E | LIB-10: a stock check that was already reopened once was reopened again. | "This stock check has already been reopened once." | `errors.library_verification_reopen_used` | no |
+| `library_print_too_large` | 409 | D `count`, `max` | LIB-12: a report print with more rows than the print cap (2,000). | "Too many rows to print. Narrow the filters." | `errors.library_print_too_large` | no |
 
 
 ### 22.1.2 The naming rule
@@ -496,3 +547,10 @@ Inbound provider webhooks verify HMAC signatures, are idempotent on provider ids
 2. `POST /payments` `direction=in`, amount 500 UPI, `allocations:"auto"` → allocation 500 to invoice, invoice `partially_paid`, `amount_due=398.00`; `LedgerEntry(credit 500, payment_in)`; `Party.balance = 398`; SMS to party if enabled: "Received ₹500. Balance ₹398."
 3. `GET /parties/{id}/statement` → opening 0 → +898 (INV/26-27/0042) → −500 (RCT/26-27/0017) → closing 398.
 4. Owner voids the invoice by mistake? `POST /sales/invoices/{id}/void` → stock +2 (`reversal`), ledger credit 898 (`reversal`), invoice `void`; the ₹500 payment remains as unallocated advance; party balance −102 ("You will give ₹102"). Statement shows both with corrections toggle.
+
+
+### 19 Oct 2026 · Request context preconditions (R-DEC-18 / BP-13)
+
+Authenticated browser calls may send `X-Expected-User-Id` and `X-Expected-Tenant-Id`. They are optional safety preconditions against shared-cookie/stale-tab intent; tokens, membership and app grants remain the authorization authority. A mismatch is a non-retryable 409 **before** the resource view runs. Missing headers preserve existing API clients. They never switch an account/business. Anonymous/intentional login endpoints retain their existing behavior.
+
+Scoped replies expose `X-User-Id` and `X-Membership-Version` in addition to the existing tenant echo. The membership revision is omitted on responses whose explicit tenant echo is a transition target different from the request tenant. Metadata adds no payload fields or query per row. CORS allows/exposes these headers. Clients discard late responses/401 retries belonging to an earlier actor and older permission revisions; they reload rather than replay a mismatched intent.

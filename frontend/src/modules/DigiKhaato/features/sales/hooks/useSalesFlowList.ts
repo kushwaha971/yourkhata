@@ -1,0 +1,206 @@
+'use client';
+
+import { useCallback, useEffect, useMemo } from 'react';
+
+import { useSearchParams } from 'next/navigation';
+
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
+import { usePermissions } from 'src/hooks/usePermissions';
+import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
+import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
+import { todayInTenantTz } from 'src/utils/dates';
+
+import {
+  flowFiltersChanged,
+  sameFlowListQuery,
+  selectSalesDocList,
+  type SalesDocListState,
+} from '../redux/salesDocListSlice';
+import { fetchFlowDocuments, type FlowListArg } from '../redux/salesFlowThunk';
+import { flowFiltersFromQuery, type FlowListFilters } from '../view-model/flowDisplay';
+import { invoiceQueryFromFilters, resolveInvoicePreset } from '../view-model/invoiceDisplay';
+
+import type { InvoicePreset } from '../constants/salesConstants';
+import type { FlowKind, FlowTab } from '../types/salesFlows.types';
+import type { InvoiceListFilters } from '../view-model/invoiceDisplay';
+
+/**
+ * SAL-01 FR-10 / SAL-04 §14 — the estimates or credit notes list, with the
+ * bills list's URL rules (useInvoiceList): tab and dates in the address bar,
+ * every setter but `setPage` back to page one.
+ */
+export interface UseSalesFlowListResult extends Omit<SalesDocListState, 'filters'> {
+  readonly filters: FlowListFilters;
+  readonly today: string;
+  readonly canRead: boolean;
+  readonly canWrite: boolean;
+  readonly setPreset: (preset: InvoicePreset) => void;
+  readonly setRange: (from: string | null, to: string | null) => void;
+  readonly setTab: (tab: FlowTab) => void;
+  /** The phone's Filters sheet: tab, period and dates in ONE address-bar update. */
+  readonly applyFilters: (next: {
+    tab: FlowTab;
+    preset: InvoicePreset;
+    dateFrom: string;
+    dateTo: string;
+  }) => void;
+  readonly setQuery: (q: string) => void;
+  readonly setPage: (page: number) => void;
+  readonly clearFilters: () => void;
+  readonly refetch: () => void;
+}
+
+export const useSalesFlowList = (
+  kind: FlowKind,
+  mode: 'replace' | 'append' = 'replace'
+): UseSalesFlowListResult => {
+  const dispatch = useAppDispatch();
+  const router = useAppRouter();
+  const search = useSearchParams();
+  const { can, hasModule } = usePermissions();
+  const timezone = useAppSelector(selectTenantTimezone);
+  const isImpaired = useAppSelector(selectNetworkImpaired);
+  const state = useAppSelector(selectSalesDocList);
+
+  const canRead =
+    hasModule('sales') &&
+    can(
+      kind === 'credit_note' || kind === 'delivery_challan'
+        ? 'sales.invoice.read'
+        : 'sales.estimate.read'
+    );
+  // Estimates and sales orders are the estimate codenames' (Shop item 3).
+  const canWrite =
+    hasModule('sales') &&
+    can(
+      kind === 'credit_note'
+        ? 'sales.credit_note.write'
+        : kind === 'delivery_challan'
+          ? 'sales.invoice.write'
+          : 'sales.estimate.write'
+    );
+  const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
+
+  const queryString = search?.toString() ?? '';
+  const filters = useMemo(
+    () => flowFiltersFromQuery(kind, new URLSearchParams(queryString), today),
+    [kind, queryString, today]
+  );
+  const query = useMemo<FlowListArg>(
+    () => ({
+      kind,
+      mode,
+      tab: filters.tab,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      partyId: null,
+      q: filters.q,
+      page: filters.page,
+    }),
+    [kind, mode, filters]
+  );
+
+  useEffect(() => {
+    if (!canRead) return undefined;
+    dispatch(flowFiltersChanged(query));
+    const promise = dispatch(fetchFlowDocuments(query));
+    return () => promise.abort();
+  }, [dispatch, canRead, query]);
+
+  useEffect(() => {
+    if (!state.stale || isImpaired || !canRead) return undefined;
+    const promise = dispatch(fetchFlowDocuments(query));
+    return () => promise.abort();
+  }, [state.stale, isImpaired, canRead, dispatch, query]);
+
+  const push = useCallback(
+    (next: FlowListFilters) => {
+      const qs = invoiceQueryFromFilters(next as unknown as InvoiceListFilters);
+      router.replace(qs ? `?${qs}` : '?', { scroll: false });
+    },
+    [router]
+  );
+  const setPreset = useCallback(
+    (preset: InvoicePreset) => {
+      const resolved = resolveInvoicePreset(preset, today);
+      push({
+        ...filters,
+        preset,
+        dateFrom: resolved?.dateFrom ?? filters.dateFrom,
+        dateTo: resolved?.dateTo ?? filters.dateTo,
+        page: 1,
+      });
+    },
+    [push, filters, today]
+  );
+  const setRange = useCallback(
+    (from: string | null, to: string | null) =>
+      push({
+        ...filters,
+        preset: 'custom',
+        dateFrom: from ?? filters.dateFrom,
+        dateTo: to ?? filters.dateTo,
+        page: 1,
+      }),
+    [push, filters]
+  );
+  const setTab = useCallback((tab: FlowTab) => push({ ...filters, tab, page: 1 }), [push, filters]);
+  const applyFilters = useCallback(
+    (next: { tab: FlowTab; preset: InvoicePreset; dateFrom: string; dateTo: string }) => {
+      const resolved = next.preset === 'custom' ? null : resolveInvoicePreset(next.preset, today);
+      push({
+        ...filters,
+        tab: next.tab,
+        preset: next.preset,
+        dateFrom: resolved?.dateFrom ?? next.dateFrom,
+        dateTo: resolved?.dateTo ?? next.dateTo,
+        page: 1,
+      });
+    },
+    [push, filters, today]
+  );
+  const setQuery = useCallback((q: string) => push({ ...filters, q, page: 1 }), [push, filters]);
+  const setPage = useCallback((page: number) => push({ ...filters, page }), [push, filters]);
+  const clearFilters = useCallback(
+    () => push({ ...filters, tab: 'all', q: '', page: 1 }),
+    [push, filters]
+  );
+  const refetch = useCallback(() => {
+    void dispatch(fetchFlowDocuments(query));
+  }, [dispatch, query]);
+
+  // URL/kind changes render before the fetch effect. Never label the previous source as this one.
+  const sourceMatches = sameFlowListQuery(
+    state.filters,
+    query,
+    mode === 'append' && filters.page > 1
+  );
+  return {
+    ...state,
+    ...(!sourceMatches
+      ? {
+          rows: [],
+          totals: null,
+          tabs: null,
+          hasAny: null,
+          total: 0,
+          page: filters.page,
+          status: 'loading' as const,
+          error: null,
+        }
+      : {}),
+    filters,
+    today,
+    canRead,
+    canWrite,
+    setPreset,
+    setRange,
+    setTab,
+    applyFilters,
+    setQuery,
+    setPage,
+    clearFilters,
+    refetch,
+  };
+};

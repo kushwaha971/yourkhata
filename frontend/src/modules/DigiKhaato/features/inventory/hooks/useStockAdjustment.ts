@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { usePermissions } from 'src/hooks/usePermissions';
+import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
@@ -45,6 +46,10 @@ export interface UseStockAdjustmentResult {
   readonly prefill: readonly AdjustmentFormLine[];
   readonly isPosting: boolean;
   readonly canAdjust: boolean;
+  /** `reports.financial.read`: the value impact is internal cost (09 §0.4). */
+  readonly canSeeValue: boolean;
+  /** No connection (or a degraded one): Save waits (09 §8.4 States). */
+  readonly impaired: boolean;
   readonly shortLines: readonly InsufficientLine[];
   readonly negativeOff: boolean;
   readonly formErrors: readonly string[];
@@ -73,7 +78,8 @@ export const lineFromRow = (row: Omit<AdjustableRow, 'trackStock'>): AdjustmentF
   allowDecimal: row.unit.allowDecimal,
   onHand: row.onHand ?? '0.000',
   avgCost: row.avgCost ?? '0.0000',
-  mode: 'by',
+  /* Most adjustments take stock out; the reason chips re-read it (defaultModeFor). */
+  mode: 'remove',
   qty: '',
   unitCost: row.avgCost && Number(row.avgCost) > 0 ? row.avgCost : '',
 });
@@ -98,6 +104,7 @@ export function useStockAdjustment(): UseStockAdjustmentResult {
   const prefill = useAppSelector(selectAdjustmentPrefill);
   const status = useAppSelector(selectAdjustmentStatus);
   const viewingId = useAppSelector(selectAdjustmentViewingId);
+  const impaired = useAppSelector(selectNetworkImpaired);
   const { key, rotate } = useIdempotencyKey();
   const [shortLines, setShortLines] = useState<readonly InsufficientLine[]>([]);
   const [negativeOff, setNegativeOff] = useState(false);
@@ -138,6 +145,9 @@ export function useStockAdjustment(): UseStockAdjustmentResult {
             severity: 'success',
             id: 'stock.adjust.posted',
             params: { number: posted.number },
+            /* 09 §8.4 — "Stock adjusted · View" opens what was just written.
+               Every screen that mounts this drawer mounts the detail dialog. */
+            action: { labelId: 'stock.adjust.view', then: adjustmentViewOpened(posted.id) },
           })
         );
         return posted;
@@ -170,6 +180,8 @@ export function useStockAdjustment(): UseStockAdjustmentResult {
       prefill,
       isPosting: status === 'loading',
       canAdjust: can('inventory.stock.adjust'),
+      canSeeValue: can('reports.financial.read'),
+      impaired,
       shortLines,
       negativeOff,
       formErrors,
@@ -185,6 +197,7 @@ export function useStockAdjustment(): UseStockAdjustmentResult {
       prefill,
       status,
       can,
+      impaired,
       shortLines,
       negativeOff,
       formErrors,

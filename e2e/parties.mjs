@@ -36,10 +36,11 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots';
 const wantShots = process.argv.includes('--shots');
@@ -143,7 +144,7 @@ async function seed() {
 }
 
 const signIn = async (page) => {
-  await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 45000 });
+  await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 45000 });
   await page.fill('input[type="email"], input[name="email"]', OWNER.email);
   await page.fill('input[type="password"], input[name="password"]', OWNER.password);
   await page.click('button[type="submit"]');
@@ -158,7 +159,7 @@ const shot = async (page, name) => {
 
 async function run() {
   await seed();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
 
@@ -173,6 +174,11 @@ async function run() {
   await page.goto(`${FRONTEND}/parties`, { waitUntil: 'networkidle', timeout: 45000 });
   await page.waitForSelector('[data-testid="ub-grid"]', { timeout: 30000 });
   await page.waitForTimeout(1200);
+  // The stat cards fold into a summary line (owner, 6 Oct 2026); open them
+  // once — the screen remembers on this device.
+  if (await page.getByRole('button', { name: 'Details' }).count()) {
+    await page.getByRole('button', { name: 'Details' }).click();
+  }
 
   const totals = () => page.locator('[data-testid="ub-stat-grid"]').innerText();
 
@@ -193,18 +199,34 @@ async function run() {
   }
 
   // ── A chip must reach the SERVER, not just the pressed state ──────────────
-  for (const [label, expected, rows] of [
+  /* Owner, 6 Oct 2026 — the approved filter pattern: Balance is a dropdown,
+     Type lives in the Filters sheet (applied once). Same assertions, on the
+     WIRE, through the controls a merchant now uses. */
+  const chooseFilter = async (axis, label) => {
+    if (axis === 'balance') {
+      await page.getByRole('button', { name: /^Balance:/ }).click();
+      await page.getByRole('option', { name: label, exact: true }).click();
+      return;
+    }
+    await page.getByTestId('filters-button').click();
+    await page
+      .getByRole('radiogroup', { name: 'Type' })
+      .getByRole('radio', { name: label, exact: true })
+      .click();
+    await page.getByTestId('filters-apply').click();
+  };
+  for (const [axis, label, expected, rows] of [
     // Nobody owes anything yet (see BOOK), so these two find nobody — which is
     // the server and the screen agreeing, and is exactly what breaks when a
     // filter silently fails to leave the device.
-    ['Owes me', 'balance=owes_me', 0],
-    ['I owe them', 'balance=i_owe', 0],
-    ['Settled', 'balance=settled', BOOK.length],
-    ['Suppliers', 'type=supplier', 2],
-    ['Customers', 'type=customer', BOOK.length],
+    ['balance', 'You will get', 'balance=owes_me', 0],
+    ['balance', 'You will give', 'balance=i_owe', 0],
+    ['balance', 'Settled', 'balance=settled', BOOK.length],
+    ['type', 'Suppliers', 'type=supplier', 2],
+    ['type', 'Customers', 'type=customer', BOOK.length],
   ]) {
     const before = listRequests.length;
-    await page.getByRole('button', { name: label, exact: true }).click();
+    await chooseFilter(axis, label);
     await page.waitForTimeout(1500);
     const issued = listRequests.slice(before);
 
@@ -228,14 +250,14 @@ async function run() {
     );
 
     // Off again, so each filter is measured on its own.
-    await page.getByRole('button', { name: label, exact: true }).click();
+    await chooseFilter(axis, 'All');
     await page.waitForTimeout(1200);
   }
 
   // ── The money tiles are the same control as the chips ─────────────────────
   {
     const before = listRequests.length;
-    await page.getByRole('button', { name: 'Show only who owes me' }).click();
+    await page.getByRole('button', { name: 'Show only people you will get money from' }).click();
     await page.waitForTimeout(1500);
     const issued = listRequests.slice(before);
 
@@ -245,8 +267,8 @@ async function run() {
       issued.length ? issued.join(' , ') : 'NO REQUEST WAS MADE'
     );
     record(
-      'and the matching chip says the list is narrowed',
-      (await page.getByRole('button', { name: 'Owes me', exact: true }).getAttribute('aria-pressed')) === 'true',
+      'and the Balance dropdown says the list is narrowed',
+      (await page.getByRole('button', { name: 'Balance: You will get' }).count()) === 1,
       'a filter applied with nothing on screen saying so reads as missing parties'
     );
 
@@ -266,7 +288,7 @@ async function run() {
 
   // ── The empty state says which way the merchant got there ─────────────────
   {
-    await page.getByRole('button', { name: 'Owes me', exact: true }).click();
+    await chooseFilter('balance', 'You will get');
     await page.waitForTimeout(1600);
 
     const body = await page.locator('body').innerText();
@@ -333,7 +355,7 @@ async function run() {
 
     record(
       'an unknown party is a not-found screen with a way back',
-      body.includes('This party was not found') && body.includes('Back to customers'),
+      body.includes('This contact was not found') && body.includes('Back to customers'),
       body.slice(0, 160).replace(/\n/g, ' | ')
     );
     record(
@@ -405,7 +427,7 @@ async function run() {
     const afterBody = await page.locator('body').innerText();
     record(
       'the party is archived and the page says so',
-      afterBody.includes('This party is archived'),
+      afterBody.includes('This contact is archived'),
       afterBody.slice(0, 120).replace(/\n/g, ' | ')
     );
     record(
@@ -427,7 +449,7 @@ async function run() {
     record(
       'but is still there under Archived \u2014 hidden, never deleted',
       await (async () => {
-        await page.getByRole('combobox', { name: 'Show' }).click();
+        await page.getByRole('button', { name: /^Show:/ }).click();
         await page.getByRole('option', { name: 'Archived' }).click();
         await page.waitForTimeout(1500);
         return (await page.getByRole('button', { name: `Open ${name}` }).count()) > 0;

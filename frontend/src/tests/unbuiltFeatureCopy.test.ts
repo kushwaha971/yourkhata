@@ -1,5 +1,19 @@
-import en from 'locales/en.json';
-import hi from 'locales/hi.json';
+import { en, hi } from 'src/tests/allMessages';
+import {
+  COMPARATIVE_CLAIMS,
+  LANDING_JARGON,
+  MODULE_WORDS,
+  namesACompetitor,
+  STATUS_WORDS,
+  isDesktopSoonKey,
+  SUMMARY_KEYS,
+  WITHDRAWN_MODULE_WORDS,
+  ownsKey,
+  withoutBrand,
+} from 'src/tests/moduleVocabulary';
+
+import { LANDING_MODULES } from 'modules/DigiKhaato/features/landing/config/modules';
+import { WHY_PARTS, WHY_POINTS, whyKey } from 'modules/DigiKhaato/features/landing/config/why';
 
 /**
  * UAT D8 — copy that promised features the product does not have, or described
@@ -163,24 +177,10 @@ const STALE: readonly {
     en: /units/i,
     hi: /इकाइयाँ/u,
   },
-  {
-    key: 'common.action.goToDashboard',
-    why: 'D-L5: there is no dashboard; the landing page is the customer list',
-    en: /dashboard/i,
-    hi: /डैशबोर्ड/u,
-  },
-  {
-    key: 'team.accept.goToDashboard',
-    why: 'D-L5: there is no dashboard; the landing page is the customer list',
-    en: /dashboard/i,
-    hi: /डैशबोर्ड/u,
-  },
-  {
-    key: 'nav.brandHome',
-    why: 'D-L5: there is no dashboard; the logo goes to the customer list',
-    en: /dashboard/i,
-    hi: /डैशबोर्ड/u,
-  },
+  /* RPT-01 — the three "go to Customers" lines D-L5 wrote while `/dashboard`
+     was a redirect now say Dashboard, because that is where they lead. Their
+     guard is the reverse one below: they must not go back to promising the
+     customer list. */
 ];
 
 describe('no copy for unbuilt features or retired behaviour (UAT D8)', () => {
@@ -227,8 +227,335 @@ describe('no copy for unbuilt features or retired behaviour (UAT D8)', () => {
     expect(hiMessages[key]).toBeUndefined();
   });
 
+  it.each(['common.action.goToDashboard', 'team.accept.goToDashboard'])(
+    '%s names the dashboard it links to, now that it exists (RPT-01)',
+    (key) => {
+      expect(enMessages[key]).toMatch(/dashboard/i);
+      expect(hiMessages[key]).toMatch(/डैशबोर्ड/u);
+    }
+  );
+
+  /**
+   * The logo opens the workspace's first page (owner, 4 Oct 2026): a shop's
+   * dashboard, a library's students. Naming "Dashboard" would be wrong for
+   * the library, so it says "home", which is true for both.
+   */
+  it('nav.brandHome names home, which is where the logo goes in every workspace', () => {
+    expect(enMessages['nav.brandHome']).toMatch(/home/i);
+    expect(hiMessages['nav.brandHome']).toMatch(/होम/u);
+  });
+
   it('retires the old opening-balance key rather than leaving it to be reused', () => {
     expect(enMessages['parties.form.opening.notPostedYet']).toBeUndefined();
     expect(hiMessages['parties.form.opening.notPostedYet']).toBeUndefined();
+  });
+});
+
+/**
+ * The landing page (`/`) is the one surface whose whole job is to make claims,
+ * so it gets the whole list rather than one row per key. Owner, verbatim in
+ * substance: never mention a feature that is not built — offline mode, SMS or
+ * email sending, e-invoice or e-way bill, GST return filing, bank sync, a
+ * payment gateway, barcode, P&L or balance sheet, multiple branches, a native
+ * app — and no testimonials, user counts, ratings or invented figures.
+ *
+ * Every `landing.*` string in both languages is checked. The one exception is
+ * the FAQ answer about e-invoicing, which exists to say plainly that it is NOT
+ * supported; it is allowed the word, and is required to carry the "not".
+ */
+describe('the landing page promises only what is built', () => {
+  const enMessages = en as Record<string, string>;
+  const hiMessages = hi as Record<string, string>;
+  const landingKeys = Object.keys(enMessages).filter((key) => key.startsWith('landing.'));
+  const E_INVOICE_FAQ = new Set(['landing.faq.einvoice.q', 'landing.faq.einvoice.a']);
+
+  const UNBUILT: readonly { readonly what: string; readonly en: RegExp; readonly hi: RegExp }[] = [
+    { what: 'offline mode', en: /off-?line/i, hi: /ऑफ़?लाइन/u },
+    { what: 'SMS sending', en: /\bSMS\b|text message/i, hi: /SMS|एसएमएस/u },
+    {
+      what: 'email sending (DEC-012)',
+      en: /(send|sent|sends|by)\s+(an\s+)?e-?mail|e-?mail(ed|s)?\s+(to|reminders?|invoices?|bills?|statements?)/i,
+      hi: /ई-?मेल\s*(से|पर)\s*(भेज|रिमाइंडर|बिल)/u,
+    },
+    { what: 'e-invoice', en: /e-?invoic/i, hi: /ई-?इनवॉइस/u },
+    { what: 'e-way bill', en: /e-?way/i, hi: /ई-?वे/u },
+    {
+      what: 'GST return filing',
+      en: /GSTR|file (your )?(GST )?returns?|return filing/i,
+      hi: /GSTR|रिटर्न/u,
+    },
+    { what: 'bank sync', en: /\bbank\b/i, hi: /बैंक/u },
+    {
+      what: 'a payment gateway',
+      en: /gateway|pay online|accept (online |card |UPI )?payments/i,
+      hi: /गेटवे|ऑनलाइन पेमेंट/u,
+    },
+    { what: 'barcode', en: /barcode|\bscan/i, hi: /बारकोड|स्कैन/u },
+    {
+      what: 'P&L and balance sheet',
+      en: /profit|P&L|balance sheet/i,
+      hi: /लाभ|मुनाफ़ा|बैलेंस शीट/u,
+    },
+    { what: 'multiple branches', en: /branch|multi-?(store|shop|location)/i, hi: /ब्रांच|शाखा/u },
+    {
+      what: 'a native app',
+      en: /app store|play store|google play|download the app|install the app|mobile app|android app|ios app|\bapk\b/i,
+      hi: /ऐप स्टोर|प्ले स्टोर|ऐप डाउनलोड|मोबाइल ऐप/u,
+    },
+    {
+      what: "something sent on the merchant's behalf (DEC-012)",
+      en: /we send|sent automatically|automatic(ally)? (send|remind)|auto-?remind/i,
+      hi: /अपने-आप भेज|हम भेज/u,
+    },
+  ];
+
+  const CLAIMS: readonly { readonly what: string; readonly en: RegExp; readonly hi: RegExp }[] = [
+    {
+      what: 'a user count',
+      en: /\d[\d,.]*\s*(\+|k\b|lakh|crore)?\s*(users|shops|merchants|businesses|customers|downloads|shopkeepers)\b/i,
+      hi: /\d[\d,.]*\s*\+?\s*(दुकानें|दुकानदार|यूज़र|व्यापारी)/u,
+    },
+    {
+      what: 'a rating or testimonial',
+      en: /\brated\b|rating|★|\bstars?\b|testimonial|review/i,
+      hi: /रेटिंग|समीक्षा/u,
+    },
+    {
+      what: 'a popularity claim',
+      en: /most popular|trusted by|loved by|thousands|lakhs|millions|#1|number one|best-selling/i,
+      hi: /सबसे लोकप्रिय|हज़ारों|लाखों|करोड़ों|नंबर 1/u,
+    },
+    { what: 'an invented percentage', en: /\d\s*%/, hi: /\d\s*%/u },
+  ];
+
+  it('has landing copy in both languages to check', () => {
+    expect(landingKeys.length).toBeGreaterThan(100);
+    landingKeys.forEach((key) => expect(hiMessages[key]).toBeTruthy());
+  });
+
+  it.each(UNBUILT.map((row) => [row.what, row]))('never mentions %s', (_what, row) => {
+    const offending = landingKeys
+      .filter((key) => !(row.what === 'e-invoice' && E_INVOICE_FAQ.has(key)))
+      .filter((key) => !(row.what === 'offline mode' && isDesktopSoonKey(key)))
+      .flatMap((key) => [
+        ...(row.en.test(enMessages[key] ?? '') ? [`${key} (en): ${enMessages[key]}`] : []),
+        ...(row.hi.test(hiMessages[key] ?? '') ? [`${key} (hi): ${hiMessages[key]}`] : []),
+      ]);
+    expect(offending).toEqual([]);
+  });
+
+  it.each(CLAIMS.map((row) => [row.what, row]))('makes no %s', (_what, row) => {
+    const offending = landingKeys.flatMap((key) => [
+      ...(row.en.test(enMessages[key] ?? '') ? [`${key} (en): ${enMessages[key]}`] : []),
+      ...(row.hi.test(hiMessages[key] ?? '') ? [`${key} (hi): ${hiMessages[key]}`] : []),
+    ]);
+    expect(offending).toEqual([]);
+  });
+
+  it('answers the e-invoice question with a plain "not today", never a "soon"', () => {
+    expect(enMessages['landing.faq.einvoice.a']).toMatch(/^Not today\./);
+    expect(enMessages['landing.faq.einvoice.a']).toMatch(/does not/);
+    expect(hiMessages['landing.faq.einvoice.a']).toMatch(/^आज नहीं।/u);
+    landingKeys
+      .filter((key) => !isDesktopSoonKey(key))
+      .forEach((key) => {
+        expect(enMessages[key]).not.toMatch(/\bsoon\b|coming/i);
+        expect(hiMessages[key]).not.toMatch(/जल्द/u);
+      });
+  });
+
+  it('keeps the brand name in Latin script in Hindi', () => {
+    const hindiWithBrand = landingKeys.filter((key) => /YourKhata/.test(enMessages[key] ?? ''));
+    expect(hindiWithBrand.length).toBeGreaterThan(0);
+    hindiWithBrand.forEach((key) => expect(hiMessages[key]).toContain('YourKhata'));
+    landingKeys.forEach((key) => expect(hiMessages[key]).not.toMatch(/योरखाता|यॉरखाता/u));
+  });
+});
+
+/**
+ * CR-2026-09-29-PLATFORM-D — every module is presented as part of the product
+ * (vision §4), so the old rule ("planned words only in planned places") gives
+ * way to a simpler one: a module's own words appear only in that module's own
+ * keys, or in the one FAQ answer that names every module. And a module's card
+ * carries no figure at all — no invented count, price or percentage — and no
+ * status word. `LandingPage.test.tsx` checks the rendered page the same way.
+ */
+describe('each module speaks only in its own place', () => {
+  const enMessages = en as Record<string, string>;
+  const hiMessages = hi as Record<string, string>;
+  const landingKeys = Object.keys(enMessages).filter((key) => key.startsWith('landing.'));
+  const modulesWithWords = Object.keys(MODULE_WORDS) as (keyof typeof MODULE_WORDS)[];
+
+  it('has a word list for every module but the shop, and copy for each to check', () => {
+    expect([...modulesWithWords].sort()).toEqual(
+      LANDING_MODULES.map((module) => module.id)
+        .filter((id) => id !== 'shop')
+        .sort()
+    );
+    modulesWithWords.forEach((id) => {
+      expect(landingKeys.filter((key) => ownsKey(id, key)).length).toBeGreaterThan(6);
+    });
+  });
+
+  it.each(modulesWithWords.flatMap((id) => [[id, 'en'] as const, [id, 'hi'] as const]))(
+    "uses %s's words only in its own keys (%s)",
+    (id, lang) => {
+      const messages = lang === 'en' ? enMessages : hiMessages;
+      const offending = landingKeys
+        .filter((key) => MODULE_WORDS[id][lang].test(messages[key] ?? ''))
+        .filter((key) => !ownsKey(id, key) && !SUMMARY_KEYS.includes(key))
+        .map((key) => `${key}: ${messages[key]}`);
+      expect(offending).toEqual([]);
+    }
+  );
+
+  /** Nothing is invented on a card: no count, price, percentage or year. */
+  it('puts no figure in any module copy, in either language', () => {
+    const offending = landingKeys
+      .filter((key) => key.startsWith('landing.module.'))
+      .flatMap((key) => [
+        ...(/[\d₹%]/.test(enMessages[key] ?? '') ? [`${key} (en): ${enMessages[key]}`] : []),
+        ...(/[\d₹%०-९]/u.test(hiMessages[key] ?? '') ? [`${key} (hi): ${hiMessages[key]}`] : []),
+      ]);
+    expect(offending).toEqual([]);
+  });
+
+  /** No Live / Planned / In development, and no "not yet available", anywhere on the page. */
+  it.each([
+    ['en', STATUS_WORDS.en],
+    ['hi', STATUS_WORDS.hi],
+  ] as const)('uses no status word in any landing string that renders (%s)', (lang, pattern) => {
+    const messages = lang === 'en' ? enMessages : hiMessages;
+    // The demo dialog's failure line ("…cannot be played right now") is about
+    // a video file, not a module, and renders only when the film 404s.
+    const offending = landingKeys
+      .filter((key) => key !== 'landing.demo.unavailable')
+      .filter((key) => !isDesktopSoonKey(key))
+      .filter((key) => pattern.test(messages[key] ?? ''))
+      .map((key) => `${key}: ${messages[key]}`);
+    expect(offending).toEqual([]);
+  });
+
+  it('retires the status labels and the planned-module lines, in both languages', () => {
+    const retired =
+      /^landing\.module\.status\.|\.problem\.\d$|^landing\.modules\.(note|problems|willBuildOn|seeInUse|included|key\.planned)$/;
+    expect(Object.keys(enMessages).filter((key) => retired.test(key))).toEqual([]);
+    expect(Object.keys(hiMessages).filter((key) => retired.test(key))).toEqual([]);
+  });
+
+  /** Vision §4: record-keeping, not lending. The card and the FAQ both say so. */
+  it('says the lending module keeps records and does not lend or move money', () => {
+    ['landing.module.lending.purpose', 'landing.faq.lending.a'].forEach((key) => {
+      expect(enMessages[key]).toMatch(/not lend/);
+      expect(enMessages[key]).toMatch(/move money/);
+      expect(hiMessages[key]).toMatch(/न कर्ज़ देता/u);
+    });
+  });
+
+  /**
+   * Coaching & tuition was withdrawn by the owner on 29 Sep ("I need library
+   * mgmt system, not coaching"): no landing string names it, in either
+   * language.
+   */
+  it('names the withdrawn coaching module nowhere', () => {
+    const offending = landingKeys.flatMap((key) => [
+      ...(WITHDRAWN_MODULE_WORDS.en.test(enMessages[key] ?? '')
+        ? [`${key} (en): ${enMessages[key]}`]
+        : []),
+      ...(WITHDRAWN_MODULE_WORDS.hi.test(hiMessages[key] ?? '')
+        ? [`${key} (hi): ${hiMessages[key]}`]
+        : []),
+    ]);
+    expect(offending).toEqual([]);
+  });
+
+  /** Vision §4 — no "kirana", no regional jargon: shop, store, business, organisation. */
+  it.each([
+    ['en', LANDING_JARGON.en],
+    ['hi', LANDING_JARGON.hi],
+  ] as const)('uses no regional jargon in any landing string (%s)', (lang, pattern) => {
+    const messages = lang === 'en' ? enMessages : hiMessages;
+    const offending = landingKeys
+      .filter((key) => pattern.test(withoutBrand(messages[key] ?? '')))
+      .map((key) => `${key}: ${messages[key]}`);
+    expect(offending).toEqual([]);
+  });
+});
+
+/**
+ * "Why YourKhata" (owner, 29 Sep 2026): what other apps commonly miss, and
+ * what YourKhata does instead — generic, true, and unranked. Each `get` line
+ * rests on a live capability or a binding rule; `config/why.ts` has the
+ * evidence table.
+ */
+describe('"Why YourKhata" names nobody and ranks nothing', () => {
+  const enMessages = en as Record<string, string>;
+  const hiMessages = hi as Record<string, string>;
+  const landingKeys = Object.keys(enMessages).filter((key) => key.startsWith('landing.'));
+
+  it('has every point in both languages, and nothing left over', () => {
+    expect(WHY_POINTS.length).toBeGreaterThanOrEqual(6);
+    expect(WHY_POINTS.length).toBeLessThanOrEqual(8);
+    WHY_POINTS.forEach((id) =>
+      WHY_PARTS.forEach((part) => {
+        const key = whyKey(id, part);
+        expect({ key, en: !!enMessages[key], hi: !!hiMessages[key] }).toEqual({
+          key,
+          en: true,
+          hi: true,
+        });
+      })
+    );
+    const pointKeys = new Set(
+      WHY_POINTS.flatMap((id) => WHY_PARTS.map((part) => whyKey(id, part)))
+    );
+    const shared = new Set(
+      ['eyebrow', 'lead', 'key', 'body', 'missLabel'].map((part) => `landing.why.${part}`)
+    );
+    expect(
+      landingKeys.filter(
+        (key) => key.startsWith('landing.why.') && !pointKeys.has(key) && !shared.has(key)
+      )
+    ).toEqual([]);
+  });
+
+  it.each(['en', 'hi'] as const)('names no competitor in any landing string (%s)', (lang) => {
+    const messages = lang === 'en' ? enMessages : hiMessages;
+    expect(landingKeys.filter((key) => namesACompetitor(messages[key] ?? '', lang))).toEqual([]);
+  });
+
+  it.each(['en', 'hi'] as const)('makes no comparative claim nobody has measured (%s)', (lang) => {
+    const messages = lang === 'en' ? enMessages : hiMessages;
+    expect(landingKeys.filter((key) => COMPARATIVE_CLAIMS[lang].test(messages[key] ?? ''))).toEqual(
+      []
+    );
+  });
+
+  /** The payments point is about where the money goes, never a gateway (DEC-012, capabilities). */
+  it('says the money goes straight to the business and never through YourKhata', () => {
+    expect(enMessages['landing.why.payments.get']).toMatch(/never passes through YourKhata/);
+    expect(hiMessages['landing.why.payments.get']).toMatch(/YourKhata से होकर नहीं/u);
+  });
+});
+
+describe('the one announced future: the offline desktop app (owner, 12 Oct 2026)', () => {
+  const enMessages = en as Record<string, string>;
+  const hiMessages = hi as Record<string, string>;
+  const keys = Object.keys(enMessages).filter(isDesktopSoonKey);
+
+  it('says "coming soon" plainly, in both languages', () => {
+    expect(enMessages['landing.desktop.eyebrow']).toMatch(/^Coming soon/);
+    expect(hiMessages['landing.desktop.eyebrow']).toMatch(/^जल्द आ रहा है/u);
+  });
+
+  it('promises no date, price or figure, and keeps "offline" to everyday entries', () => {
+    const offending = keys.flatMap((key) => [
+      ...(/[\d₹%]|\b(19|20)\d\d\b|January|April|December|free/i.test(enMessages[key] ?? '')
+        ? [`${key} (en)`]
+        : []),
+      ...(/[₹%०-९]/u.test(hiMessages[key] ?? '') ? [`${key} (hi)`] : []),
+    ]);
+    expect(offending).toEqual([]);
+    expect(enMessages['landing.desktop.point.offline']).toMatch(/everyday entries/);
   });
 });

@@ -1,6 +1,7 @@
 import { API_PATHS } from 'src/api/APIPaths';
 import { absoluteFileUrl } from 'src/api/apiUrl';
 import { api, ubConfig } from 'src/api/AxiosInstances';
+import type { TWriteClass } from 'src/types/api.types';
 
 import type {
   DeleteRequestInput,
@@ -94,17 +95,28 @@ export const getExport = async (id: string, signal?: AbortSignal): Promise<Tenan
 };
 
 /**
- * POST /tenants/current/delete-request (FR-3). The password re-verifies the
- * owner (DEC-010: there is no OTP); a wrong one is a 400 on the field.
+ * POST /tenants/current/delete-request (FR-3). A code sent to the owner's own
+ * mobile re-verifies them; a wrong one is a 400 on the field.
  */
 export const requestDeletion = async (input: DeleteRequestInput): Promise<DeletionState> => {
   const response = await api.post<{ data: DeletionStateApi }>(API_PATHS.TENANT_DELETE_REQUEST, {
-    password: input.password,
+    challenge_id: input.challengeId,
+    code: input.code,
     confirm_name: input.confirmName,
     reason: input.reason,
   });
   return toDeletionState(response.data.data);
 };
+
+/**
+ * POST /tenants/current/delete-code — a six-digit code to the owner's own
+ * mobile, which re-verifies a delete for an owner who has no password.
+ */
+export const requestDeleteCode = async (): Promise<{ readonly challengeId: string; readonly codeLength: number }> => {
+  const response = await api.post<{ data: { challenge_id: string; code_length?: number } }>(API_PATHS.TENANT_DELETE_CODE);
+  return { challengeId: response.data.data.challenge_id, codeLength: response.data.data.code_length ?? 6 };
+};
+export const requestDeleteCodeWriteClass: TWriteClass = 'online-only';
 
 /** POST /tenants/current/delete-cancel (FR-4). */
 export const cancelDeletion = async (): Promise<DeletionState> => {

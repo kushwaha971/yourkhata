@@ -1,0 +1,146 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "customer-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "supplier-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "supplier-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "busy-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "saved-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "customer-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "supplier-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "supplier-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "customer-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "supplier-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "editable-reminder",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "supplier-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "customer-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "supplier-picker",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "editable-reminder",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "supplier-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  }
+]

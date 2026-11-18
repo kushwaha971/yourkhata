@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-
-import hi from 'locales/hi.json';
 
 import { resetStatement } from '../redux/statementSlice';
 
@@ -108,6 +107,8 @@ const ALL = ['ledger.entry.read', 'ledger.statement.export'];
 const onScreen = async () => within(await screen.findByTestId('statement-screen'));
 
 beforeEach(() => {
+  // The figures fold into one closed bar by default; these tests read the tiles.
+  window.localStorage.setItem('ub.statSummary.statement', 'open');
   store.dispatch(resetStatement());
   jest.clearAllMocks();
   mockSearch = '';
@@ -165,7 +166,8 @@ describe('the statement a merchant reads', () => {
     const view = await onScreen();
 
     await view.findByText('Cement bags');
-    await userEvent.click(view.getByRole('button', { name: 'All time' }));
+    await userEvent.click(view.getByTestId('period-select'));
+    await userEvent.click(await screen.findByRole('option', { name: 'All time' }));
 
     /* `replace`, not `push`: a merchant trying five presets and hitting back
        expects the khata page, not four statements. */
@@ -382,7 +384,7 @@ describe('the closing tile is painted by what the balance means (UAT)', () => {
     const figure = closingTile(view);
     expect(figure).toHaveTextContent('₹0.00');
     expect(figure).toHaveClass('text-text-primary');
-    expect(figure).not.toHaveClass('text-error-bright');
+    expect(figure).not.toHaveClass('text-error');
     expect(figure).not.toHaveClass('text-success');
   });
 
@@ -390,7 +392,7 @@ describe('the closing tile is painted by what the balance means (UAT)', () => {
     renderWithProviders(<PartyStatementPageContent id={PARTY_ID} />);
     const view = await onScreen();
     await view.findByText('Cement bags');
-    expect(closingTile(view)).toHaveClass('text-error-bright');
+    expect(closingTile(view)).toHaveClass('text-error');
   });
 });
 

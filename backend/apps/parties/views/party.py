@@ -12,11 +12,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db.models import Count, F, Q
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
+from apps.common.book_access import allowed_books, require_book
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
+from apps.common.dates import tenant_today
 from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
 from apps.common.permissions import ModuleEnabled
@@ -24,9 +28,9 @@ from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopedNoDeleteViewSet
 from apps.parties.constants import archive_via
-from apps.parties.filters import PartyFilterSet
-from apps.parties.models import Party
-from apps.parties.permissions import PartyPermissions, WriteOffPermissions
+from apps.parties.filters import PartyFilterSet, list_balance_field
+from apps.parties.models import Party, PartyRelation
+from apps.parties.permissions import PartyManagerActions, PartyPermissions, WriteOffPermissions
 from apps.parties.selectors.party import (
     list_parties,
     party_detail_queryset,
@@ -47,9 +51,12 @@ from apps.parties.serializers.party import (
     PartyUpdateSerializer,
     PartyWriteSerializer,
 )
+from apps.parties.serializers.relation import PartyRelationCreateSerializer, PartyRelationSerializer
 from apps.parties.services.archive import archive_party, bulk_archive_parties, restore_party
 from apps.parties.services.credit import check_credit, credit_mode, credit_snapshot, may_override
 from apps.parties.services.crud import create_party, update_party
+from apps.parties.services.relations import create_relation, relations_of, remove_relation
+from apps.parties.services.roles import enabled_roles, role_counts, roles_for, with_role_codes
 
 
 def _party_type(party: Party) -> str:
@@ -58,11 +65,18 @@ def _party_type(party: Party) -> str:
     return "supplier" if party.is_supplier else "customer"
 
 
+def _book_balance(party: Party) -> Any:
+    """The figure of the book the list reads (DEC-019): `export_queryset` attaches
+    `list_balance` for the Shop's lists; otherwise it is the Udhaar book's."""
+    return getattr(party, "list_balance", party.balance)
+
+
 def _balance_type(party: Party) -> str:
     """The direction as words, as the statement CSV writes it (LED-04 BR-4)."""
-    if party.balance > 0:
+    balance = _book_balance(party)
+    if balance > 0:
         return "You will get"
-    if party.balance < 0:
+    if balance < 0:
         return "You will give"
     return "Settled"
 
@@ -74,12 +88,15 @@ PARTY_EXPORT_COLUMNS = (
     ExportColumn("display_code", lambda p: p.display_code or ""),
     ExportColumn("mobile", lambda p: p.mobile or ""),
     ExportColumn("type", _party_type),
-    ExportColumn("balance", lambda p: abs(p.balance), numeric=True),
+    ExportColumn("balance", lambda p: abs(_book_balance(p)), numeric=True),
     ExportColumn("balance_type", _balance_type),
     ExportColumn("collection_date", lambda p: csv_date(p.collection_date)),
     ExportColumn("last_activity", lambda p: csv_date(p.last_activity_at)),
     ExportColumn("status", lambda p: p.status),
     ExportColumn("tags", lambda p: "; ".join(tag.name for tag in p.tags.all())),
+    # A6 (FRD 00 PLT-X04 §11) — the role codes, from ONE annotation on the export
+    # queryset (`with_role_codes`); empty for a tenant without a role-bearing module.
+    ExportColumn("roles", lambda p: "; ".join(getattr(p, "role_codes", None) or ())),
 )
 
 
@@ -99,11 +116,19 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
     # anything not named here is ignored by DRF's ordering backend rather than
     # passed through. `collection_date` is here because CR-024 accepted it into
     # Part 22's four-value list.
-    ordering_fields = ("name", "balance", "last_activity_at", "collection_date")
+    ordering_fields = ("name", "balance", "last_activity_at", "collection_date", "oldest_due_on")
+    nulls_last_ordering_fields = (
+        "shop_customer_open_due_on",
+        "shop_supplier_open_due_on",
+        "shop_last_activity_at",
+    )
     permission_classes = [
         IsAuthenticated,
         ModuleEnabled(ModuleCode.PARTIES),
         PartyPermissions,
+        # After the codename, so a role without `parties.party.write` still hears
+        # the codename's refusal; see `PartyManagerActions` for the PATCH split.
+        PartyManagerActions,
     ]
     # Three budgets, chosen per request in `get_throttles` below. No class-level
     # `throttle_scope`: a single scope on this class is what put every GET on
@@ -167,6 +192,54 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             return PartyDetailSerializer
         return PartyListSerializer
 
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        if request.query_params.get("book") == "shop":
+            require_book(request, "shop", codename)
+        if self.action == "credit_check":
+            require_book(request, "main", "ledger.entry.read")
+        if request.query_params.get("book") != "shop" and "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
+            params = request.query_params
+            if any(params.get(key) for key in ("balance", "credit", "collection", "late")) or any(
+                key in params.get("ordering", "")
+                for key in ("balance", "last_activity", "oldest_due")
+            ):
+                require_book(request, "main", "parties.party.read")
+        body = request.data if request.method not in ("GET", "HEAD", "OPTIONS") else {}
+        if body.get("opening_balance_amount") or any(
+            key in body for key in ("credit_limit", "credit_days")
+        ):
+            require_book(request, "main", "ledger.entry.write")
+        if self.action in ("archive", "bulk_archive"):
+            for book in ("main", "shop"):
+                require_book(request, book, codename)
+        if self.action in ("archive", "bulk_archive") and body.get("write_off"):
+            ModuleEnabled(ModuleCode.LEDGER)().has_permission(request, self)
+            require_book(request, "main", "ledger.entry.write")
+        return True
+
+    def _project_financials(self, data: dict) -> dict:
+        books = allowed_books(self.request, "parties.party.read")
+        if "main" not in books:
+            for key in (
+                "balance",
+                "summary",
+                "credit",
+                "credit_limit",
+                "credit_days",
+                "opening_balance_amount",
+                "opening_balance_direction",
+                "opening_balance_as_of",
+                "collection_date",
+                "last_activity_at",
+            ):
+                data.pop(key, None)
+        if "shop" not in books:
+            data.pop("shop_balance", None)
+            data.pop("shop", None)
+        return data
+
     def get_queryset(self) -> Any:
         """The selector owns the query; the viewset owns nothing but the call.
 
@@ -176,7 +249,18 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         second query per row (§20.14.2).
         """
         if self.action == "list":
-            return list_parties(tenant=self.get_tenant())
+            rows = list_parties(tenant=self.get_tenant())
+            if self.request.query_params.get("book") == "shop":
+                from apps.parties.selectors.shop import with_shop_facts
+
+                rows = with_shop_facts(rows, tenant=self.get_tenant()).order_by(
+                    F("shop_last_activity_at").desc(nulls_last=True), "-id"
+                )
+            if self.request.query_params.get("book") != "shop" and "main" not in allowed_books(
+                self.request, "parties.party.read"
+            ):
+                rows = rows.order_by("name", "id")
+            return rows
         return party_detail_queryset(tenant=self.get_tenant())
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -190,16 +274,145 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         """
         if self.wants_csv(request):
             return self.csv_export(request)
-        queryset = self.export_queryset()
-        totals = party_totals(queryset)
+        # The filtered set WITHOUT the export's role annotation (A6): the page and
+        # the totals are the same queries they were, and badges are one more.
+        queryset = self.filter_queryset(self.get_queryset())
+        totals = party_totals(queryset, field=list_balance_field(request))
         page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
+        serializer = self.get_serializer(page, many=True, context=self._roles_context(page))
         # Through a serializer, not straight into the envelope: the two
         # figures are money, and money is a string on the wire (canon rule 3).
         # Handed the raw dict, the renderer emits `0.0` and the precision is
         # gone before the client ever sees it.
-        meta = {**self.paginator.get_meta(), "totals": PartyTotalsSerializer(totals).data}
-        return StandardResponse.ok(serializer.data, meta=meta)
+        meta = {
+            **self.paginator.get_meta(),
+            "totals": PartyTotalsSerializer(totals).data,
+            "has_any": bool(page) or self._has_any(request),
+        }
+        if request.query_params.get("book") == "shop" and request.query_params.get("type") in (
+            "customer",
+            "supplier",
+        ):
+            params = request.query_params.copy()
+            params.pop("balance", None)
+            params.pop("late", None)
+            base = PartyFilterSet(params, queryset=self.get_queryset(), request=request).qs
+            field = (
+                "shop_supplier_balance"
+                if params.get("type") == "supplier"
+                else "shop_customer_balance"
+            )
+            prefix = "shop_supplier" if params.get("type") == "supplier" else "shop_customer"
+            counts = base.aggregate(
+                all=Count("id"),
+                owes=Count("id", filter=Q(**{f"{field}__gt": 0})),
+                advance=Count("id", filter=Q(**{f"{field}__lt": 0})),
+                late=Count(
+                    "id",
+                    filter=Q(
+                        **{
+                            f"{prefix}_balance__gt": 0,
+                            f"{prefix}_due_on__lt": tenant_today(self.get_tenant()),
+                        }
+                    ),
+                ),
+            )
+            meta["shop_counts"] = counts
+        # Never expose main-book totals to identity-only consumers.
+        if self.request.query_params.get("book") != "shop" and "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
+            meta["totals"] = {"count": totals["count"]}
+        rows = [self._project_financials(dict(row)) for row in serializer.data]
+        if (
+            "main" not in allowed_books(request, "parties.party.read")
+            and request.query_params.get("book") == "shop"
+        ):
+            for row, original in zip(rows, serializer.data):
+                # On this list balance is the selected Shop role, not main.
+                row["balance"] = original["balance"]
+        return StandardResponse.ok(rows, meta=meta)
+
+    def _has_any(self, request: Any) -> bool:
+        """Whether the list's own kind of party exists at all — customers on
+        Customers, suppliers on Suppliers — archived included, whatever the
+        search, balance or status filter. An empty book hides its search and
+        filters (approved designs, 12 Oct 2026); a filter that found nothing
+        must keep them, or the merchant cannot undo it."""
+        qs = Party.objects.for_tenant(self.get_tenant())
+        kind = request.query_params.get("type")
+        if kind == "customer":
+            qs = qs.filter(is_customer=True)
+        elif kind == "supplier":
+            qs = qs.filter(is_supplier=True)
+        return qs.exists()
+
+    def authorize_export_scope(self, request: Any) -> None:
+        """CSV money is never an identity-only read, including stored files."""
+        require_book(
+            request,
+            "shop" if request.query_params.get("book") == "shop" else "main",
+            self.export_codename,
+        )
+
+    def allowed_export_columns(self, request: Any) -> Any:
+        columns = super().allowed_export_columns(request)
+        if request.query_params.get("book") == "shop" or "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
+            columns = tuple(
+                c for c in columns if c.header not in ("collection_date", "last_activity")
+            )
+        return columns
+
+    def export_queryset(self) -> Any:
+        """The filtered set, plus `role_codes` for the CSV's `roles` column (A6)."""
+        queryset = self.filter_queryset(self.get_queryset())
+        field = list_balance_field(self.request)
+        if field != "balance":
+            queryset = queryset.annotate(list_balance=F(field))
+        return with_role_codes(queryset, self.get_tenant())
+
+    def ordering_term(self, term: str) -> str:
+        """DEC-019 — `?ordering=balance` sorts by the book the list reads (`StableOrderingFilter`)."""
+        field = list_balance_field(self.request)
+        if self.request.query_params.get("book") == "shop":
+            name = term.lstrip("-")
+            if name == "oldest_due_on":
+                return ("-" if term.startswith("-") else "") + (
+                    "shop_supplier_open_due_on"
+                    if self.request.query_params.get("type") == "supplier"
+                    else "shop_customer_open_due_on"
+                )
+            if name == "last_activity_at":
+                return term.replace("last_activity_at", "shop_last_activity_at")
+        if self.request.query_params.get("book") != "shop" and term.lstrip("-") == "oldest_due_on":
+            return "-last_activity_at"
+        if field != "balance" and term.lstrip("-") == "balance":
+            return term.replace("balance", field)
+        return term
+
+    def _roles_context(self, page: Any) -> dict[str, Any]:
+        """The serializer context, with `party_roles` when a role-bearing module is on."""
+        context = self.get_serializer_context()
+        # DEC-019 — the row's `balance` is the figure of the book the list reads.
+        context["balance_field"] = list_balance_field(self.request)
+        context["shop_kind"] = self.request.query_params.get("type", "customer")
+        tenant = self.get_tenant()
+        if enabled_roles(tenant):
+            context["party_roles"] = roles_for(tenant, [party.pk for party in page or ()])
+        return context
+
+    def _detail(self, party: Party) -> dict:
+        """`PartyDetailSerializer` with the tenant in hand, so `roles` costs no tenant read."""
+        data = PartyDetailSerializer(party, context={"tenant": self.get_tenant()}).data
+        if self.request.query_params.get("book") == "shop":
+            from apps.parties.selectors.shop import serialize_shop_facts, shop_party_facts
+
+            current = shop_party_facts(tenant=self.get_tenant(), party_id=party.id)
+            if current is not None:
+                data["shop"] = serialize_shop_facts(current, today=tenant_today(self.get_tenant()))
+        return self._project_financials(data)
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """The party, plus the two blocks the khata page's header draws.
@@ -226,14 +439,14 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         app that owns the table.
         """
         party = self.get_object()
-        data = dict(self.get_serializer(party).data)
+        data = dict(self._detail(party))
         data["summary"] = PartySummarySerializer(party_summary(party)).data
         # PTY-06. One setting read for the mode; the rest is arithmetic on the
         # row already in hand, so the block costs no extra query about the party.
         credit = credit_snapshot(party, mode=credit_mode(self.get_tenant()))
         if credit is not None:
             data["credit"] = PartyCreditSerializer(credit).data
-        return StandardResponse.ok(data)
+        return StandardResponse.ok(self._project_financials(data))
 
     def get_object(self) -> Any:
         """The scoped queryset WITHOUT the list's filters.
@@ -279,7 +492,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         serializer.is_valid(raise_exception=True)
         party, warnings = create_party(ctx=self._ctx(request), payload=serializer.validated_data)
         return StandardResponse.created(
-            PartyDetailSerializer(party).data,
+            self._detail(party),
             meta={"warnings": warnings} if warnings else None,
         )
 
@@ -298,7 +511,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             ctx=self._ctx(request), party=party, payload=serializer.validated_data
         )
         return StandardResponse.ok(
-            PartyDetailSerializer(party).data,
+            self._detail(party),
             meta={"warnings": warnings} if warnings else None,
         )
 
@@ -342,7 +555,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             write_off=dict(write_off) if write_off is not None else None,
         )
         return StandardResponse.ok(
-            PartyDetailSerializer(archived).data,
+            self._detail(archived),
             meta={"write_off_entry_id": write_off_entry_id} if write_off_entry_id else None,
         )
 
@@ -380,7 +593,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         """
         party = self.get_object()
         restored = restore_party(ctx=self._ctx(request), party=party, via="api")
-        return StandardResponse.ok(PartyDetailSerializer(restored).data)
+        return StandardResponse.ok(self._detail(restored))
 
     # ── PTY-06 — the credit limit's pre-flight ──────────────────────────────
     #
@@ -443,4 +656,71 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
                 "archived_count": len(result["archived"]),
                 "skipped_count": len(result["skipped"]),
             },
+        )
+
+    # ── A6 ── PLT-X04: roles and relations ─────────────────────────────────
+    #
+    # On this viewset rather than beside it, so `parties/roles` is matched before
+    # `parties/<pk>` by the router's own ordering (list routes come first) and
+    # every relation route inherits this class's module gate, tenant scoping and
+    # 404-for-another-tenant's-id.
+
+    @action(detail=False, methods=["get"], url_path="roles")
+    def roles(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """`[{code, module, label_id, count}]` for the enabled modules' roles (§6).
+
+        Empty — not absent — for a tenant with no role-bearing module on: the
+        client hides the chips row when the list is empty (§8).
+        """
+        return StandardResponse.ok(role_counts(self.get_tenant()))
+
+    @action(detail=True, methods=["get"], url_path="relations")
+    def relations(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """Both directions: `{as_person: [...], as_related: [...]}`."""
+        party = self.get_object()
+        tenant = self.get_tenant()
+        found = relations_of(tenant, party)
+        context = {"today": tenant_today(tenant)}
+        return StandardResponse.ok(
+            {
+                key: PartyRelationSerializer(rows, many=True, context=context).data
+                for key, rows in found.items()
+            }
+        )
+
+    @relations.mapping.post
+    @idempotent("party_relation_create")
+    def create_relation(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """201 with the relation; 200 when an ended one of the same kind is re-opened."""
+        party = self.get_object()
+        serializer = PartyRelationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        relation, created = create_relation(
+            ctx=self._ctx(request), party=party, **serializer.validated_data
+        )
+        data = PartyRelationSerializer(
+            relation, context={"today": tenant_today(self.get_tenant())}
+        ).data
+        return StandardResponse.created(data) if created else StandardResponse.ok(data)
+
+    @action(detail=True, methods=["delete"], url_path=r"relations/(?P<rid>[0-9a-fA-F-]{36})")
+    def delete_relation(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """204 when deleted; 200 with the relation (and its `to_on`) when ended.
+
+        The relation must belong to this party in EITHER direction — a
+        guardian's khata can unlink their ward — and to this tenant; anything
+        else is 404 (canon §0.11 rule 2).
+        """
+        party = self.get_object()
+        relation = get_object_or_404(
+            PartyRelation.objects.for_tenant(self.get_tenant()).filter(
+                Q(party=party) | Q(related_party=party)
+            ),
+            pk=kwargs["rid"],
+        )
+        ended = remove_relation(ctx=self._ctx(request), relation=relation)
+        if ended is None:
+            return StandardResponse.no_content()
+        return StandardResponse.ok(
+            PartyRelationSerializer(ended, context={"today": tenant_today(self.get_tenant())}).data
         )

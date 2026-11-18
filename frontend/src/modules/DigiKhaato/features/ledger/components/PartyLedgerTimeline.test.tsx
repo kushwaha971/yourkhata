@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-
-import hi from 'locales/hi.json';
 
 import { resetLedgerEntries } from '../redux/ledgerEntrySlice';
 import { resetLedgerForm } from '../redux/ledgerFormSlice';
@@ -141,16 +140,16 @@ describe('the khata timeline', () => {
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
     // Once on the row, and once as the running total above it — the second
-    // occurrence is `You gave in all`, which is why this counts rather than
+    // occurrence is `Gave money in all`, which is why this counts rather than
     // asserting a single match.
-    expect(await screen.findByText('You gave')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money')).toBeInTheDocument();
     expect(screen.getAllByText('₹500.00')).toHaveLength(2);
     /* The label is in the accessible name even where it is not painted, so a
        screen reader still hears which way the money went. `UbAmount` puts it in
        an `sr-only` span as "<label>, <amount>" rather than on an aria-label —
        the visible figure is `aria-hidden`, because "minus five hundred rupees"
        is not how the number is read in the shop. */
-    expect(screen.getByText('You gave, ₹500.00')).toBeInTheDocument();
+    expect(screen.getByText('Gave money, ₹500.00')).toBeInTheDocument();
   });
 
   it('never shows an entry amount with a sign', async () => {
@@ -165,7 +164,7 @@ describe('the khata timeline', () => {
 
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    await screen.findByText('You got');
+    await screen.findByText('Got money');
     expect(screen.queryByText(/[-−]₹/)).not.toBeInTheDocument();
   });
 
@@ -262,14 +261,14 @@ describe('the khata timeline', () => {
 
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    await screen.findByText('You gave');
+    await screen.findByText('Gave money');
     expect(screen.queryByText('Backdated')).not.toBeInTheDocument();
   });
 
   it('shows the two running totals only when there is something to total', async () => {
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    expect(await screen.findByText('You gave in all')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all')).toBeInTheDocument();
 
     store.dispatch(resetLedgerEntries());
     ledgerService.listPartyEntries.mockResolvedValue(
@@ -279,9 +278,9 @@ describe('the khata timeline', () => {
     view.unmount();
   });
 
-  it('shows a write-off as its own figure, not inside "You got in all"', async () => {
+  it('shows a write-off as its own figure, not inside "Got money in all"', async () => {
     /* CR-2026-09-24-A, the QA defect: after a write-off the header read
-       "You got in all ₹930.00" over a row saying "Written off". The server now
+       "Got money in all ₹930.00" over a row saying "Written off". The server now
        reports gave and got WITHOUT write-offs, and the forgiven amount is a
        third line — so the header adds up the way a merchant checks it:
        2,800 − 300 − 2,500 = 0. */
@@ -311,8 +310,8 @@ describe('the khata timeline', () => {
 
     expect(await screen.findByText('Written off in all')).toBeInTheDocument();
     expect(screen.getByText('Written off in all, ₹2,500.00')).toBeInTheDocument();
-    expect(screen.getByText('You got in all, ₹300.00')).toBeInTheDocument();
-    expect(screen.getByText('You gave in all, ₹2,800.00')).toBeInTheDocument();
+    expect(screen.getByText('Got money in all, ₹300.00')).toBeInTheDocument();
+    expect(screen.getByText('Gave money in all, ₹2,800.00')).toBeInTheDocument();
   });
 
   it('draws no written-off line for a khata nobody has forgiven', async () => {
@@ -329,7 +328,7 @@ describe('the khata timeline', () => {
 
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    expect(await screen.findByText('You gave in all')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all')).toBeInTheDocument();
     expect(screen.queryByText(/Written off in all/)).not.toBeInTheDocument();
   });
 
@@ -360,11 +359,11 @@ describe('the khata timeline', () => {
 
     expect(await screen.findByText('No transactions yet')).toBeInTheDocument();
     expect(
-      screen.getByText('Record what you gave or got and it will appear here.')
+      screen.getByText('Add an entry to see it here.')
     ).toBeInTheDocument();
-    // And no "You gave in all ₹0.00" above it — two lines of nothing over an
+    // And no "Gave money in all ₹0.00" above it — two lines of nothing over an
     // empty state that already says the same thing.
-    expect(screen.queryByText('You gave in all')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gave money in all')).not.toBeInTheDocument();
   });
 
   it('offers older entries rather than loading a three-year history at once', async () => {
@@ -391,7 +390,7 @@ describe('the khata timeline', () => {
     // And the header figures the first page carried survive a response that
     // omits them — writing that `null` in would blank what the merchant is
     // reading.
-    expect(screen.getByText('You gave in all')).toBeInTheDocument();
+    expect(screen.getByText('Gave money in all')).toBeInTheDocument();
   });
 
   it('offers a way back when the timeline will not load', async () => {
@@ -410,7 +409,7 @@ describe('the khata timeline', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     // R-E-4 — the reference an operator can trace, on the screen rather than in
     // a console the merchant will never open.
-    expect(screen.getByText(/req_abc123/)).toBeInTheDocument();
+    expect(screen.queryByText(/req_abc123/)).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
   });
 
   it('renders nothing at all for a tenant without the ledger module', async () => {
@@ -522,7 +521,7 @@ describe('correcting from the khata', () => {
     signIn(['ledger.entry.read', 'ledger.entry.write']);
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    await screen.findByText('You gave');
+    await screen.findByText('Gave money');
     expect(screen.queryByRole('button', { name: /More actions/ })).not.toBeInTheDocument();
     expect(screen.queryByText('Show corrections')).not.toBeInTheDocument();
   });
@@ -582,7 +581,7 @@ describe('correcting from the khata', () => {
     signIn(CORRECT);
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
-    await screen.findByText('You gave');
+    await screen.findByText('Gave money');
     await userEvent.click(screen.getByRole('switch', { name: 'Show corrections' }));
 
     await waitFor(() =>
@@ -619,7 +618,7 @@ describe('an archived party’s khata (QA O4)', () => {
     /* Prevents QA O4: an ARCHIVED party's rows still offered "Correct this
        entry / Reverse this entry", and the server refuses both (409
        party_archived). Hidden rather than disabled (§19.7.5) — the same rule
-       as the header's You gave / You got on that page. */
+       as the header's Gave money / Got money on that page. */
     signIn(['ledger.entry.read', 'ledger.entry.write', 'ledger.entry.correct']);
     ledgerService.listPartyEntries.mockResolvedValue(page([entry({ note: 'Cement bags' })]));
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} readOnly />);

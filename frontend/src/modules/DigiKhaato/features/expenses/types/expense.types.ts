@@ -78,6 +78,16 @@ export interface ExpenseFilters {
   readonly mode: PaymentMode | null;
   readonly q: string;
   readonly page: number;
+  /** DEC-019 (QA B10) — the app whose expenses these are; set by the page, not the URL. */
+  readonly app?: string;
+}
+
+/**
+ * What a list request carries: the filters, plus how a phone shows the next
+ * page (R-DEC-33) — `append` joins it to the cards already shown.
+ */
+export interface ExpenseListArg extends ExpenseFilters {
+  readonly listMode?: 'replace' | 'append';
 }
 
 export interface ExpensePage {
@@ -86,6 +96,8 @@ export interface ExpensePage {
   readonly page: number;
   readonly pageSize: number;
   readonly total: number;
+  /** Any expense at all, whatever the filters (approved designs, 12 Oct 2026). */
+  readonly hasAny?: boolean;
 }
 
 /** The drawer's form state. `mode`/`upiApp` are kept even when `paid` is off

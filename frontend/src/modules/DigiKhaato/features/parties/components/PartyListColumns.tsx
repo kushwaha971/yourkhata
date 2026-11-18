@@ -1,18 +1,20 @@
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { activityView, contactLine } from '../view-model/partyDisplay';
 import { PARTY_SORT_FIELDS } from '../view-model/partyListSort';
+import { shopAgeView, shopActivityLabel } from '../view-model/shopPartyDisplay';
 
 import {
   PartyBalanceCell,
   PartyMetaCell,
   PartyNameCell,
   PartyStatusCell,
+  ShopPartyRowActions,
 } from './PartyListRow';
 
 import type { Party } from '../types/party.types';
-
 
 /**
  * Part 19 §19.9.4 — a MODULE-LEVEL column factory, memoised by the screen on
@@ -83,6 +85,24 @@ export interface PartyColumnDeps {
    * cannot tell which one it is painting.
    */
   readonly tagChipsPerRow: number;
+  /** The first column's heading when the page is one book (Suppliers). */
+  readonly nameHeader?: string;
+  readonly compactShop?: boolean;
+  readonly supplier?: boolean;
+  readonly onPay?: (party: Party) => void;
+  readonly hideBalanceLabel?: boolean;
+  readonly onOpen?: (party: Party) => void;
+  readonly onRemind?: (party: Party) => void;
+  readonly onSettle?: (party: Party) => void;
+  readonly formatActivity?: (at: string) => string;
+  readonly phoneCards?: boolean;
+  /**
+   * A full table narrower than 1280 (a 1024 laptop beside the menu, ~740 px):
+   * the Shop's six columns and Pay do not fit there, so Status, the lowest
+   * priority and the same word on every active row, steps out (G round,
+   * 10 Nov: "Active…" was cut and ₹1,15,081.32 spilled out of its cell).
+   */
+  readonly narrowTable?: boolean;
 }
 
 export const createPartyColumns = ({
@@ -91,82 +111,186 @@ export const createPartyColumns = ({
   balanceLabels,
   hasTags,
   tagChipsPerRow,
-}: PartyColumnDeps): readonly UbDataGridColumn<Party>[] => [
-  {
-    id: 'name',
-    header: t('parties.list.column.name'),
-    priority: 1,
-    sortField: PARTY_SORT_FIELDS.name,
-    cardSlot: 'title',
-    widthShare: 34,
-    cell: (party) => (
-      <PartyNameCell
-        name={party.name}
-        tags={party.tags}
-        reserveTagLane={hasTags}
-        maxTags={tagChipsPerRow}
-        /* Named after the party, because a row's chip list sits beside
+  nameHeader,
+  compactShop = false,
+  supplier = false,
+  onPay,
+  hideBalanceLabel,
+  onOpen,
+  onRemind,
+  onSettle,
+  formatActivity,
+  phoneCards,
+  narrowTable = false,
+}: PartyColumnDeps): readonly UbDataGridColumn<Party>[] => {
+  const columns: readonly UbDataGridColumn<Party>[] = [
+    {
+      id: 'name',
+      header: nameHeader ?? t('parties.list.column.name'),
+      priority: 1,
+      sortField: PARTY_SORT_FIELDS.name,
+      cardSlot: 'title',
+      // A7: 24 / 20 in the Shop (was 26 / 22), the 4 % given to the actions
+      // column so Hindi's "भुगतान करें" and its ⋯ fit at 1024.
+      widthShare: compactShop ? 24 : 34,
+      cell: (party) => (
+        <PartyNameCell
+          name={party.name}
+          wrap={compactShop}
+          roleLabel={
+            compactShop && (supplier ? party.isCustomer : party.isSupplier)
+              ? t(
+                  supplier ? 'parties.list.supplier.alsoCustomer' : 'parties.list.shop.alsoSupplier'
+                )
+              : undefined
+          }
+          statusLabel={
+            compactShop && party.status === 'archived'
+              ? t('parties.list.status.archived')
+              : undefined
+          }
+          contact={
+compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
+          }
+          tags={party.tags}
+          reserveTagLane={!compactShop && hasTags}
+          maxTags={tagChipsPerRow}
+          /* Named after the party, because a row's chip list sits beside
            twenty-four other chip lists and "Tags" alone announces as one of
            twenty-five identical lists with no way to tell which is whose. */
-        tagsLabel={t('parties.tags.listLabel', { name: party.name })}
-        overflowLabel={(count) => t('parties.tags.overflow', { count })}
-      />
-    ),
-  },
-  {
-    id: 'balance',
-    header: t('parties.list.column.balance'),
-    priority: 1,
-    align: 'end',
-    sortField: PARTY_SORT_FIELDS.balance,
-    cardSlot: 'trailing',
-    widthShare: 20,
-    cell: (party) => <PartyBalanceCell balance={party.balance} labels={balanceLabels} />,
-  },
-  {
-    id: 'activity',
-    header: t('parties.list.column.activity'),
+          tagsLabel={t('parties.tags.listLabel', { name: party.name })}
+          overflowLabel={(count) => t('parties.tags.overflow', { count })}
+        />
+      ),
+    },
+    {
+      id: 'balance',
+      header: t('parties.list.column.balance'),
+      priority: 1,
+      align: 'end',
+      sortField: PARTY_SORT_FIELDS.balance,
+      cardSlot: 'trailing',
+      widthShare: compactShop ? 18 : 20,
+      cell: (party) => (
+        <PartyBalanceCell
+          balance={party.balance}
+          labels={balanceLabels}
+          labelHidden={hideBalanceLabel || (phoneCards && compactShop && Number(party.balance) !== 0)}
+        />
+      ),
+    },
+    {
+      id: 'activity',
+      header: t(compactShop ? 'parties.list.shop.lastActivity' : 'parties.list.column.activity'),
+      priority: 2,
+      sortField: PARTY_SORT_FIELDS.activity,
+      cardSlot: compactShop ? 'none' : 'meta',
+      // 18 in the Shop: at 14 its header wrapped to three lines at 1024 and
+      // grew the header row past 46 px (A7, measured).
+      widthShare: compactShop ? 18 : 16,
+      cell: (party) => {
+        if (compactShop) {
+          const at = party.shop?.lastActivityAt;
+          return (
+            <PartyMetaCell
+              wrap
+              text={
+                at
+                  ? `${formatActivity?.(at) ?? at} · ${shopActivityLabel(party.shop?.lastActivityKind, t)}`
+                  : t('parties.list.shop.noActivity')
+              }
+            />
+          );
+        }
+        const view = activityView(party.lastActivityAt, nowMs);
+        return <PartyMetaCell text={t(view.labelId, view.values)} />;
+      },
+    },
+    {
+      id: 'contact',
+      header: t(compactShop ? 'parties.list.shop.mobile' : 'parties.list.column.contact'),
+      priority: 3,
+      // The phone row is name and how late; the mobile is one tap further (design pCustomers).
+      cardSlot: compactShop ? 'none' : 'meta',
+      /**
+       * Every column states a width and the five sum to 100, including this one.
+       *
+       * Leaving one column unsized to "take the rest" is what was here before,
+       * and on a SELECTABLE grid it does not work: the checkbox column is a fixed
+       * 48 px that no percentage accounts for, so the four sized columns took
+       * their 92% of the full table and this one was left with 36 px — its header
+       * overlapped Status and every cell read "C…". `table-fixed` scales stated
+       * percentages down to fit the space the checkbox leaves, so a full hundred
+       * is the shape that survives selection being switched on.
+       */
+      widthShare: 18,
+      cell: (party) => (
+        <PartyMetaCell
+          text={
+            compactShop && !phoneCards
+              ? (formatPhoneForDisplay(party.mobile)?.replace(/ /g, '\u00a0') ?? '')
+              : contactLine(party)
+          }
+          wrap
+        />
+      ),
+    },
+    {
+      id: 'status',
+      header: t('parties.list.column.status'),
+      priority: 4,
+      // The card does not carry it: a phone shows the active list, and a word
+      // that is the same on every row is furniture, not information.
+      cardSlot: 'none',
+      widthShare: 12,
+      cell: (party) => (
+        <PartyStatusCell
+          archived={party.status === 'archived'}
+          label={t(`parties.list.status.${party.status}`)}
+        />
+      ),
+    },
+  ];
+  if (!compactShop) return columns;
+  const late: UbDataGridColumn<Party> = {
+    id: 'late',
+    header: t('parties.list.shop.lateBy'),
     priority: 2,
-    sortField: PARTY_SORT_FIELDS.activity,
-    cardSlot: 'meta',
+    sortField: 'oldest_due_on',
+    cardSlot: 'none',
     widthShare: 16,
     cell: (party) => {
-      const view = activityView(party.lastActivityAt, nowMs);
-      return <PartyMetaCell text={t(view.labelId, view.values)} />;
+      const age = shopAgeView(party, t, supplier);
+      return (
+        <PartyMetaCell text={age.label} wrap />
+      );
     },
-  },
-  {
-    id: 'contact',
-    header: t('parties.list.column.contact'),
-    priority: 3,
-    cardSlot: 'meta',
-    /**
-     * Every column states a width and the five sum to 100, including this one.
-     *
-     * Leaving one column unsized to "take the rest" is what was here before,
-     * and on a SELECTABLE grid it does not work: the checkbox column is a fixed
-     * 48 px that no percentage accounts for, so the four sized columns took
-     * their 92% of the full table and this one was left with 36 px — its header
-     * overlapped Status and every cell read "C…". `table-fixed` scales stated
-     * percentages down to fit the space the checkbox leaves, so a full hundred
-     * is the shape that survives selection being switched on.
-     */
-    widthShare: 18,
-    cell: (party) => <PartyMetaCell text={contactLine(party)} />,
-  },
-  {
-    id: 'status',
-    header: t('parties.list.column.status'),
-    priority: 4,
-    // The card does not carry it: a phone shows the active list, and a word
-    // that is the same on every row is furniture, not information.
+  };
+  const actions: UbDataGridColumn<Party> = {
+    id: 'actions',
+    header: t('common.action.moreActions'),
+    headerHidden: true,
+    priority: 2,
     cardSlot: 'none',
-    widthShare: 12,
+    align: 'end',
+    widthShare: 20,
     cell: (party) => (
-      <PartyStatusCell
-        archived={party.status === 'archived'}
-        label={t(`parties.list.status.${party.status}`)}
+      <ShopPartyRowActions
+        party={party}
+        t={t}
+        onOpen={onOpen}
+        onRemind={onRemind}
+        onPay={onPay}
+        onSettle={onSettle}
+        supplier={supplier}
       />
     ),
-  },
-];
+  };
+
+  return [
+    ...columns.filter((column) => column.id === 'name' || column.id === 'balance'),
+    late,
+    ...columns.filter((column) => column.id === 'contact' || (column.id === 'status' && !narrowTable)),
+    actions,
+  ];
+};

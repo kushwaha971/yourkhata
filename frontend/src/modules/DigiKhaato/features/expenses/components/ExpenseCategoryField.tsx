@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { Plus } from 'lucide-react';
 
-import { UbButton, UbCombobox, UbStack, UbTextInput } from 'src/design-system';
+import { UbButton, UbChoiceChips, UbCombobox, UbStack, UbTextInput } from 'src/design-system';
 import type { UbFieldRenderProps } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
@@ -15,6 +15,12 @@ import type { ExpenseCategory } from '../types/expense.types';
 /**
  * EXP-02 FR-4 — the category picker, with "New category" beside it.
  *
+ * 08 §12.1 — "₹500 tea, cash, today" is three taps: amount, a category CHIP,
+ * Save. The six categories the business uses most (the server's usage-first
+ * order) are chips; the rest are in the search below them, which appears only
+ * when there are more than six. A category picked from the search takes the
+ * last chip's place, so the choice is always visible.
+ *
  * The picker is the shared `UbCombobox` over the tenant's LIVE categories in
  * the server's usage-first order (the tea a shop buys every morning is at the
  * top). Creating one inline is a second, explicit step rather than a "Create
@@ -24,6 +30,9 @@ import type { ExpenseCategory } from '../types/expense.types';
  * "Hamali", tap Add, and the new row is selected; a name that already exists
  * comes back as the existing row (EC-1), so a double tap makes one category.
  */
+/** How many categories are one tap away. */
+const QUICK = 6;
+
 export interface ExpenseCategoryFieldProps {
   readonly field: UbFieldRenderProps;
   readonly categories: readonly ExpenseCategory[];
@@ -65,23 +74,46 @@ export function ExpenseCategoryField({
     }
   }, [name, onCreate, onChange]);
 
+  const value = field.value as string;
+  const quick = useMemo(() => {
+    const first = options.slice(0, QUICK);
+    const picked = options.find((option) => option.value === value);
+    if (!picked || first.some((option) => option.value === value)) return first;
+    return [...first.slice(0, QUICK - 1), picked];
+  }, [options, value]);
+
+  /* 16 px under the chips: a chip's 44 px target reaches 6 px below it and
+     the 28 px "New category" button's reaches 8 px above, so 12 px left them
+     overlapping and a tap on the bottom of "Rent" opened New category (found
+     by measuring at 390 px). */
   return (
-    <UbStack gap={2}>
-      <UbCombobox
+    <UbStack gap={4}>
+      <UbChoiceChips<string>
         id={field.id}
-        name={field.name}
-        value={field.value as string}
+        value={value}
         onChange={field.onChange}
         onBlur={field.onBlur}
-        options={options}
-        placeholder={field.placeholder}
-        searchPlaceholder={t('expenses.category.search')}
-        emptyLabel={t('expenses.category.none')}
+        options={quick}
+        ariaLabel={t('expenses.category.quick')}
         invalid={field.invalid}
-        aria-invalid={field['aria-invalid']}
-        aria-required={field['aria-required']}
-        aria-describedby={field['aria-describedby']}
+        describedBy={field['aria-describedby']}
       />
+      {options.length > QUICK && (
+        <UbCombobox
+          name={field.name}
+          value={value}
+          onChange={field.onChange}
+          onBlur={field.onBlur}
+          options={options}
+          placeholder={t('expenses.category.more')}
+          aria-label={t('expenses.category.more')}
+          searchPlaceholder={t('expenses.category.search')}
+          emptyLabel={t('expenses.category.none')}
+          invalid={field.invalid}
+          aria-required={field['aria-required']}
+          aria-describedby={field['aria-describedby']}
+        />
+      )}
       {canCreate &&
         (adding ? (
           <UbStack direction="row" gap={2} align="center">

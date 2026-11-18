@@ -1,0 +1,617 @@
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import { resetAllFeatureState } from 'src/redux/actions';
+import { browserWentOffline, responseObserved } from 'src/redux/slice/networkSlice';
+import { sessionLoaded } from 'src/redux/slice/sessionSlice';
+import { store } from 'src/redux/store';
+import { renderWithProviders } from 'src/tests/renderWithProviders';
+import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
+
+import { PurchaseBillDetailPageContent } from './PurchaseBillDetailPageContent';
+
+import type { PurchaseBill, PurchaseBillEnvelope } from '../types/purchase.types';
+
+/**
+ * PUR-04 on screen. What these protect: the consequences are on the dialog
+ * BEFORE a reason is typed (AC-2), there is no "Average cost unchanged" line
+ * (CR-2026-09-24-INV-A made it false), goods already sold are refused IN the
+ * dialog with the item and how far it would go (AC-4), a void shows the Void
+ * banner with the reason (AC-3), and staff never see Void (§12).
+ */
+jest.mock('../api/purchaseBillService');
+const push = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(''),
+  usePathname: () => '/purchases/bills/b1',
+}));
+
+const service = jest.requireMock('../api/purchaseBillService') as {
+  getPurchaseBill: jest.Mock;
+  voidPurchaseBill: jest.Mock;
+  deletePurchaseBill: jest.Mock;
+};
+
+const BILL: PurchaseBill = {
+  id: 'b1',
+  kind: 'purchase_bill',
+  number: 'PB/26-27/0007',
+  fyLabel: '2026-27',
+  status: 'recorded',
+  version: 2,
+  party: {
+    id: 'p1',
+    name: 'Agro Traders',
+    gstin: null,
+    mobile: null,
+    stateCode: '27',
+    creditDays: 15,
+  },
+  partySnapshot: { name: 'Agro Traders', gstin: null, stateCode: '27', mobile: null },
+  supplierInvoiceNumber: 'AT/778',
+  supplierInvoiceDate: '2026-09-17',
+  documentDate: '2026-09-18',
+  dueOn: '2026-10-03',
+  isInterState: false,
+  reverseCharge: false,
+  itcEligible: true,
+  discountType: null,
+  discountValue: null,
+  roundOffEnabled: true,
+  subtotal: '2782.00',
+  discountAmount: '0.00',
+  taxableTotal: '2782.00',
+  cgstTotal: '69.55',
+  sgstTotal: '69.55',
+  igstTotal: '0.00',
+  cessTotal: '0.00',
+  roundOff: '-0.10',
+  grandTotal: '2921.00',
+  amountPaid: '0.00',
+  amountDue: '2921.00',
+  lines: [
+    {
+      id: 'l1',
+      lineNo: 1,
+      itemId: 'rice',
+      description: 'Rice',
+      hsnSac: '1006',
+      qty: '20.000',
+      unitCode: 'NOS',
+      unitCost: '46.0000',
+      discountType: null,
+      discountValue: null,
+      discountAmount: '0.00',
+      taxableValue: '920.00',
+      taxCode: 'GST5',
+      taxRate: '5.000',
+      cgst: '23.00',
+      sgst: '23.00',
+      igst: '0.00',
+      cess: '0.00',
+      lineTotal: '966.00',
+      inboundUnitCost: '46.0000',
+      trackStock: true,
+    },
+  ],
+  notes: '',
+  ledgerEntryId: 'e1',
+  payments: [],
+  createdBy: { id: 'u1', name: 'Owner' },
+  recordedAt: '2026-09-18T10:00:00Z',
+  voidedAt: null,
+  voidedBy: null,
+  voidReason: null,
+  links: {
+    bill: null,
+    order: null,
+    cancelReason: null,
+    against: null,
+    reason: null,
+    restock: false,
+    applied: '0.00',
+    supplierInvoiceNumber: null,
+    debitNotes: [],
+    debitApplied: '0.00',
+    returned: {},
+  },
+  updatedAt: '2026-09-18T10:00:00Z',
+};
+
+const envelope = (
+  bill: PurchaseBill,
+  over: Partial<PurchaseBillEnvelope> = {}
+): PurchaseBillEnvelope => ({
+  bill,
+  warnings: [],
+  partyBalance: null,
+  payment: null,
+  releasedPayments: [],
+  ...over,
+});
+
+const signIn = (
+  permissions: readonly PermissionCode[],
+  modules: readonly ModuleCode[] = ['purchases']
+): void => {
+  store.dispatch(
+    sessionLoaded({
+      user: {
+        id: 'u1',
+        name: 'Owner',
+        email: 'owner@shop.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: { id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' },
+      tenants: [{ id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' }],
+      permissions: [...permissions],
+      enabledModules: [...modules],
+      version: 1,
+    })
+  );
+};
+
+const OWNER: PermissionCode[] = [
+  'purchases.bill.read',
+  'purchases.bill.write',
+  'purchases.bill.void',
+];
+
+/** The void opens from the chooser: "Something's wrong…" → "The bill was entered wrongly". */
+const openVoid = async (): Promise<void> => {
+  await userEvent.click(await screen.findByTestId('purchase-wrong'));
+  await userEvent.click(await screen.findByTestId('purchase-void'));
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  store.dispatch(responseObserved());
+  store.dispatch(resetAllFeatureState());
+  service.getPurchaseBill.mockResolvedValue(envelope(BILL));
+});
+
+it('lists what the void will do before a reason is typed, and never promises the average', async () => {
+  signIn(OWNER);
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  await openVoid();
+  const consequences = await screen.findByTestId('purchase-void-consequences');
+  expect(consequences).toHaveTextContent('Stock: −20 NOS Rice');
+  expect(consequences).toHaveTextContent('Khata: ₹2,921.00 less to give Agro Traders');
+  expect(document.body).not.toHaveTextContent(/average cost unchanged/i);
+});
+
+it('shows the refusal in the dialog when the goods were already sold (AC-4)', async () => {
+  signIn(OWNER);
+  // Services reject with the normalised ApiErrorShape (the interceptor's job).
+  service.voidPurchaseBill.mockRejectedValue({
+    code: 'insufficient_stock',
+    message: 'Not enough stock.',
+    details: {
+      lines: [{ item_name: 'Rice', requested: '20.000', available: '12.000', unit_code: 'NOS' }],
+    },
+    requestId: null,
+    status: 409,
+  });
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  await openVoid();
+  await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+  await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+  expect(await screen.findByText(/Rice would go to −8 NOS/)).toBeInTheDocument();
+  expect(service.voidPurchaseBill).toHaveBeenCalledWith('b1', 'Entered twice');
+});
+
+it('shows the Void banner with the reason once voided (AC-3)', async () => {
+  signIn(OWNER);
+  service.voidPurchaseBill.mockResolvedValue(
+    envelope({
+      ...BILL,
+      status: 'void',
+      voidReason: 'Entered twice',
+      voidedBy: { id: 'u1', name: 'Owner' },
+      voidedAt: '2026-09-25T10:00:00Z',
+    })
+  );
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  await openVoid();
+  await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+  await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+  expect(await screen.findByText('This bill is void')).toBeInTheDocument();
+  expect(screen.getByText(/Entered twice — by Owner/)).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.queryByTestId('purchase-void-confirm')).not.toBeInTheDocument()
+  );
+});
+
+it('never offers Void to staff (PUR-04 §12)', async () => {
+  signIn(['purchases.bill.read', 'purchases.bill.write']);
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  expect(await screen.findByText('Rice')).toBeInTheDocument();
+  await userEvent.click(screen.getByTestId('purchase-wrong'));
+  expect(await screen.findByTestId('purchase-return')).toBeInTheDocument();
+  expect(screen.queryByTestId('purchase-void')).not.toBeInTheDocument();
+});
+
+const PAYER: PermissionCode[] = [...OWNER, 'payments.payment.read', 'payments.payment.write'];
+
+it('offers Pay supplier on a bill still owing, and only there (PUR-02 FR-4 / AC-3)', async () => {
+  /** Protects the entry point: shown for an unpaid bill to a role that may pay suppliers;
+   *  hidden (never disabled) on a PAID bill and for a role without payments write. */
+  signIn(PAYER, ['purchases', 'payments']);
+  const { unmount } = renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  expect(await screen.findByRole('button', { name: /Pay supplier/ })).toBeInTheDocument();
+  unmount();
+
+  store.dispatch(resetAllFeatureState());
+  service.getPurchaseBill.mockResolvedValue(
+    envelope({ ...BILL, status: 'paid', amountPaid: '2921.00', amountDue: '0.00' })
+  );
+  signIn(PAYER, ['purchases', 'payments']);
+  const paid = renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  expect(await screen.findByText('Rice')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Pay supplier/ })).not.toBeInTheDocument();
+  paid.unmount();
+
+  store.dispatch(resetAllFeatureState());
+  service.getPurchaseBill.mockResolvedValue(envelope(BILL));
+  signIn(OWNER, ['purchases']);
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  expect(await screen.findByText('Rice')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Pay supplier/ })).not.toBeInTheDocument();
+});
+
+it('lists the supplier payments on the bill, each linked to its voucher (PUR-02 FR-6)', async () => {
+  signIn(PAYER, ['purchases', 'payments']);
+  service.getPurchaseBill.mockResolvedValue(
+    envelope({
+      ...BILL,
+      status: 'partially_paid',
+      amountPaid: '1000.00',
+      amountDue: '1921.00',
+      payments: [
+        {
+          id: 'pay1',
+          number: 'PAYOUT/26-27/0001',
+          paymentDate: '2026-09-18',
+          primaryMode: 'cash',
+          amount: '1000.00',
+          status: 'recorded',
+        },
+      ],
+    })
+  );
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  const list = await screen.findByTestId('purchase-payments');
+  expect(list).toHaveTextContent('PAYOUT/26-27/0001 · 18/09/2026 · ₹1,000.00');
+  expect(screen.getByRole('link', { name: 'PAYOUT/26-27/0001' })).toHaveAttribute(
+    'href',
+    '/payments/pay1'
+  );
+});
+
+it('says how much stays as advance when a paid bill is voided (PUR-02 BR-4)', async () => {
+  /** The void releases the bill's supplier payments; the toast must not read as if the
+   *  money vanished with the bill. */
+  signIn(OWNER);
+  service.voidPurchaseBill.mockResolvedValue(
+    envelope(
+      { ...BILL, status: 'void', voidReason: 'Entered twice' },
+      { releasedPayments: [{ paymentId: 'pay1', number: 'PAYOUT/26-27/0001', amount: '600.00' }] }
+    )
+  );
+  renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+  await openVoid();
+  await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+  await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+  await waitFor(() => expect(store.getState().snackbar.id).toBe('purchases.void.doneAdvance'));
+  expect(store.getState().snackbar.params).toEqual({
+    number: 'PB/26-27/0007',
+    amount: '₹600.00',
+  });
+});
+
+/**
+ * Shop item 3 — the same page shows a purchase order: Create bill and Cancel order
+ * on a sent order, no Void, no "To pay" (an order owes nothing), and the order is
+ * asked for on its own route — so a bill route can never be shown one.
+ */
+describe('a purchase order', () => {
+  const ORDER: PurchaseBill = {
+    ...BILL,
+    id: 'o1',
+    kind: 'purchase_order',
+    number: 'PO/26-27/0001',
+    status: 'sent',
+    amountDue: '0.00',
+    supplierInvoiceNumber: null,
+  };
+
+  it('offers Create bill and Cancel order, never Void or what is owed', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(envelope(ORDER));
+    renderWithProviders(<PurchaseBillDetailPageContent id="o1" kind="purchase_order" />);
+    expect(await screen.findByTestId('purchase-order-create-bill')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-order-cancel')).toBeInTheDocument();
+    expect(screen.queryByTestId('purchase-void')).not.toBeInTheDocument();
+    expect(screen.queryByText('To pay')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('purchase-money')).getByText('Estimated total')
+    ).toBeInTheDocument();
+    expect(service.getPurchaseBill).toHaveBeenCalledWith('o1', expect.anything(), 'purchase_order');
+  });
+
+  it('says what it was billed as, and offers no second bill while that bill stands', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({
+        ...ORDER,
+        status: 'billed',
+        links: {
+          bill: { id: 'b9', kind: 'purchase_bill', number: 'PB/26-27/0009', status: 'recorded' },
+          order: null,
+          cancelReason: null,
+          against: null,
+          reason: null,
+          restock: false,
+          applied: '0.00',
+          supplierInvoiceNumber: null,
+          debitNotes: [],
+          debitApplied: '0.00',
+          returned: {},
+        },
+      })
+    );
+    renderWithProviders(<PurchaseBillDetailPageContent id="o1" kind="purchase_order" />);
+    expect(await screen.findByText('Billed as PB/26-27/0009')).toBeInTheDocument();
+    expect(screen.queryByTestId('purchase-order-create-bill')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Shop P0 — debit notes. What these protect: "Return goods" sends exactly the lines and
+ * quantities typed, against THIS bill, and cannot be pressed with a quantity above what
+ * is still returnable (the server's cap, shown first) or without a reason; the bill
+ * lists its notes and what they took off; a note shows its bill and offers only Void.
+ */
+describe('debit notes', () => {
+  const issueMock = (): jest.Mock =>
+    (jest.requireMock('../api/purchaseBillService') as { issueDebitNote: jest.Mock })
+      .issueDebitNote;
+
+  it('retries a failed return with the same key, quantity and reason', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({ ...BILL, links: { ...BILL.links, returned: { '1': '15.000' } } })
+    );
+    issueMock()
+      .mockRejectedValueOnce(new Error('Response lost'))
+      .mockResolvedValue(
+        envelope({
+          ...BILL,
+          id: 'dn1',
+          kind: 'debit_note',
+          number: 'DN/26-27/0001',
+          status: 'issued',
+          grandTotal: '241.50',
+        })
+      );
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await userEvent.click(await screen.findByTestId('purchase-wrong'));
+    await userEvent.click(await screen.findByTestId('purchase-return'));
+    expect(await screen.findByText(/can return 5 NOS/)).toBeInTheDocument();
+    const issue = screen.getByTestId('debit-note-issue');
+    await userEvent.type(screen.getByLabelText('Quantity of Rice to return'), '6');
+    expect(issue).toBeDisabled(); // above what is left
+    await userEvent.clear(screen.getByLabelText('Quantity of Rice to return'));
+    await userEvent.type(screen.getByLabelText('Quantity of Rice to return'), '5');
+    expect(issue).toBeDisabled(); // no reason yet
+    await userEvent.click(screen.getByRole('combobox', { name: 'Reason' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Damaged goods' }));
+    await userEvent.click(issue);
+    await waitFor(() => expect(issueMock()).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(issue).toBeEnabled());
+    await userEvent.click(issue);
+    await waitFor(() => expect(issueMock()).toHaveBeenCalledTimes(2));
+    expect(issueMock().mock.calls[1]).toEqual(issueMock().mock.calls[0]);
+    await waitFor(() =>
+      expect(issueMock()).toHaveBeenCalledWith(
+        expect.objectContaining({
+          against_id: 'b1',
+          reason: 'damaged_goods',
+          restock: true,
+          lines: [{ bill_line_no: 1, qty: '5' }],
+        }),
+        expect.any(String)
+      )
+    );
+  });
+
+  it('lists a bill’s notes and what they took off its due', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({
+        ...BILL,
+        amountDue: '2679.50',
+        links: {
+          ...BILL.links,
+          debitApplied: '241.50',
+          debitNotes: [
+            {
+              id: 'dn1',
+              number: 'DN/26-27/0001',
+              status: 'issued',
+              grandTotal: '241.50',
+              documentDate: '2026-09-20',
+            },
+          ],
+        },
+      })
+    );
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    expect(await screen.findByText('DN/26-27/0001')).toBeInTheDocument();
+    expect(screen.getByText('Less debit notes')).toBeInTheDocument();
+    // LOOK 23 Oct: the deduction rendered as "₹241.50", reading as money ADDED to the bill.
+    expect(screen.getByTestId('purchase-money')).toHaveTextContent(
+      /Less debit notes\s*−\s*₹241\.50/
+    );
+  });
+
+  it('shows a note against its bill with Void and nothing to pay', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({
+        ...BILL,
+        id: 'dn1',
+        kind: 'debit_note',
+        number: 'DN/26-27/0001',
+        status: 'issued',
+        amountDue: '0.00',
+        links: {
+          ...BILL.links,
+          against: { id: 'b1', kind: 'purchase_bill', number: 'PB/26-27/0007', status: 'recorded' },
+          reason: 'damaged_goods',
+          restock: true,
+          applied: '241.50',
+        },
+      })
+    );
+    renderWithProviders(<PurchaseBillDetailPageContent id="dn1" kind="debit_note" />);
+    expect(
+      await screen.findByText('Against bill PB/26-27/0007 · Damaged goods')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('debit-note-void')).toBeInTheDocument();
+    expect(screen.queryByTestId('purchase-void')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('purchase-return')).not.toBeInTheDocument();
+    expect(screen.queryByText('To pay')).not.toBeInTheDocument();
+    expect(screen.getByText('Taken off the bill')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Revamp §6 — the page reads in the order a merchant needs it: what is still to pay,
+ * then paying it, then a single "Something's wrong…" chooser instead of separate
+ * Void and Return buttons. What these protect: the chooser names the supplier and the
+ * money that stays with them, the two server refusals a void can meet are explained
+ * where the merchant is looking with a way out, writes are refused offline with the
+ * reason, and a draft can be deleted from its own page.
+ */
+describe('§6 phone composition', () => {
+  it('puts To pay first, then Pay supplier and the chooser with supplier words', async () => {
+    signIn(PAYER, ['purchases', 'payments']);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({ ...BILL, status: 'partially_paid', amountPaid: '1000.00', amountDue: '1921.00' })
+    );
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    const money = await screen.findByTestId('purchase-money');
+    expect(money).toHaveTextContent(/Total.*₹2,921\.00.*Paid.*₹1,000\.00.*To pay.*₹1,921\.00/);
+    const actions = screen.getByTestId('purchase-actions');
+    expect(actions).toHaveTextContent(/Pay supplier.*Something.s wrong/);
+    // Money first, actions next, lines last — DOM order is the phone's reading order.
+    expect(
+      money.compareDocumentPosition(screen.getByTestId('purchase-lines')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    await userEvent.click(screen.getByTestId('purchase-wrong'));
+    expect(await screen.findByText('What happened with PB/26-27/0007?')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void')).toHaveTextContent(/payments stay as advance/);
+    expect(screen.getByTestId('purchase-return')).toHaveTextContent('Goods went back');
+    expect(
+      screen.getByText(/does not bring back the ₹1,000\.00 you paid.*Agro Traders/)
+    ).toBeInTheDocument();
+  });
+
+  it('names the standing debit note when the void is refused for it, with a link', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({
+        ...BILL,
+        links: {
+          ...BILL.links,
+          debitNotes: [
+            {
+              id: 'dn1',
+              number: 'DN/26-27/0003',
+              status: 'issued',
+              grandTotal: '241.50',
+              documentDate: '2026-09-20',
+            },
+          ],
+        },
+      })
+    );
+    service.voidPurchaseBill.mockRejectedValue({
+      code: 'has_dependent_documents',
+      message: 'Void the debit note DN/26-27/0003 first.',
+      details: { documents: ['DN/26-27/0003'] },
+      requestId: null,
+      status: 409,
+    });
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await openVoid();
+    await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+    await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+    expect(await screen.findByText('Cancel debit note DN/26-27/0003 first.')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void-blocker-link')).toHaveAttribute(
+      'href',
+      '/purchases/debit-notes/dn1'
+    );
+  });
+
+  it('says an archived supplier must be restored, and links to them', async () => {
+    signIn(OWNER);
+    service.voidPurchaseBill.mockRejectedValue({
+      code: 'party_archived',
+      message: 'This supplier is archived. Restore them to void this bill.',
+      details: { party_id: 'p1', name: 'Agro Traders' },
+      requestId: null,
+      status: 409,
+    });
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await openVoid();
+    await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+    await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+    expect(
+      await screen.findByText('This supplier is archived. Restore them to cancel this bill.')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void-blocker-link')).toHaveAttribute(
+      'href',
+      '/parties/p1?from=suppliers'
+    );
+  });
+
+  it('refuses writes offline and says why', async () => {
+    signIn(PAYER, ['purchases', 'payments']);
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await screen.findByTestId('purchase-actions');
+    store.dispatch(browserWentOffline());
+    await waitFor(() => expect(screen.getByTestId('record-payment-action')).toBeDisabled());
+    expect(screen.getByTestId('purchase-wrong')).toBeDisabled();
+    expect(screen.getByTestId('purchase-offline')).toHaveTextContent(/No internet/);
+  });
+
+  it('deletes a draft from its own page after asking, then goes back to the list', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({ ...BILL, status: 'draft', number: null, amountDue: '0.00' })
+    );
+    service.deletePurchaseBill.mockResolvedValue(undefined);
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    expect(await screen.findByRole('link', { name: /Edit draft/ })).toHaveAttribute(
+      'href',
+      '/purchases/bills/b1/edit'
+    );
+    expect(screen.queryByTestId('purchase-wrong')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('purchase-delete-draft'));
+    expect(service.deletePurchaseBill).not.toHaveBeenCalled();
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete draft' })
+    );
+    await waitFor(() =>
+      expect(service.deletePurchaseBill).toHaveBeenCalledWith('b1', 'purchase_bill')
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/purchases/bills'));
+  });
+});

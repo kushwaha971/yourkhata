@@ -1,0 +1,1593 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        434
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        90,
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        90,
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        434
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        90,
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        90,
+        434,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        607
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        90,
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        90,
+        631,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        566
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        607
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        90,
+        607,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        90,
+        631,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90,
+        90
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        566
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        70,
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        70,
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "rows-collapsed",
+      "layout": "card",
+      "cards": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "second-line-expanded",
+      "layout": "card",
+      "cards": [
+        70,
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "invalid-collapsed-line",
+      "layout": "card",
+      "cards": [
+        70,
+        414,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹14,73,086.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "card",
+      "cards": [
+        414
+      ],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "empty-lines",
+      "layout": "table",
+      "cards": [],
+      "dock": {
+        "cut": false,
+        "text": "₹0.00"
+      },
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "failures": []
+}

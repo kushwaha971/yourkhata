@@ -10,6 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from apps.common.constants import LedgerBucket
 from apps.common.context import Ctx
 from apps.common.exceptions import BusinessRuleViolation
 from apps.sales.services import settings as sales_settings
@@ -33,7 +34,9 @@ def rule46_for(tenant: Any, document: Any, rows: list[dict]) -> dict:
     )
 
 
-def post_stock(ctx: Ctx, document: Any, rows: list[dict]) -> dict[int, Decimal | None]:
+def post_stock(
+    ctx: Ctx, document: Any, rows: list[dict], *, warnings: list[dict] | None = None
+) -> dict[int, Decimal | None]:
     """FR-7/FR-8 — `sale_out` for tracked goods; returns `{line_no: unit_cost}` (COGS at avg).
 
     Services and untracked goods never move stock (BR-19, EC-14) and keep a
@@ -42,6 +45,7 @@ def post_stock(ctx: Ctx, document: Any, rows: list[dict]) -> dict[int, Decimal |
     """
     from apps.inventory.constants import ItemType, MovementType
     from apps.inventory.services.stock import MovementLine, post_movements
+    from apps.inventory.services.units import base_qty, per_line_unit
 
     movement_lines = []
     for row in rows:
@@ -51,7 +55,8 @@ def post_stock(ctx: Ctx, document: Any, rows: list[dict]) -> dict[int, Decimal |
         movement_lines.append(
             MovementLine(
                 item=item,
-                qty=-row["qty"],
+                qty=-base_qty(row),
+                location=document.location,
                 movement_type=MovementType.SALE_OUT,
                 movement_date=document.document_date,
                 source_type="sales_document",
@@ -60,13 +65,43 @@ def post_stock(ctx: Ctx, document: Any, rows: list[dict]) -> dict[int, Decimal |
             )
         )
     posted = post_movements(ctx=ctx, lines=movement_lines)
-    return {p.line.index + 1: p.movement.unit_cost for p in posted}
+    # D P3 — the phones on this bill leave stock, each one exactly once.
+    from apps.inventory.services import serials
+
+    serials.sell(ctx=ctx, document=document, rows=rows)
+    # D P4 — earliest expiry first; the line keeps which batches it took.
+    from apps.inventory.services import batches
+
+    batches.allocate(ctx=ctx, document=document, rows=rows)
+    if warnings is not None:
+        for row in posted:
+            if row.date_shortage:
+                details = row.date_shortage
+                warnings.append(
+                    {
+                        "code": "stock_before_available_date",
+                        "message": f"Not enough {details['item_name']} stock on {details['as_of']}.",
+                        "details": details,
+                    }
+                )
+    # The snapshot is per LINE unit (a box's cost): reports multiply it by the
+    # line's own qty. The movement's cost is per base unit.
+    by_no = {row["line_no"]: row for row in rows}
+    return {
+        p.line.index + 1: per_line_unit(p.movement.unit_cost, by_no[p.line.index + 1])
+        for p in posted
+    }
 
 
 def credit_check(
-    ctx: Ctx, party: Any, amount: Decimal, *, override: bool
+    ctx: Ctx, party: Any, amount: Decimal, *, override: bool, enforce: bool = True
 ) -> tuple[dict | None, bool]:
-    """BR-13 on the LOCKED party. Returns `(warning or None, overridden)`."""
+    """BR-13 on the LOCKED party. Returns `(warning or None, overridden)`.
+
+    ── A5 ── `enforce=False` is the document port's `credit_check="skip"` (ADR-048, BR-3): an
+    engine charge is owed whether or not the party is over their shop limit, so a crossed limit
+    is only ever the warning — never a 409, and no override is needed or recorded.
+    """
     from apps.parties.services.credit import (
         CREDIT_MODE_BLOCK,
         check_credit,
@@ -74,14 +109,17 @@ def credit_check(
         may_override,
     )
 
-    decision = check_credit(party=party, amount=amount, mode=credit_mode(ctx.tenant))
+    # DEC-019 — a bill is tested against the Shop's own balance.
+    decision = check_credit(
+        party=party, amount=amount, mode=credit_mode(ctx.tenant), bucket=LedgerBucket.SHOP
+    )
     details = {
         "limit": str(decision["limit"]) if decision["limit"] is not None else None,
         "balance_after": str(decision["exposure_after"]),
         "over_by": str(decision["over_by"]),
     }
     overridden = False
-    if decision["status"] == CREDIT_MODE_BLOCK:
+    if decision["status"] == CREDIT_MODE_BLOCK and enforce:
         if not override:
             raise BusinessRuleViolation(
                 "credit_limit_exceeded",

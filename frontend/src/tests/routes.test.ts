@@ -22,10 +22,12 @@ import {
   isPublicPath,
   loginPathWithNext,
   onboardingStepPath,
+  purchaseOrderForItemsPath,
+  readOrderItems,
 } from 'src/routes';
 
-import { NAV_ITEMS } from 'modules/DigiKhaato/features/navigation/sidebarConfig';
-
+import { APP_MANIFESTS } from 'modules/appManifests';
+import { PLATFORM_NAV_ITEMS } from 'modules/DigiKhaato/features/navigation/appManifest';
 const ROOT = process.cwd();
 
 const walk = (dir: string): readonly string[] =>
@@ -44,7 +46,8 @@ describe('ROUTES', () => {
   it('gives every address a leading slash and no trailing one', () => {
     for (const path of Object.values(ROUTES)) {
       expect(path.startsWith('/')).toBe(true);
-      expect(path.endsWith('/')).toBe(false);
+      // The root is the one address that IS its slash.
+      if (path !== ROUTES.HOME) expect(path.endsWith('/')).toBe(false);
     }
   });
 
@@ -69,6 +72,22 @@ describe('ROUTES', () => {
     ]) {
       expect(guarded(href)).toBe(true);
     }
+  });
+
+  it("guards every menu row of every app, and the phone's More tab", () => {
+    /* Prevents: a menu destination the proxy lets through unsigned and robots
+       does not disallow. Step 3b split the party list into /customers and
+       /suppliers and neither was added to the hand-written list above, so both
+       went unguarded for a week; deriving the list from the manifests means
+       the next new row cannot be forgotten. */
+    const guarded = (href: string): boolean =>
+      APP_ROUTE_PREFIXES.some((prefix) => href === prefix || href.startsWith(`${prefix}/`));
+    const hrefs = [
+      ...APP_MANIFESTS.flatMap((app) => app.navigation.map((row) => row.href)),
+      ...PLATFORM_NAV_ITEMS.map((row) => row.href),
+      ROUTES.MORE,
+    ];
+    for (const href of hrefs) expect([href, guarded(href)]).toEqual([href, true]);
   });
 
   it('never guards an (auth) address, or the login page would redirect to itself', () => {
@@ -169,6 +188,21 @@ describe('public routes and the login redirect loop', () => {
     expect(isPublicPath(`${ROUTES.RESET_PASSWORD}/abc123`)).toBe(true);
   });
 
+  it('treats the customer share page as public, so a customer is never sent to login', () => {
+    // Launch blocker: `/d/<token>` is opened by someone with no account. The
+    // root layout's session fetch 401s, the refresh 401s, and the handler sent
+    // them to `/login?next=/d/<token>` — no bill, and the token in a query.
+    expect(isPublicPath(`${ROUTES.PUBLIC_DOCUMENT}/AbC_123-xyz`)).toBe(true);
+    expect(isPublicPath('/dashboard')).toBe(false);
+  });
+
+  it('treats the legal pages as public, because sign-up links to them before an account exists', () => {
+    // Found by the same live probe: an anonymous visitor to /legal/terms was
+    // bounced to /login?next=/legal/terms.
+    expect(isPublicPath(ROUTES.LEGAL_TERMS)).toBe(true);
+    expect(isPublicPath(ROUTES.LEGAL_PRIVACY)).toBe(true);
+  });
+
   it('does not treat an app route as public', () => {
     expect(isPublicPath(ROUTES.DASHBOARD)).toBe(false);
     expect(isPublicPath(ROUTES.PARTIES)).toBe(false);
@@ -233,8 +267,7 @@ describe('the onboarding guard', () => {
  * journey stopped reaching network-idle, which is a roundabout way to discover
  * a navigation bug and exactly why this assertion now exists.
  *
- * `ready` is opt-in, so a row added before its route defaults to hidden. This
- * checks the other direction: nothing may claim `ready: true` without a page.
+ * A manifest lists only built pages, so every row it declares must have one.
  */
 describe('the sidebar only links to pages that exist', () => {
   const pageDirs = walk(join(ROOT, 'app'))
@@ -248,20 +281,40 @@ describe('the sidebar only links to pages that exist', () => {
     )
     .map((path) => path || '/');
 
-  it.each(NAV_ITEMS.filter((item) => item.ready).map((item) => [item.key, item.href]))(
-    '%s → %s has a page',
-    (_key, href) => {
-      expect(pageDirs).toContain(href);
-    }
-  );
+  // docs/platform/14 §4.2 — a manifest lists only built pages (owner rule: an
+  // unbuilt feature is not shown), so every row must have one.
+  const rows = [
+    ...APP_MANIFESTS.flatMap((app) =>
+      app.navigation.map((item) => [`${app.code}.${item.key}`, item.href])
+    ),
+    ...PLATFORM_NAV_ITEMS.map((item) => [`platform.${item.key}`, item.href]),
+  ] as [string, string][];
 
-  it('has no page behind any row that is not ready (those rows are not shown)', () => {
-    // `useNavigation` drops a row that is not `ready` — owner rule: unbuilt
-    // features are not shown, not even as an inert "Soon" row. So a row whose
-    // page now exists but is still not `ready` would be a built feature hidden.
-    const notReady = NAV_ITEMS.filter((item) => !item.ready).map((item) => item.href);
-    for (const href of notReady) {
-      expect(pageDirs).not.toContain(href);
-    }
+  it.each(rows)('%s → %s has a page', (_key, href) => {
+    expect(pageDirs).toContain(href);
+  });
+});
+
+/**
+ * 09 §8.7 — "Order" from Low stock carries its items to the purchase editor in
+ * the address. The editor reads exactly what the list wrote, and a hand-edited
+ * address with nonsense in it fills nothing rather than a line of "abc".
+ */
+describe('purchase order for items', () => {
+  it('round-trips the items and their quantities', () => {
+    const path = purchaseOrderForItemsPath([
+      { itemId: 'a1', qty: '35.000' },
+      { itemId: 'b2', qty: '1' },
+    ]);
+    expect(path).toBe('/purchases/orders/new?items=a1:35.000,b2:1');
+    expect(readOrderItems(new URL(path, 'http://x').searchParams.get('items'))).toEqual([
+      { itemId: 'a1', qty: '35.000' },
+      { itemId: 'b2', qty: '1' },
+    ]);
+  });
+
+  it('drops a pair with no item, no quantity, or a zero', () => {
+    expect(readOrderItems(':5,a1:,b2:0,c3:abc,d4:2')).toEqual([{ itemId: 'd4', qty: '2' }]);
+    expect(readOrderItems(null)).toEqual([]);
   });
 });

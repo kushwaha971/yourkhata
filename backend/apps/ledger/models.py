@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from django.db import models
 
-from apps.common.constants import Direction, PaymentMode, UpiApp
+from apps.common.constants import (
+    MONEY_PAYMENT_MODE_CHOICES,
+    Direction,
+    LedgerBucket,
+    PaymentMode,
+    UpiApp,
+)
 from apps.common.db.fields import MoneyField, uuid7_pk
 from apps.common.models import ImmutableModel, TenantModel
 from apps.ledger.constants import (
@@ -79,9 +85,10 @@ class LedgerEntry(TenantModel, ImmutableModel):
     #: day book all read this one; `created_at` only breaks ties within a day.
     entry_date = models.DateField()
     entry_type = models.CharField(max_length=24, choices=EntryType.choices)
-    source_type = models.CharField(
-        max_length=32, choices=SourceType.choices, default=SourceType.MANUAL
-    )
+    #: No `choices` since A2 (R8): a source registered by an engine or a vertical
+    #: (`dues_due`, `library_charge`) is valid because `register_posting_source`
+    #: says so, not because it is a `SourceType` member.
+    source_type = models.CharField(max_length=32, default=SourceType.MANUAL)
     source_id = models.UUIDField(null=True, blank=True)
     note = models.CharField(max_length=NOTE_MAX_LENGTH, blank=True, default="")
     #: BR-7 — stored on the entry, and NOT mirrored into a `payments_payment`
@@ -89,7 +96,12 @@ class LedgerEntry(TenantModel, ImmutableModel):
     #: money arrived, not recording a payment against a document. EXP-03's
     #: cashbook reads these entries by `payment_mode` beside real payments.
     payment_mode = models.CharField(
-        max_length=16, choices=PaymentMode.choices, null=True, blank=True
+        # A4b: the money modes, the set this field always had. An adjustment
+        # payment's line may still STORE `adjustment` (no CHECK on the value).
+        max_length=16,
+        choices=MONEY_PAYMENT_MODE_CHOICES,
+        null=True,
+        blank=True,
     )
     #: Which UPI app the money came through — "PhonePe kiya" — so a merchant
     #: checking a disputed payment knows which app's history to open. Only ever
@@ -124,6 +136,17 @@ class LedgerEntry(TenantModel, ImmutableModel):
     #: ordering, which is the only place the number is true. The column stays
     #: for a future materialised statement that owns its own invalidation.
     running_balance_after = MoneyField(null=True, blank=True)
+    #: ADR-043 — which kind of money this line is: `main` (the trade khata),
+    #: `loan` (lending) or `deposit` (held and returnable). Frozen like every
+    #: other column by the trigger migration 0006 re-created. `main` for every row
+    #: written before it existed and for every writer that does not say — LED-01,
+    #: the opening, the write-off, a correction — which is true of all of them.
+    bucket = models.CharField(
+        max_length=8,
+        choices=LedgerBucket.choices,
+        default=LedgerBucket.MAIN,
+        db_default=LedgerBucket.MAIN.value,
+    )
 
     class Meta:
         db_table = "ledger_entry"
@@ -169,6 +192,12 @@ class LedgerEntry(TenantModel, ImmutableModel):
                 condition=(models.Q(upi_app__isnull=True) | models.Q(payment_mode=PaymentMode.UPI)),
                 name="ck_ledger_entry_upi_app_needs_upi",
             ),
+            # ADR-043 — no new bucket without a migration (it is this CHECK, the
+            # payments one, a party cache and DEC-019's re-bucketing, contracts §1.2).
+            models.CheckConstraint(
+                condition=models.Q(bucket__in=[choice.value for choice in LedgerBucket]),
+                name="ck_ledger_entry_bucket",
+            ),
             # LED-02 BR-2 — at most one POSTED opening per party. `post_opening_
             # balance()` checks it under a row lock, which is correct for every
             # caller that goes through it; this is correct for the ones that do
@@ -178,10 +207,24 @@ class LedgerEntry(TenantModel, ImmutableModel):
             # reversal plus a replacement: both rows are `entry_type='opening'`
             # and both stay for ever, so a total unique index would make
             # correcting an opening impossible. Only one is ever standing.
+            # A6 (owner, 28 Oct 2026) — one opening per BOOK: the Udhaar book
+            # keeps one per contact, and the Shop one per side (still to collect
+            # as a customer, still to pay as a supplier), because DEC-019 keeps
+            # each app's money apart and a Shop contact can be both. Migration
+            # 0010 narrowed the first index to `main` and added the second.
             models.UniqueConstraint(
                 fields=["party"],
-                condition=models.Q(entry_type=EntryType.OPENING, status=EntryStatus.POSTED),
+                condition=models.Q(
+                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.MAIN
+                ),
                 name="uq_ledger_one_opening_per_party",
+            ),
+            models.UniqueConstraint(
+                fields=["party", "direction"],
+                condition=models.Q(
+                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.SHOP
+                ),
+                name="uq_ledger_one_shop_opening_per_side",
             ),
         ]
         indexes = [
@@ -202,6 +245,14 @@ class LedgerEntry(TenantModel, ImmutableModel):
             models.Index(fields=["tenant", "source_type", "source_id"], name="ix_ledger_source"),
             # The day book and the aging report: every party, by business date.
             models.Index(fields=["tenant", "entry_date"], name="ix_ledger_tenant_date"),
+            # A2 — a party's loan and deposit lines, for the lending and deposit
+            # reads. Partial on `bucket <> 'main'`, so it holds only those rows and
+            # costs today's tenants nothing.
+            models.Index(
+                fields=["tenant", "party", "bucket"],
+                condition=~models.Q(bucket=LedgerBucket.MAIN),
+                name="ix_ledger_party_bucket",
+            ),
         ]
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
@@ -242,6 +293,29 @@ class Reminder(TenantModel):
     scheduled_for = models.DateTimeField(null=True, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)
 
+    # ── A7 ── PLT-X06 / contracts §1.6: what the reminder is ABOUT, and to whom.
+    #
+    # `module` is `''` for today's party reminders (the khata balance). A
+    # module's reminder names one record through `(source_type, source_id)` —
+    # an instalment, a library loan, a hold — polymorphically, because core
+    # never imports the vertical that owns the table. `subject_label` is the
+    # line printed in the list and the text ("Instalment 4 of LN-0042").
+    # `recipient_party` is who was contacted when it was not the party (a
+    # guardian, a guarantor, R9); rows sent as one message share
+    # `message_group_id` (R10).
+    module = models.CharField(max_length=32, blank=True, default="", db_default="")
+    source_type = models.CharField(max_length=48, null=True, blank=True)
+    source_id = models.UUIDField(null=True, blank=True)
+    subject_label = models.CharField(max_length=120, blank=True, default="", db_default="")
+    recipient_party = models.ForeignKey(
+        "parties.Party",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="reminders_received",
+    )
+    message_group_id = models.UUIDField(null=True, blank=True)
+
     class Meta:
         db_table = "ledger_reminder"
         verbose_name = "reminder"
@@ -250,16 +324,43 @@ class Reminder(TenantModel):
             # §21.3.4 / LED-07 FR-7 — one automated reminder per kind per date.
             # This is what makes the scheduler's double run harmless: the second
             # INSERT … ON CONFLICT DO NOTHING writes nothing.
+            #
+            # A7 widened it to `(party, due_on, kind, source_id)` NULLS NOT
+            # DISTINCT over the module kinds too: two loans due the same day
+            # are two reminders, a rerun is still one, and today's party rows
+            # (`source_id` NULL) stay unique because NULLs compare equal here.
             models.UniqueConstraint(
-                fields=["party", "due_on", "kind"],
-                condition=models.Q(kind__in=["auto_d1", "auto_d0"]),
+                fields=["party", "due_on", "kind", "source_id"],
+                condition=models.Q(kind__in=["auto_d1", "auto_d0", "due", "notice"]),
+                nulls_distinct=False,
                 name="uq_reminder_auto_per_day",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(source_type__isnull=True, source_id__isnull=True)
+                | models.Q(source_type__isnull=False, source_id__isnull=False),
+                name="ck_reminder_source_complete",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(kind="notice") | models.Q(snapshot_balance__isnull=True),
+                name="ck_reminder_notice_has_no_amount",
             ),
         ]
         indexes = [
             models.Index(fields=["tenant", "status", "due_on"], name="ix_reminder_status_due"),
             # The party page's history strip, newest first (LED-06 FR-6).
             models.Index(fields=["party", "-created_at"], name="ix_reminder_party_recent"),
+            # A7 — "was this loan reminded?" from the module's own screens.
+            models.Index(
+                fields=["tenant", "source_type", "source_id"],
+                condition=models.Q(source_type__isnull=False),
+                name="ix_reminder_source",
+            ),
+            # A7 — the daily-cap count (BR-3), module rows only.
+            models.Index(
+                fields=["tenant", "module", "source_id", "sent_at"],
+                condition=~models.Q(module=""),
+                name="ix_reminder_module_sent",
+            ),
         ]
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience

@@ -1,7 +1,9 @@
-"""`/sales/invoices` (SAL-02, SAL-03, SAL-06, SAL-07, SAL-08).
+"""`/sales/invoices` (SAL-02, SAL-03, SAL-05, SAL-06, SAL-07, SAL-08).
 
 Thin by construction (Part 26 §26.7 R7.1): authenticate, authorise, coerce,
-delegate to one service or selector, wrap in the envelope.
+delegate to one service or selector, wrap in the envelope. Only the tax kinds
+(`invoice`, `bill_of_supply`) are reachable here: an estimate's or a credit
+note's id is a 404 on every action, so no invoice write can land on either.
 """
 
 from __future__ import annotations
@@ -15,13 +17,14 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
-from apps.common.dates import tenant_today
 from apps.common.exceptions import ValidationFailed
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
 from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
+from apps.common.dates import tenant_today
 from apps.sales.constants import TAB_STATUSES
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
@@ -31,20 +34,19 @@ from apps.sales.selectors.documents import (
     apply_tab,
     detail_queryset,
     list_invoices,
-    list_totals,
-    tab_counts,
 )
 from apps.sales.serializers.document import (
     DocumentReadSerializer,
-    InvoiceListSerializer,
     InvoiceWriteSerializer,
     IssueSerializer,
     ShareLinkSerializer,
 )
+from apps.sales.serializers.flows import VoidSerializer
 from apps.sales.services import documents as drafts
 from apps.sales.services.issue import issue_invoice
-from apps.sales.services.issue_parts import rule46_for
-from apps.sales.services.share import create_share_link, upi_intent
+from apps.sales.services.share import create_share_link, revoke_share_link, upi_intent
+from apps.sales.services.void import void_invoice
+from apps.sales.views.common import draft_created, envelope, ok, tabbed_list
 
 
 def _require_key(request: Any) -> None:
@@ -55,22 +57,18 @@ def _require_key(request: Any) -> None:
         )
 
 
-def _rule46(document: SalesDocument) -> dict:
-    rows = [
-        {"hsn_sac": line.hsn_sac, "description": line.description} for line in document.lines.all()
-    ]
-    return rule46_for(document.tenant, document, rows)
-
-
-def _envelope(
-    document: SalesDocument, *, warnings: list | None = None, extra: dict | None = None
-) -> dict:
-    document = detail_queryset(tenant=document.tenant).get(pk=document.pk)
-    meta = {"warnings": warnings or [], "rule46": _rule46(document), **(extra or {})}
-    return {"data": DocumentReadSerializer(document).data, "meta": meta}
+INVOICE_EXPORT_COLUMNS = (
+    ExportColumn("number", lambda d: d.number or ""),
+    ExportColumn("date", lambda d: csv_date(d.document_date)),
+    ExportColumn("customer", lambda d: d.party.name if d.party_id else ""),
+    ExportColumn("amount", lambda d: d.grand_total, numeric=True),
+    ExportColumn("due", lambda d: d.amount_due, numeric=True),
+    ExportColumn("status", lambda d: d.status),
+)
 
 
 class InvoiceViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -82,6 +80,8 @@ class InvoiceViewSet(
     ordering_fields = ORDERING_FIELDS
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.SALES), InvoicePermissions]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "bills"
+    export_columns = INVOICE_EXPORT_COLUMNS
 
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -92,36 +92,25 @@ class InvoiceViewSet(
             return list_invoices(tenant=self.get_tenant())
         return detail_queryset(tenant=self.get_tenant())
 
-    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        tab = request.query_params.get("tab") or "all"
+    def export_queryset(self) -> Any:
+        """The file is the screen: the tab narrows it as it narrows the list."""
+        tab = self.request.query_params.get("tab") or "all"
         if tab not in TAB_STATUSES:
-            raise ValidationFailed({"tab": ["Choose all, unpaid, overdue, paid, draft or void."]})
-        ordering = (request.query_params.get("ordering") or "").strip()
-        if ordering and ordering.lstrip("-") not in ORDERING_FIELDS:
-            raise ValidationFailed({"ordering": [f"Sort by one of {', '.join(ORDERING_FIELDS)}."]})
-        filtered = self.filter_queryset(self.get_queryset())
-        tabs = tab_counts(filtered)
-        queryset = apply_tab(filtered, tab)
-        totals = list_totals(queryset)
-        page = self.paginate_queryset(queryset)
-        data = InvoiceListSerializer(
-            page, many=True, context={"today": tenant_today(self.get_tenant())}
-        ).data
-        meta = {
-            **self.paginator.get_meta(),
-            "totals": {
-                "count": totals["count"],
-                "grand_total": str(totals["grand_total"]),
-                "amount_due": str(totals["amount_due"]),
-            },
-            "tabs": tabs,
-        }
-        return StandardResponse.ok(data, meta=meta)
+            raise ValidationFailed({"tab": [f"Choose one of {', '.join(TAB_STATUSES)}."]})
+        return apply_tab(
+            self.filter_queryset(self.get_queryset()),
+            tab,
+            TAB_STATUSES,
+            today=tenant_today(self.get_tenant()),
+        )
+
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if self.wants_csv(request):
+            return self.csv_export(request)
+        return tabbed_list(self, request, TAB_STATUSES)
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        document = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
-        body = _envelope(document)
-        return StandardResponse.ok(body["data"], meta=body["meta"])
+        return ok(get_object_or_404(self.get_queryset(), pk=kwargs["pk"]))
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         if request.query_params.get("issue") == "true":
@@ -132,8 +121,7 @@ class InvoiceViewSet(
         result = drafts.create_draft(
             ctx=Ctx.from_request(request), payload=dict(serializer.validated_data)
         )
-        body = _envelope(result["document"], warnings=result["warnings"])
-        return StandardResponse.created(body["data"], meta=body["meta"])
+        return draft_created(result)
 
     @idempotent("sales_invoice_issue")
     def _create_and_issue(self, request: Any) -> Any:
@@ -143,6 +131,7 @@ class InvoiceViewSet(
         serializer.is_valid(raise_exception=True)
         payload = dict(serializer.validated_data)
         ctx = Ctx.from_request(request)
+        payload.pop("client_draft_key", None)  # direct issue uses its existing issue key
         with transaction.atomic():
             draft = drafts.create_draft(ctx=ctx, payload=payload)["document"]
             result = issue_invoice(
@@ -161,8 +150,7 @@ class InvoiceViewSet(
             document_id=kwargs["pk"],
             payload=dict(serializer.validated_data),
         )
-        body = _envelope(result["document"], warnings=result["warnings"])
-        return StandardResponse.ok(body["data"], meta=body["meta"])
+        return ok(result["document"], warnings=result["warnings"])
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         drafts.delete_draft(ctx=Ctx.from_request(request), document_id=kwargs["pk"])
@@ -194,13 +182,42 @@ class InvoiceViewSet(
             extra["party_balance"] = str(result["party_balance"])
         if result["ledger_entry_id"]:
             extra["ledger_entry_id"] = result["ledger_entry_id"]
-        body = _envelope(result["document"], warnings=result["warnings"], extra=extra)
+        body = envelope(result["document"], warnings=result["warnings"], extra=extra)
         if created:
             return StandardResponse.created(body["data"], meta=body["meta"])
         return StandardResponse.ok(body["data"], meta=body["meta"])
 
+    @action(detail=True, methods=["get"], url_path="profit")
+    def profit(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """What this bill made: cost of goods and profit, per line and in all."""
+        from apps.sales.selectors.profit import invoice_profit
+
+        document = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        return StandardResponse.ok(invoice_profit(document))
+
+    @action(detail=True, methods=["post"], url_path="void")
+    def void(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """SAL-05 — `{reason}` → the void document, its reversals and the payments left over."""
+        serializer = VoidSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = void_invoice(
+            ctx=Ctx.from_request(request),
+            document_id=kwargs["pk"],
+            reason=serializer.validated_data.get("reason"),
+            confirm_origin=serializer.validated_data.get("confirm_origin", False),  # ── A5 ── R55
+        )
+        extra: dict[str, Any] = {
+            "reversals": result["reversals"],
+            "unallocated_payments": result["unallocated_payments"],
+            "released_credit": result["released_credit"],
+        }
+        if result["party_balance"] is not None:
+            extra["party_balance"] = str(result["party_balance"])
+        return ok(result["document"], extra=extra)
+
     @action(detail=True, methods=["post"], url_path="share-links")
     def share_links(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
         serializer = ShareLinkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         link = create_share_link(
@@ -211,7 +228,33 @@ class InvoiceViewSet(
         )
         return StandardResponse.created(link)
 
+    @action(detail=True, methods=["post"], url_path="share-links/revoke")
+    def revoke_share_link(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """Part 27 §27.12 — the live link stops working now (404 like any unknown token)."""
+        get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        return StandardResponse.ok(
+            revoke_share_link(ctx=Ctx.from_request(request), document_id=kwargs["pk"])
+        )
+
     @action(detail=True, methods=["get"], url_path="upi-intent")
     def upi_intent(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
         return StandardResponse.ok(upi_intent(document))
+
+
+    # D P5 — the e-way bill's transport details, and the portal's upload file.
+    @action(detail=True, methods=["get", "post"], url_path="eway")
+    def eway(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        from apps.sales.services import eway as eway_service
+
+        document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
+        if request.method == "POST":
+            saved = eway_service.save_transport(document, dict(request.data))
+            return StandardResponse.ok({"offered": eway_service.offered(document), "transport": saved})
+        return StandardResponse.ok(
+            {
+                "offered": eway_service.offered(document),
+                "transport": (document.meta or {}).get("eway"),
+                "file": eway_service.portal_json(document) if (document.meta or {}).get("eway") else None,
+            }
+        )

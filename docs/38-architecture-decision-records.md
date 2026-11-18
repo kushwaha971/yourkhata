@@ -33,7 +33,7 @@ Beyond ADR-021, the architecture and FRD chapters requested new records **withou
 | ADR-022 | JavaScript barcode decoder fallback (`@zxing/browser`) | Part 17-03 (`INV-10`) — 3 references | **ADR-025** | Part 17-03's three references to ADR-022 must be corrected to ADR-025. Note that the decision is to **decline** the dependency, so the record is `Proposed`, not `Accepted`. |
 | ADR-023 | `cryptography` for RFC 8291 Web Push | Part 17-02 (`NTF-04`) — 2 references | **ADR-024** | Part 17-02's two references to ADR-023 must be corrected to ADR-024. |
 
-The remaining new records, ADR-026 to ADR-040, were not numbered anywhere and are assigned here. Several of them record decisions that were made and enforced across the specification without ever being written as decisions — immutability, tenant scoping, the permission registry, cached balances with recompute. They are the most load-bearing records in this part and their absence until now was a genuine gap.
+The remaining new records, ADR-026 to ADR-040, were not numbered anywhere and are assigned here. ADR-041 to ADR-055 (29 September 2026) and ADR-056 to ADR-060 (30 September 2026, the cross-FRD review) and ADR-061 to ADR-062 (1 October 2026, the Wave B start) are the platform-expansion records written by the architecture owner under `docs/platform/00-platform-vision.md` §3 rule 5; their status "Accepted (architecture owner)" means in force for the FRDs and implementation, open to the owner's revision. Several of them record decisions that were made and enforced across the specification without ever being written as decisions — immutability, tenant scoping, the permission registry, cached balances with recompute. They are the most load-bearing records in this part and their absence until now was a genuine gap.
 
 ## 38.3 Index
 
@@ -80,6 +80,28 @@ The remaining new records, ADR-026 to ADR-040, were not numbered anywhere and ar
 | ADR-038 | Manual certificate provisioning for partner domains | Accepted | Operations |
 | ADR-039 | In-house WOFF2 validation for partner fonts | Accepted | Frontend |
 | ADR-040 | Entitlements and flags as configuration rows, not a flag service | Accepted | Cross-cutting |
+| ADR-041 | Module boundaries: verticals over shared engines over core, with derived engine enablement | Accepted (architecture owner) | Cross-cutting |
+| ADR-042 | Seams are registries filled in `AppConfig.ready()`, and the posting matrix becomes one | Accepted (architecture owner) | Backend |
+| ADR-043 | One party balance, with a loan bucket and a deposit bucket on the ledger line | Accepted (architecture owner) | Data |
+| ADR-044 | Held deposits are one core concept: a payments record, a deposit bucket, and adjustment payments | Accepted (architecture owner) | Data |
+| ADR-045 | Taxable dues and module sales raise sales documents through a core document port | Accepted (architecture owner) | Backend |
+| ADR-046 | One parties table: module profiles are the role, plus core relations; enquiries and co-guests are not parties | Accepted (architecture owner) | Data |
+| ADR-047 | Payments allocate to dues through the existing allocation table; the component split lives in the dues engine | Accepted (architecture owner) | Backend |
+| ADR-048 | The dues engine has two modes: charge-on-due and expectation | Accepted (architecture owner) | Backend |
+| ADR-049 | Bookings hold one row per resource per slot under a unique constraint; no `btree_gist` | Accepted (architecture owner) | Data |
+| ADR-050 | The attendance engine records marks; the vertical decides eligibility through a registered policy hook | Accepted (architecture owner) | Backend |
+| ADR-051 | Perpetual counters beside financial-year sequences in the one allocator | Accepted (architecture owner) | Data |
+| ADR-052 | Row-level scoping through module roles and a fail-closed scope filter | Accepted (architecture owner) | Security |
+| ADR-053 | Identity documents: the type and the last four characters only, and no images | Accepted (architecture owner) | Security |
+| ADR-054 | Reminder guardrails are a core feature: time windows, daily caps and fixed templates per module | Accepted (architecture owner) | Backend |
+| ADR-055 | Shared primitives: recurrence, periods and rounding in `common`; the closed-day calendar in `platform` | Accepted (architecture owner) | Backend |
+| ADR-056 | `payments` stops importing `sales` and `purchases`; document targets are registered by their owners | Accepted (architecture owner) | Backend |
+| ADR-057 | Module documents are priced by tax code, and can be credited by value | Accepted (architecture owner) | Backend |
+| ADR-058 | Identity reads are `reveal` codenames, and engine reads name codenames no scoped role holds | Accepted (architecture owner) | Security |
+| ADR-059 | Gym instalments stay separate invoices; no "expected dates against one invoice" dues mode yet | Accepted (architecture owner) | Backend |
+| ADR-060 | Bookings: shared capacity is a seat ordinal in the slot key, and cancellation tiers belong to the vertical | Accepted (architecture owner) | Data |
+| ADR-061 | Vertical frontend registrations are imported from one sanctioned file, by the registries' readers | Accepted (architecture owner) | Frontend |
+| ADR-062 | Module invalidation entries are registered with the module's lazily injected slice | Accepted (architecture owner) | Frontend |
 
 ---
 
@@ -885,6 +907,471 @@ Partner rows are read on essentially every request and change essentially never 
 
 ---
 
+## ADR-041 — Module boundaries: verticals over shared engines over core, with derived engine enablement
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** The platform vision (`docs/platform/00-platform-vision.md` §3) adds four verticals — lending, library, gym, hospitality — and three shared engines (recurring dues, bookings, attendance) to a modular monolith whose import rules are Part 20 §20.1.4 and whose module switch is `ModuleCode`, `tenant.enabled_modules`, `MODULE_DEPENDENCIES` and `ModuleEnabled` (`apps/common/constants.py:13`, `apps/platform_app/services/tenant_settings.py:46`, `apps/common/permissions.py:113`). Two facts in the code shape the decision. `modules_view` shows every `ModuleCode` except `help` as a switchable or locked feature (`tenant_settings.py:145-150`), so a code added before its module is built shows an unbuilt feature. And the existing import test reads only top-level imports (`tests/architecture/test_import_rules.py`), so a deferred import between verticals would pass it. Shared-engines research Q2 asked whether engines should be module codes.
+
+**Decision.** Each vertical is one Django app and one frontend feature folder with its own `ModuleCode`; each engine is one Django app with **no** `ModuleCode`, enabled when any enabled module lists it in `ENGINES_USED_BY`; imports go verticals → engines → core only, never sideways, and a new code stays hidden behind `UNRELEASED_MODULES` until its release CR.
+
+The apps are `apps/lending`, `apps/library`, `apps/gym`, `apps/hospitality`, `apps/dues`, `apps/bookings`, `apps/attendance`. `EngineEnabled(engine)` gates engine read endpoints; engines have no write endpoints of their own (shared-engines Q8: writes go through verticals so the vertical's codename, wording and validation apply). A vertical never imports `sales`, `purchases`, `inventory` or `expenses`; it depends on the sales **module** being on when it needs tax documents (ADR-045), which is a runtime dependency, not an import. For the seven new apps the import test walks the whole AST, deferred imports included. The existing exceptions — `payments` importing `sales` and `purchases`, `reports` importing every app's selectors — are recorded and not extended: `reports` does not gain the new apps.
+
+**Options considered.** *Engines as ModuleCodes (research option A):* reuses `ModuleEnabled` and `module_has_data` directly; but every code appears in the Features screen, in plan and partner lists and in seed data, and a tenant would see and could toggle "Schedules", which is a mechanism, not a product. *Engines always on, like the ledger (option B without derivation):* simplest; but a tenant with no vertical would have live engine endpoints, and there is no single answer to "which modules make this engine's rows matter". *Engines inside core apps* (dues in ledger, bookings in parties): fewer apps; but it puts mutable state machines beside the immutable ledger and forces `parties` to import `ledger` and `payments`, against §20.1.4. *Verticals free to import each other through services:* less plumbing; it is what vision rule 2 forbids, and it makes one module's release gate another's.
+
+**Consequences.** *Positive:* the dependency direction is testable, including deferred imports; engines can be proven with a test-only subject before any vertical exists; a module under construction is invisible to merchants. *Negative:* seven apps and more registries (ADR-042); `ENGINES_USED_BY` is a second map to keep beside `MODULE_DEPENDENCIES`; each release needs a data migration because `seed_default_partner` writes `allowed_modules` only at creation (`seed_plans.py:113-128`). *Neutral but notable:* the grandfathered `payments` → `sales` import means Shop & billing is not a pure vertical; it is left as it is because moving it would rewrite working, QA'd code for no user-visible change.
+
+**Reversal cost and trigger.** Giving engines ModuleCodes later is additive (a code plus a Features filter). Trigger: an engine that a tenant genuinely wants on without any vertical.
+
+**Related.** ADR-007, ADR-040, ADR-042, ADR-045; vision §3; Part 20 §20.1.4–20.1.5; `docs/platform/10-architecture.md` §2–3, §8, §10; shared-engines Q2, Q8.
+
+---
+
+## ADR-042 — Seams are registries filled in `AppConfig.ready()`, and the posting matrix becomes one
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Core and engines must call into verticals — to name a ledger source, to ask whether a check-in is allowed, to cancel a membership when its invoice is voided, to count open records before a module is switched off — without importing them. The code has solved this eight times with one pattern: a registry in the lower app, filled from the higher app's `ready()` (`register_target`, `register_void_listener`, `register_source_resolver`, `register_module_off_guard`, `register_write_off_handler`, `register_settle_handler`, `job_handler`, `tenant_data.register`). Two places break the pattern and would need core edits per vertical: the literal `POSTING_MATRIX` (`apps/ledger/services/postings.py:57-73`) and the literal `SCHEDULES` list (`apps/common/jobs.py:398`).
+
+**Decision.** Every upward call is a **keyed, idempotent registry in the lowest app that must call it**, filled in the owner's `AppConfig.ready()`, invoked inside the caller's transaction and lock order, allowed to refuse by raising, with a `_reset_for_tests()` snapshot; `POSTING_MATRIX` becomes `register_posting_source`, `SCHEDULES` gains `register_schedule`, and reports, notifications, parties and reminders gain registries (10-architecture §4.2).
+
+**Options considered.** *Registries (chosen):* the pattern the team already reads fluently; each call site is explicit; tests can substitute a fake. Disadvantages: indirection a reader must follow, and a forgotten registration is a silent gap — which is why every registry has a contract test. *Django signals:* built in and decoupled; invisible at the call site, cannot refuse cleanly, and rule D9 forbids them for anything that is not safe to lose. *Core editing a literal per vertical* (add a row to `POSTING_MATRIX`, a line to `SCHEDULES`): simplest to read; it makes core carry vertical knowledge and makes every vertical's change a core change. *A plugin loader or entry points:* general and unnecessary in a monolith with one settings file.
+
+**Consequences.** *Positive:* core changes once; verticals plug in; each registry has one test shape. *Negative:* start-up order matters (every `ready()` must have run before the first call, which Django guarantees for requests and jobs but not for module-level code); registries are global state, so tests must restore them. *Neutral:* the existing four posting sources are re-registered by their owners, so the matrix's content does not change.
+
+**Reversal cost and trigger.** Low: a registry can be inlined back into a literal. Trigger: none foreseen.
+
+**Related.** ADR-041, ADR-045, ADR-054; Part 20 §20.1.4 D9; `docs/platform/11-contracts.md` §1.2, §1.9, §2.
+
+---
+
+## ADR-043 — One party balance, with a loan bucket and a deposit bucket on the ledger line
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A party has one cached `balance` (`apps/parties/models.py:43`), moved only by `apply_entry` (`apps/parties/services/balance.py:100`). Lending asks (research Q3) whether a borrower's loan shares it. If it does, aging — FIFO of every credit against the oldest debits (`apps/ledger/selectors/aging.py`) — calls a disbursal "90+ days overdue" when nothing is due, the generic reminder list quotes a whole principal as owed, and a shop customer's loan collides with their shop credit limit. If it does not, a lender's party list shows every borrower at ₹0. Held deposits (ADR-044) have the opposite need: money that must never net against what is owed. Collections are payments, whose one ledger line has `source_type = payment`, so the kind of money cannot be recovered from the source alone.
+
+**Decision.** `ledger_entry` gains `bucket` (`main`, `loan`, `deposit`), frozen by the immutability trigger; `party.balance` stays the single net figure and includes `main` and `loan`; `party.loan_balance` caches the loan part; `party.deposit_held` caches deposits, which are never in the balance.
+
+Effects, stated for the owner:
+- **Dashboard.** "To collect" stays Σ positive balances, which is the true total; when lending is on, the lending section shows loan outstanding and arrears separately (from `loan_balance` and the dues engine).
+- **Aging.** `/ledger/aging` reads `bucket = main` only. Loan arrears come from dues (days past the oldest unpaid due), which is the figure a lender acts on.
+- **Reminders.** The existing party reminder list quotes the **trade** figure (`balance − loan_balance`); module reminders quote the due's own amount (ADR-054). No reminder quotes a whole loan.
+- **Credit limit.** PTY-06 compares against the trade figure; a loan does not consume the shop credit limit.
+- **Archive.** The existing guard (`balance ≠ 0`) still blocks archiving a borrower who owes; a party with only a held deposit is blocked by the deposit guard.
+- **Statement.** One statement per party with every bucket; deposit lines in their own block, outside the running balance.
+
+**Options considered.** *One balance with buckets (chosen):* one person, one contact, one figure owed, and the parts are still separable where it matters; zero effect on existing tenants, whose rows are all `main`. Disadvantages: a new column on the one table where columns are hardest to add, two new caches, and every reader of `balance` must decide which figure it means. *One balance, no bucket, exclude lending by `source_type`* (research option 1): no schema change; but collections are payments and cannot be told apart, so aging and FIFO stay wrong for mixed tenants. *Per-module sub-balances on the party* (research option 2): general; it pays the cost for gym and library fees that are ordinary trade receivables and need no separation. *Borrowers as separate parties* (option 3): breaks vision rule "people are always parties" for one person.
+
+**Consequences.** *Positive:* aging, credit limit and reminders are right for a shop that also lends; deposits have a home that cannot leak into income or allocation. *Negative:* a trigger migration and replay tests; `record_payment` must refuse a payment that mixes buckets; `recalc_balances` replays three figures. *Neutral but notable:* a future accounting projection can map buckets to accounts directly.
+
+**Reversal cost and trigger.** A fourth bucket is one CHECK change plus a trigger re-creation. Removing buckets once rows exist is not contemplated. Trigger to revisit: a vertical whose receivable must be excluded from trade aging for the same reason lending's is.
+
+**Related.** ADR-029, ADR-031, ADR-044, ADR-047; lending.md §16.3, Q3; shared-engines Q1; `11-contracts.md` §1.2–1.3.
+
+---
+
+## ADR-044 — Held deposits are one core concept: a payments record, a deposit bucket, and adjustment payments
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Library refundable deposits, gym deposits, hotel security deposits and (later) rent deposits are money the tenant holds and must return. Recorded as "You got" today, a deposit shows the party in advance and is auto-allocated to the next bill. The research found three local workarounds for one concept (shared-engines §0.3): library proposed its own `library_deposit` table with a net-to-zero trick, hospitality records it "as an advance" and must keep it out of income by report logic, gym mentions advance deposits.
+
+**Decision.** A deposit is a `payments_held_deposit` row; money received for it is a payment IN allocated to the `held_deposit` target, whose ledger line is in the `deposit` bucket and moves only `party.deposit_held`; it is refunded by a payment OUT allocated to `held_deposit_refund`; and it is **applied** to what the party owes only by an explicit act, `apply_deposit`, which writes two linked payments in the new mode `adjustment` — out of the deposit, into the bills — so no deposit ever offsets a balance or becomes income by itself.
+
+Damage becomes income only as a charge (an invoice, a library charge or a dues penalty) that a deposit application then settles. Both deposit targets are `auto = False`, so no FIFO allocation reaches them. The cashbook excludes `adjustment`, because no cash moved.
+
+**Options considered.** *Payments record plus deposit bucket (chosen):* every rupee still moves through payments and the ledger (vision §3), receipts and voids come free, reports can read held deposits exactly. Disadvantages: an application is two payments where a person thinks of one act, so the UI must present it as one; a new payment mode. *Library's option B (post a deposit charge, settle it, track "held" in a module table):* no ledger change; but the liability is invisible in the ledger, the refund needs a balancing line that reads oddly on a statement, and each module would reinvent it. *A deposits table that posts nothing until applied* (research option c): simple; it breaks "money always goes through the ledger" — cash that was received appears nowhere in the party's book. *Record deposits as advances* (hospitality): no work; the exact defect the research describes.
+
+**Consequences.** *Positive:* one concept for four modules; a switched-off module with held deposits is refused (ADR-041's guard); refunds carry receipts. *Negative:* a new payment mode that the public payment API must refuse; the cashbook and payment registers must learn it. *Neutral:* the deposit row's `held_amount` is a cache with a replay test.
+
+**Reversal cost and trigger.** Moderate once deposits exist. Trigger: an accountant requiring deposits in a separate liability ledger, which the bucket already approximates.
+
+**Related.** ADR-043, ADR-047; library.md §10.2, Q2; hospitality.md §10; gym.md; shared-engines §2.9, Q1; `11-contracts.md` §1.4.
+
+---
+
+## ADR-045 — Taxable dues and module sales raise sales documents through a core document port
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A gym membership, a hotel stay and a GST-registered tenant's recurring fee are taxable supplies; a raw ledger line is not a tax invoice. The sales pipeline already does everything a tax invoice needs — kind by GST registration (`kind_for`, `apps/sales/services/payload.py:39`), item-less lines with SAC (`apps/sales/models.py:157-165`), numbering, Rule 46, place of supply, payment at issue, credit notes with hold-as-advance or refund, void with reversal (`documents.py:72`, `issue.py:58`, `void.py:80`). But the dues engine and the verticals may not import `sales` (ADR-041), and when an invoice is voided the module that asked for it must hear about it in the same transaction (gym.md E7). Research Q3 leaned to a registered issuer seam.
+
+**Decision.** `apps/common/seams/documents.py` defines a document port: `sales` registers the issuer; engines and verticals call `issue_document`, `issue_credit_note`, `void_document` and `document_summaries`, and register an **origin listener** per origin type, which sales calls on void (`blocks_void`, `on_void`) and whenever a document's settlement changes (`on_settlement_changed`, from `refresh_invoice_amounts`).
+
+Sales stores the origin in new columns (`origin_module`, `origin_type`, `origin_id`) rather than in `meta`, so registers can filter by module. The kind is always `kind_for(tenant)`: an invoice, or a bill of supply for a composition tenant, never an estimate — which corrects the research's assumption that unregistered tenants would raise estimates (`apps/sales/constants.py:114-118`). A line may carry its own `gst_rate`, which is how hospitality's per-night slab reaches the invoice; the dated slab rule itself is tax data and lives in `tax`. The void-listener pattern is `purchases.services.payment_seam.register_void_listener` (`payment_seam.py:56-60`), generalised.
+
+**Options considered.** *A core port with origin listeners (chosen):* one tax path, so numbering, the GST summary and the sales register stay correct for every module; no vertical imports sales. Disadvantages: sales grows three columns and two call-outs, and the port is a surface to keep stable. *Each vertical imports `sales.services`:* direct; forbidden by vision rule 2, and couples every vertical's release to sales internals. *A dues-only ledger entry with an on-demand tax invoice* (research option b): no port; two documents for one supply and a second tax path. *A separate "module invoice" in each vertical:* would need its own numbering, tax engine and GST reporting — the duplication the vision forbids.
+
+**Consequences.** *Positive:* gym and hospitality get invoices, bills of supply, credit notes, share links and print with no new tax code; voids cascade to the module in one transaction. *Negative:* a gym or hotel tenant must have the sales module on (`MODULE_DEPENDENCIES`), so the Invoices screen appears in their menu; the port's line shape limits what a module can express to what a sales line can. *Neutral but notable:* the unread `sales.default_kind` setting (`onboarding.py:479`) is reported to the owner rather than silently honoured.
+
+**Reversal cost and trigger.** Adding port methods is additive. Trigger to revisit: a module needing a document sales cannot represent (e.g. a receipt voucher with tax on an advance, hospitality.md §17 Q11).
+
+**Related.** ADR-041, ADR-042, ADR-048; gym.md §15.2, E7; hospitality.md §15.1; shared-engines §2.10, Q3; `11-contracts.md` §1.5.
+
+---
+
+## ADR-046 — One parties table: module profiles are the role, plus core relations; enquiries and co-guests are not parties
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Vision §3: people are always `parties`, with a role per module; no second contacts table. The party carries `is_customer` and `is_supplier` booleans (`apps/parties/models.py:33-34`). Each vertical needs module-specific fields (a member code, a borrower's collection address, a trainer's speciality) and a list filter. Three modules want a guardian or payer link (gym `guardian_party_id`, library `guardian_party`, coaching's research). Gym wants enquiries before anyone pays; hospitality wants co-guests on the register who never transact. Research Q7 offered booleans, a role table or tags.
+
+**Decision.** A module role is a **1:1 profile table in the vertical** (`gym_member`, `gym_trainer`, `lending_borrower`, `library_membership` rows) keyed on the party with `related_name="+"`, and the profile's existence *is* the role; the vertical registers the role with `register_party_role` so `GET /parties?role=` and party badges work without core importing it; archive is refused through `register_archive_guard` while a module has open records; guardian and payer links are a core `parties_relation` table; **enquiries** and **co-guests** may exist as module rows that are not parties, under the limits below.
+
+- **Enquiries** (`gym_enquiry`) hold a name and a mobile, a status and follow-ups, and nothing else about the person: no address, no money, no documents. They are never a payer. Converting creates or links a party and records `party_id`. Lost enquiries are purged after a tenant-set period (default 180 days). This mirrors the walk-in sale's `walk_in_name`/`walk_in_mobile` (`apps/sales/models.py:37-38`).
+- **Co-guests** (`hospitality_stay_occupant`) are register rows: what the guest register requires, with an optional link to a party for regulars. The primary guest and any bill-to party are always parties. Occupant data is purged on the retention schedule (ADR-053).
+- No new booleans on `parties_party`. `is_customer`/`is_supplier` stay for Shop & billing.
+
+**Options considered.** *Profile table as role plus a registry (chosen):* module fields live with the module; one query answers "is this party a member"; the party list gains filters with no schema change in core. Disadvantages: a role filter is a subquery into a vertical table (made fast by the profile's unique index). *A core `parties_role (party, module, role)` table:* one place to list roles; but it duplicates what the profile row already says and can disagree with it. *Booleans per vertical* (`is_borrower`): what lending proposed; a core migration for every vertical and a column most tenants never use. *Tags:* user-owned and editable, so a merchant renaming a tag would silently drop members from a module.
+
+**Consequences.** *Positive:* one contact per person across modules; guardians modelled once. *Negative:* the enquiry and occupant exceptions must be policed in review — they are allowed exactly because they hold one name and one number and never money. *Neutral:* a party can hold several module profiles; the party page shows each module's panel from a frontend registry.
+
+**Reversal cost and trigger.** A core role table can be derived later from the profiles. Trigger: a need to list roles across modules in SQL outside the registry.
+
+**Related.** ADR-041, ADR-053; gym.md §15.1, Q14; hospitality.md §15.2, Q4; library.md §4.7; lending.md §4.1; shared-engines Q7; `11-contracts.md` §1.3.
+
+---
+
+## ADR-047 — Payments allocate to dues through the existing allocation table; the component split lives in the dues engine
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A collection is a payment (`payments_payment`), and "what did this payment settle" is `payments_allocation` (`apps/payments/models.py:131-160`), with targets registered in `payments/services/targets` and a strict lock and status contract (`targets/__init__.py:15-28`). Lending needs each collection split into principal, interest and fee, and a choice of order: fees last (borrower-fair, lending §6.8) or fees first (common lender practice). The research differed (shared-engines Q11): a `component` column on `payments_allocation`, or a separate `due_allocation`. The allocation's unique constraint `(payment, document_type, document_id)` (`models.py:148-150`) allows one row per payment per due. Hospitality found that an existing advance cannot be allocated to a later invoice (hospitality §6.7); `record_payment` takes `allocations` once (`apps/payments/services/record.py:170-188`). And disbursal, a payment out, must never be picked by FIFO for a supplier payment.
+
+**Decision.** Dues are ordinary allocation targets (`dues_due` for charge-mode dues in the `main` bucket, `dues_instalment` for expectation-mode dues in the `loan` bucket, over the same rows), with one `payments_allocation` row per payment per due; the target's `apply` splits the amount into components by the schedule's `allocation_order` and records the split in the engine's own `dues_settlement` table, which `unapply` removes on void; the target protocol gains `bucket`, `auto` and a `payment_id` keyword; and payments gains `allocate_existing` for moving an advance onto later documents.
+
+Allocation order is configuration: `oldest_first` (every component of the oldest due, interest before principal), `fees_last` (every scheduled component due now before any fee or penalty — the research default) or `fees_first`, set on the plan with a tenant default per module. Lending's disbursal is a payment out allocated to a `lending_loan` target with `auto = False` and bucket `loan`, so supplier FIFO never reaches it (the rule `test_supplier_fifo_never_touches_*` already holds for credit notes, `targets/purchases.py:27-32`).
+
+**Options considered.** *Engine-side split (chosen):* `payments_allocation` stays generic and every existing target is untouched; the split is owned by the only engine that needs it. Disadvantages: "how was this payment split" is two tables, joined by `(payment_id, due)`. *A nullable `component` column on `payments_allocation`* (research lean): one table; but the unique constraint must change, every target and every reader must learn to ignore or sum components, and a sales invoice has no components at all. *A separate `due_allocation` mirroring payments* (lending §4.4): splits "what did this payment settle" across two allocation tables, which is the thing the research warned about.
+
+**Consequences.** *Positive:* receipts, void and UPI QR work for collections unchanged; one allocation path for all modules; advances become usable across time. *Negative:* the target protocol changes (compatible defaults); `allocate_existing` is a new money path that needs the full lock order and tests. *Neutral:* the owner still chooses lending's default order (10-architecture §16).
+
+**Reversal cost and trigger.** Moving the split into `payments_allocation` later is a data migration. Trigger: a second module needing components.
+
+**Related.** ADR-043, ADR-044, ADR-048; lending.md §6.8, §16.2, Q6, Q11; hospitality.md §6.7, Q21; shared-engines Q11; `11-contracts.md` §1.4, §2.1.
+
+---
+
+## ADR-048 — The dues engine has two modes: charge-on-due and expectation
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Gym and library fees are debts that arise on a date; a loan's instalments are dates by which a debt that already exists is expected back. Posting a loan's instalments as charges counts the principal twice; not posting gym fees keeps them out of the balance and out of the reminders list. Research agreed on two modes (shared-engines §2.4, gym §15.3, lending §16.4) and left open: the credit limit (Q5), a refund entry type (Q6), the materialisation window (Q9) and due statuses (Q11). A due that raises a sales document needs the sales module; a public or school library may not have it on (library §10.4).
+
+**Decision.** A plan has `mode`: **`charge`** — each due creates what is owed on its `due_on`, by raising a sales document through the port (`posting = document`, required for taxable plans) or by one `CHARGE` ledger line (`posting = ledger`, for tenants without sales or for exempt fees); or **`expectation`** — the dues only schedule a debt that already exists, and only non-principal components (interest, fees) post, each as its own source in the `loan` bucket.
+
+Settled questions:
+- **Credit limit (Q5).** A charge-mode due is an agreed charge, not a new sale: it is never refused by the party's limit (the port passes `credit_check = "skip"`); the limit shows as crossed.
+- **Refund entry type (Q6).** None. Money back is `PAYMENT_OUT`; the reduction of what is owed is `ADJUSTMENT_CREDIT` (ledger mode) or a credit note (document mode).
+- **Window (Q9).** Dues are materialised for 24 months or the whole fixed-count plan, whichever is shorter, and the daily run extends the window.
+- **Statuses (Q11).** `scheduled`, `due`, `overdue`, `paid`, `skipped`, `cancelled`. Part-paid and waived are derived (`settled_amount`, `waived_amount`), so filters and aging read one status column.
+- **Idempotency and catch-up.** The run posts missed dues with their own `due_on`; the key is the ledger's `(source_type, source_id, entry_type)`.
+- **Advances.** A new ledger-mode due auto-applies open advances oldest first through `allocate_existing` when the plan says so; a document-mode due asks the port to do the same.
+- **No legal judgement.** The engine stores rates and caps; statutory ceilings are the lending module's validation.
+
+**Options considered.** *Two modes, two charge postings (chosen):* each module's money means what it says; exempt fees need no sales module. Disadvantages: two settlement paths in one engine (the invoice's, or the due's own target), which the engine hides behind one status. *Always raise a document:* one path; forces sales on for every library. *Always post ledger lines and invoice on demand:* one path; two documents for one taxable supply. *No engine; each module keeps its own dues:* what vision rule 3 forbids.
+
+**Consequences.** *Positive:* gym, library and lending share the state machine, reminders and reports; loans are never double-counted. *Negative:* the engine carries a documented fork; the settlement cache is fed by the origin listener in document mode, which must be replay-tested. *Neutral:* pauses, pro-rating and penalties are shared calculators; what is allowed stays per plan.
+
+**Reversal cost and trigger.** Dropping ledger posting later is a migration of plans to document posting. Trigger: every consuming tenant having sales on.
+
+**Related.** ADR-043, ADR-045, ADR-047, ADR-055; shared-engines §2, Q5, Q6, Q9, Q11; lending.md §4.4, §6; gym.md §15.3; library.md §10.3–10.4; `11-contracts.md` §2.1.
+
+---
+
+## ADR-049 — Bookings hold one row per resource per slot under a unique constraint; no `btree_gist`
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Two front-desk devices must never sell the same room for the same night, including when a second writer (an import, a shell) bypasses the service. The standard Postgres answer is an exclusion constraint on `(resource_id WITH =, daterange WITH &&)`, which needs the `btree_gist` contrib extension for the equality part on a UUID. The research framed that as new infrastructure; in fact the schema already installs one contrib extension, `pg_trgm`, by migration (`apps/common/migrations/0001_enable_extensions.py`), so a second is not unprecedented. Hospitality proposed per-night rows with a plain unique constraint (§4.1, §6.1); library wants seats by shift (§4.14); gym classes are slots; capacity modes (a class of 20, "two Deluxe rooms") cannot be expressed as an exclusion constraint at all.
+
+**Decision.** Every booking unit writes one `bookings_slot` row per `(resource, slot_key)` it holds — a night, a day, a shift-day or a slot start — under `UNIQUE (tenant, resource, slot_key)`; exclusive resources are guaranteed by that constraint against any writer, shared and pooled capacity by a count under a row lock plus a nightly integrity check; `btree_gist` is not installed, and free-range (`span`) bookings are not supported until a module in scope needs them.
+
+Releasing (cancel, expiry, no-show, shortening) deletes the unit's slot rows in the same transaction; the booking row and the audit log keep history. An expired hold is freed lazily under the same lock before any insert, so correctness never waits on the scheduler.
+
+**Options considered.** *Slot rows (chosen):* no extension; one mechanism for exclusive, shared and pooled modes (a count of rows per slot key); the availability grid is a plain query over the same rows; about 15,000 rows a year for a 40-room hotel (hospitality §6.1). Disadvantages: storage grows with booked slots; free ranges would need buckets. *Exclusion constraint with `btree_gist`:* elegant for exclusive ranges and free spans; it covers only one of the three capacity modes, needs an extension ADR, and the capacity modes would still need the lock-and-count path — two mechanisms. *Service lock only:* no schema guarantee; a second writer can double-book.
+
+**Consequences.** *Positive:* the database refuses a double sale; one code path for rooms, seats and slots. *Negative:* slot rows are materialised for the booking window (up to 18 months ahead, hospitality §14); venues' hourly spans are deferred. *Neutral:* a `type_night_hold` counter for unassigned type bookings (hospitality §6.1) remains possible later with the same rows.
+
+**Reversal cost and trigger.** Adding `btree_gist` and a range constraint later is additive. Trigger: a module in scope needing free-range bookings (venues).
+
+**Related.** ADR-029's spirit (the database as the last guard), ADR-021; hospitality.md §4.1, §6.1, §15.4, Q19, Q20; library.md §4.14, §15.4; shared-engines §3.4, Q4; `11-contracts.md` §2.2.
+
+---
+
+## ADR-050 — The attendance engine records marks; the vertical decides eligibility through a registered policy hook
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A gym desk checks members in by search-and-tap and runs batch roll-call; session packs count down; a later library may log visits. Whether a person may come in depends on the gym's membership validity, freeze and dues — data the engine must not read if engines are to stay independent. Gym calls this a "context resolver" and shared-engines a "policy hook" (§0.3: agreed). Names differed (`checkin_event` vs `attendance_mark`).
+
+**Decision.** `apps/attendance` owns groups, sessions, marks (`attendance_mark`), open visits and entitlement counters; at check-in it calls the policy registered for the mark's `context_type`, which returns `allow`, `warn(reason)` or `block(reason, override_permission)` and may name an entitlement to consume; the engine never reads dues or memberships.
+
+A block is overridable only with a reason by a member who holds the codename the policy names; the override is audited. Entitlement use is a row-locked counter with a use row per mark, given back on void, and replay-tested. Marks are not money, so they are editable within a window with audit; after the window, the vertical's edit codename is needed. Hotel arrival is a booking status (ADR-049), not a mark. `quantity` marks are not built.
+
+**Options considered.** *Engine plus policy hook (chosen):* engines stay independent; each vertical says "block", "warn" or "allow" in its own terms. *The engine reads dues itself:* fewer hooks; couples two engines and puts one vertical's rule ("refuse when dues older than N days") in the engine for all. *Attendance inside each vertical:* no engine; gym and a later library or coaching would each build the register, the grid and the reports.
+
+**Consequences.** *Positive:* one register, grid and percentage report for every module; the gym's refusal rules stay the gym's. *Negative:* a check-in is a cross-app call on the hottest desk path, so the policy must be one indexed query. *Neutral:* QR self check-in waits for member identity (gym §15.4).
+
+**Reversal cost and trigger.** Low. Trigger: a module needing quantity marks (daily delivery).
+
+**Related.** ADR-042, ADR-048; gym.md §15.4; shared-engines §4, §0.3; `11-contracts.md` §2.3.
+
+---
+
+## ADR-051 — Perpetual counters beside financial-year sequences in the one allocator
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A library's accession register is permanent: numbers never reset and are never reused, and a library continues its paper register from the next number (library §6.8). `allocate_number` keys every sequence by financial year and prints the year (`apps/platform_app/services/sequences.py:38-62`). Member codes (library, gym) are also not yearly. The settings row carries a `reset_fy` flag per kind (`tenant_settings.py:81-107`) that `allocate_number` does not read — a latent defect found during this review.
+
+**Decision.** Number kinds are registered with a mode, `fy` or `perpetual`; a perpetual kind uses the same `platform_document_sequence` row shape with `fy_label = '*'`, prints `prefix + padded number` with no year, may be raised but never lowered, and is locked last like every sequence; the module's own unique constraint (for example on `accession_number`) is the guarantee and the counter only proposes.
+
+An import of typed numbers raises the counter to the highest imported number plus one. Registered kinds show in the settings numbering screen only when their module is enabled.
+
+**Options considered.** *One allocator with a mode (chosen):* one lock rule, one settings screen, one audit path. *A library-owned counter table:* self-contained; a second allocator with its own locking and its own "never lower" rule, and gym would build a third. *Honour `reset_fy = false` for these kinds:* reuses a flag; but the flag still prints a year, and its semantics for existing kinds are an owner question.
+
+**Consequences.** *Positive:* accession and member numbers behave as registers expect. *Negative:* `'*'` is a sentinel in a column named `fy_label`. *Neutral:* the ignored `reset_fy` is reported to the owner, not fixed here.
+
+**Reversal cost and trigger.** Low. Trigger: none.
+
+**Related.** ADR-009; library.md §6.8, Q9; `11-contracts.md` §1.7.
+
+---
+
+## ADR-052 — Row-level scoping through module roles and a fail-closed scope filter
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** A collection agent must see only the loans on their routes; a trainer only their members, without fees or mobiles; housekeeping only rooms. Nothing in core scopes rows below the tenant (lending §16.1). ADR-033 fixed four system roles, and `staff` holds `parties.party.read`, `ledger.entry.read` and `payments.payment.read` (`apps/common/permissions_registry.py:70-90`): a scoped agent holding `staff` could open the core party list and see every borrower and balance, which defeats any scope applied only to lending's tables. `platform_role` already supports non-canon roles (`tenant` NULL for system roles, `is_system`, a codename array; `apps/platform_app/models/membership.py:13-31`).
+
+**Decision.** A scoped person holds a **module role** — a system `platform_role` row owned by one module (`lending_agent`, `gym_trainer`, `hospitality_housekeeping`), assignable only while that module is enabled — whose codenames exclude every tenant-wide core read; the vertical's viewsets implement a required `scope_filter()` applied unless the member holds `<module>.<resource>.read_all`; an out-of-scope id is 404; and restricted fields are dropped by codename in serializers.
+
+Assignments stay in the vertical (a route's agents, a term's trainer). Business ceilings keep checking `owner`/`admin` by role, so module roles never reach them. The three roles amend canon §0.9 and need the owner's confirmation and a CR (10-architecture §16).
+
+**Options considered.** *Module roles plus a fail-closed filter (chosen):* the scope cannot be bypassed through a core endpoint because the role never holds the core codename; the filter is required by the base class, so a new viewset without one fails in tests. *`staff` plus `permissions_override` deny lists:* no new roles; every new core codename would have to be added to every agent's deny list, and the failure mode is a leak. *A fifth global role per need:* simple; roles multiply across modules and appear for tenants without the module. *Row-level security in Postgres:* strong defence in depth (ADR-032 defers it); not an answer to "which rows" by itself.
+
+**Consequences.** *Positive:* agents, trainers and housekeeping see exactly their slice, with 404 semantics. *Negative:* canon §0.9 changes; the team screen must offer module roles only when the module is on; each scoped screen is a vertical endpoint serving a projection of core data. *Neutral:* tenant-defined custom roles (`PLT-12`) build on the same rows.
+
+**Reversal cost and trigger.** Moderate. Trigger: custom roles shipping, which may absorb module roles as presets.
+
+**Related.** ADR-032, ADR-033; lending.md §12; gym.md §12, Q8; hospitality.md §12, Q2; `11-contracts.md` §3.
+
+---
+
+## ADR-053 — Identity documents: the type and the last four characters only, and no images
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Lenders, hotels and gyms habitually copy ID documents. The DPDP Act 2023 and Rules 2025 (core obligations from about May 2027) require minimisation and security safeguards with penalties up to ₹250 crore; UIDAI calls Aadhaar photocopies contrary to the Aadhaar Act (hospitality §6.11). The only encryption library in reach, `cryptography`, is admitted by ADR-024 for Web Push only, and `MEDIA_ROOT` has no encryption at rest (ADR-013). Hospitality proposed an optional "keep full ID numbers" setting for non-Aadhaar IDs.
+
+**Decision.** **Binding rule:** the product stores an identity document as its **type** and its **last four characters** only — never a full number of any ID, never an Aadhaar number beyond four digits, and **no image of any ID document** in the MVP; the server discards anything longer than four characters, and ID fields are restricted fields that never appear in lists, exports, share links or to housekeeping or agents.
+
+This refuses hospitality's "keep full ID numbers" option. For foreign guests, Form III needs passport and visa numbers: the clerk types them into the e-FRRO portal from the passport, and the product records the filing reference and the last four characters. Gym records "ID seen: type, date", never the number. Retention purges of occupant and borrower identity fields follow each FRD's schedule while ledger and GST records keep their own retention.
+
+**Options considered.** *Type and last four (chosen):* enough to match a person at the desk and in a dispute; nothing worth stealing. *Full numbers behind a permission and an access log:* convenient for Form III; a breach of one tenant then exposes full passport numbers, and the product becomes a store of the most sensitive data its tenants hold. *Encrypted images:* what front desks ask for; needs an encryption dependency for storage, key management, a separate storage kind and purge — its own ADR, later.
+
+**Consequences.** *Positive:* the product holds nothing an attacker wants from an ID; the privacy notice is short and true. *Negative:* hotel clerks retype passport details into e-FRRO; a hotel that must keep a copy keeps paper, as today. *Neutral:* the rule is testable (a validator refuses length > 4) and must be.
+
+**Reversal cost and trigger.** Relaxing it needs a new ADR with encryption, key handling and a lawyer's view. Trigger: a legal duty that cannot be met without full numbers.
+
+**Related.** ADR-013, ADR-021, ADR-024; lending.md §15.5; hospitality.md §6.10–6.11; gym.md §13a; `10-architecture.md` §16 item 2.
+
+---
+
+## ADR-054 — Reminder guardrails are a core feature: time windows, daily caps and fixed templates per module
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** Every state money-lending Act found treats harassing a debtor as an offence, and RBI's fair-practice code confines contact to 08:00–19:00 (lending §15.2, §15.4). Lending research requires fixed polite templates and at most one reminder per loan per day. The product sends nothing itself (DEC-012), but it prepares texts, records sends and runs an automated SMS job (LED-07). Today's reminders are party-level and money-only, with no source link, and their unique index `(party, due_on, kind)` for auto kinds (`apps/ledger/models.py:227-258`) makes two loans due the same day collide. Library and gym need non-money notices (hold ready, renewal).
+
+**Decision.** Reminders gain a source (`module`, `source_type`, `source_id`, `subject_label`) and two kinds, `due` and `notice`; modules feed candidates through `register_reminder_source`; and a **reminder policy** registered per module — a tenant-local time window, daily caps per source and per party, fixed templates — is enforced by one function, `check_reminder_allowed`, on every path that records, prepares or sends a reminder, with 409 `reminder_outside_window` or `reminder_cap_reached` carrying `next_allowed_at`.
+
+Lending registers 08:00–19:00, one per loan per day, fixed templates, and a template test with a forbidden-words list. A tenant may narrow a module's window, never widen it. Modules without a policy keep today's behaviour.
+
+**Options considered.** *A core policy (chosen):* one enforcement point that the auto job, bulk prepare and single send all pass through, so a new path cannot forget it. *Lending-only checks in lending's screens:* simple; the auto job and the generic reminder list would bypass them. *A global window for all modules:* uniform; changes behaviour for existing shop tenants, which the owner has not asked for (10-architecture §16 item 4).
+
+**Consequences.** *Positive:* the legal guardrail is structural rather than a UI habit; module notices share the history and share sheet. *Negative:* the reminder table grows columns and a wider unique index; the auto job must defer to the next window. *Neutral:* templates stay in the LED-08 template registry.
+
+**Reversal cost and trigger.** Low. Trigger: DEC-012 changing (a paid provider), which would make the policy more important, not less.
+
+**Related.** DEC-012; lending.md §15.4, EC-18; gym.md §6.12; library.md §3.8; `11-contracts.md` §1.6.
+
+---
+
+## ADR-055 — Shared primitives: recurrence, periods and rounding in `common`; the closed-day calendar in `platform`
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 29 September 2026
+
+**Context.** All three engines need a recurrence rule with month-end clamping, a period with a printable label, and rounding where the last instalment absorbs the residue (shared-engines §1). Lending, library and gym need closed weekdays and holidays (collection days, fines that skip closed days, freezes). ADR-021 rules out `dateutil`. `common` may hold pure code but no business tables (Part 20 §20.1.2). `apps/common/money.py` already has `half_up` and `allocate_proportional` (`money.py:31,56`). Research Q10 asked where the rule lives and how it is stored.
+
+**Decision.** `Recurrence` and `occurrences()` are a pure value object in `apps/common/recurrence.py`, `Period` and `period_label()` in `apps/common/periods.py`, and `round_amount()` and `split_total()` join `apps/common/money.py`; a recurrence is persisted as typed columns plus a `date[]` for explicit dates, never JSON; the tenant calendar is `platform_closed_day` plus the setting `calendar.closed_weekdays`, read through `platform_app.services.calendar.is_open` and `next_open_day`, with an optional per-module override.
+
+**Options considered.** *Pure code in common, calendar in platform (chosen):* every engine and vertical can import them (rules D2 and D3); the calendar is tenant configuration, which platform already owns. *A primitives app:* one more app for four small modules. *JSON-stored rules:* flexible; unqueryable and unvalidated by the database, which is canon rule 3's objection to money in jsonb, applied to dates. *A calendar per module* (library §4.12 proposed `library_calendar_day`): three calendars that disagree about Diwali.
+
+**Consequences.** *Positive:* one tested implementation of month-end clamping and leap years; one holiday list. *Negative:* the calendar is a platform table that only some modules read. *Neutral:* all dates are tenant-local, as LED-10's void dating already requires.
+
+**Reversal cost and trigger.** Low. Trigger: none.
+
+**Related.** ADR-010, ADR-021; shared-engines §1, Q10; lending.md §16.4 item 6; library.md §4.12; `11-contracts.md` §1.8.
+
+---
+
+## ADR-056 — `payments` stops importing `sales` and `purchases`; document targets are registered by their owners
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 30 September 2026
+
+**Context.** ADR-041 recorded that `payments` (core) imports `sales` and `purchases` at module level (`apps/payments/apps.py:21-35`, `apps/payments/services/targets/sales.py`, `targets/purchases.py`) and grandfathered it. The cross-FRD review (Phase 3 step 3) found that the grandfathered import is now the only thing keeping `payments` above the Shop & billing apps in the import matrix, while every new target (dues, library, lending, deposits) is registered by its owner. It also makes the rule "core never imports a vertical" untestable for `payments`, the app every vertical depends on.
+
+**Decision.** The sales and purchase-bill targets, the purchase void listener wiring and the payment source resolver registration move to the owning apps (`apps/sales/services/payment_target.py`, `apps/purchases/services/payment_target.py`), registered from their own `AppConfig.ready()` through a deferred import of the payments registry; `ALLOWED["payments"]` loses `sales` and `purchases`.
+
+This is Wave A task A14 and changes no behaviour: the target contract suite, PAY-01…05 and PUR-02 tests are the proof. Rule D5's one cycle is unchanged in shape (sales still reaches `record_payment` by a deferred import).
+
+**Options considered.** *Move the adapters (chosen):* the import matrix states the architecture for every app; the move is mechanical and covered. *Keep the grandfathered import:* no work; the exception stays in the one core app all verticals use, and every future reader must learn it. *Move `payments` above sales in the DAG:* renames the problem.
+
+**Consequences.** *Positive:* core imports no vertical anywhere; the matrix can assert it. *Negative:* a change to two working, QA'd apps before any module work; `ready()` order now matters for sales and purchases targets as it does for every other. *Neutral:* `payments/services/targets/__init__.py` keeps the protocol and registry only.
+
+**Reversal cost and trigger.** Trivial (move the files back). Trigger: none.
+
+**Related.** ADR-041, ADR-042, ADR-047; `10-architecture.md` §3, §17 R72; `12-implementation-plan.md` A14.
+
+---
+
+## ADR-057 — Module documents are priced by tax code, and can be credited by value
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 30 September 2026
+
+**Context.** ADR-045 gave the document port a per-line `gst_rate`. Sales lines are taxed by a `tax_code` resolved for the document date (`apps/sales/services/lines.py:98-130`), several codes share a rate (0%: GST0, EXEMPT, NIL, NONGST), and a rate change on a date works only through codes. Separately, sales' credit notes against an invoice are priced **by quantity** of the invoice line, at most three decimals, and every credit moves `returned_qty` (`apps/sales/services/credit_note_lines.py:46-117`). A gym upgrade credits 77/92 of a membership line, which quantity cannot express exactly (₹3,515.40 instead of ₹3,515.22 in gym.md's worked example), and a service credit has nothing to "return".
+
+**Decision.** `DocumentLine.tax_code` is the port's tax field (a rate is accepted only when exactly one active code carries it on that date), `dues_plan` and `tax_room_slab` store codes; and sales gains **value credit lines** — `against_line_id` plus an exact `taxable_value`, tax copied from the invoice line, capped at the line's remaining taxable value, moving neither `returned_qty` nor stock — used by the port's `issue_credit_note` (Wave A task A15).
+
+**Options considered.** *Codes and value lines (chosen):* one tax path that follows dated rate changes; exact paise on the credit a customer checks. *Rates mapped silently to codes:* ambiguous at 0%, wrong the day two codes share 5%. *Quantity credits with a ratio:* no sales change; a rounding error printed on a customer document, and a service "returned" into stock logic. *A separate credit instrument for modules:* a second GST path.
+
+**Consequences.** *Positive:* gym, hospitality and dues credits are exact and reportable in the GST summary as credit notes. *Negative:* a new line mode in sales' credit-note code and its register; a cap rule to test (Σ value ≤ taxable value, with quantity credits on the same line counted by their value). *Neutral:* counter returns keep the quantity mode.
+
+**Reversal cost and trigger.** Low before use. Trigger: a CA ruling that value credits need a different instrument (gym T8).
+
+**Related.** ADR-045, ADR-048; gym.md C2, C3; hospitality.md C2, C12; `10-architecture.md` §17 R2, R51.
+
+---
+
+## ADR-058 — Identity reads are `reveal` codenames, and engine reads name codenames no scoped role holds
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 30 September 2026
+
+**Context.** The accountant role holds every codename ending `.read` (`apps/common/permissions_registry.py:96`), so a module codename such as `hospitality.guest_id.read` would give accountants full identity fields automatically, against ADR-053's minimisation. Engine read endpoints (ADR-041) apply no vertical scope, so if a module named a codename that a scoped role holds (a trainer's `gym.member.read`), that role would read every mark and due of the tenant through `/api/v1/attendance/` and `/api/v1/dues/`. The FRDs also use actions outside canon §0.9's closed set (`read_all`, `void_own`, `id_read`, `money_read`).
+
+**Decision.** A codename that exposes identity fields uses the action **`reveal`** and is never implied by `*.read`; a codename that reads beyond a scope uses **`read_all`**; `ENGINE_READ_PERMISSIONS` may name only codenames that no scoped module role holds; and the canon §0.9 CR widens the action set to the actions the registry and the FRDs actually use.
+
+**Options considered.** *Distinct actions (chosen):* the accountant rule stays one line; a scope leak through engine reads is a failing test. *Exclude identity codenames from the accountant set by name:* works until the next module forgets. *Scope engine read endpoints per vertical:* engines would have to know vertical scopes, against ADR-050's independence.
+
+**Consequences.** *Positive:* minimisation and scoping hold structurally. *Negative:* lending renames `lending.borrower.id_read`; canon §0.9 changes (it is changing anyway for module roles). *Neutral:* `reveal` reads are audited as ADR-053 requires.
+
+**Reversal cost and trigger.** Low. Trigger: none.
+
+**Related.** ADR-033, ADR-052, ADR-053; hospitality.md C15, C16; gym.md C13; `10-architecture.md` §17 R25, R70.
+
+---
+
+## ADR-059 — Gym instalments stay separate invoices; no "expected dates against one invoice" dues mode yet
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 30 September 2026
+
+**Context.** Gym research (§6.10) described instalments as expected dates against one sale invoice, driving reminders only. The dues engine (ADR-048) has `charge` mode, where each due raises its own document, and `expectation` mode, built for loans in the `loan` bucket with principal that never posts. Gym FRD C5 asked for an expectation-like variant in the `main` bucket whose settlement follows an existing document. Whether a prepaid term paid in parts must be invoiced whole at sale or part by part is a tax question for a CA (gym T7).
+
+**Decision.** Gym instalments use the existing `charge` mode with document posting — part 1 on the sale invoice, each later part invoiced on its due date — and the engine gains no third settlement path until the CA's answer to T7 requires one.
+
+**Options considered.** *Split invoicing on charge mode (chosen):* no new engine path; each part is a real receivable in reminders and aging; a member who stops paying is not left with a whole-term invoice to credit. *Expectation over one invoice:* matches the research's wording; adds a derived-settlement path (the invoice's paid amount spread over dues) to an engine whose fork is already documented, for one consumer, and puts the whole term's tax on the sale date.
+
+**Consequences.** *Positive:* gym uses the engine as built. *Negative:* several invoices per term; if the CA says the whole term must be invoiced at sale, GYM-07 changes. *Neutral:* the variant stays a known, recorded option.
+
+**Reversal cost and trigger.** Moderate: a new settlement path in dues and a GYM-07 revision. Trigger: CA answer T7 (owner question Q16).
+
+**Related.** ADR-048; gym.md GYM-07, C5, T7; `10-architecture.md` §17 R53.
+
+---
+
+## ADR-060 — Bookings: shared capacity is a seat ordinal in the slot key, and cancellation tiers belong to the vertical
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 30 September 2026
+
+**Context.** ADR-049 guarantees exclusive resources by `UNIQUE (tenant, resource, slot_key)` and described shared capacity as "a count of rows per slot key" under a lock — which that very unique index forbids, since it allows one row per key. It also left cancellation "fee from policy tiers" with no table, while the engine holds no prices (ADR-049, shared-engines §3.6), and hospitality already stores its tiers as settings.
+
+**Decision.** For a `shared` resource the slot key carries a **seat ordinal** (`<key>#NN`, 1…capacity), so the same unique index bounds capacity in the database and `slot_key` widens to `varchar(32)`; `pooled_by_type` keeps the count under the type lock; and the engine keeps no cancellation tiers — `cancellation_fee(..., tiers)` is a pure calculator over tiers the vertical passes, returning a percent-and-basis rule the vertical applies to its own quote.
+
+**Options considered.** *Ordinals and vertical tiers (chosen):* shared capacity gets the same database guarantee as exclusive; tiers live beside the prices they apply to. *Count under a lock for shared:* no guarantee against a second writer — what ADR-049 exists to avoid. *An engine tier table:* a policy table for a price the engine cannot see.
+
+**Consequences.** *Positive:* one database rule for exclusive and shared; the engine stays price-free. *Negative:* releasing a shared seat frees a specific ordinal, and a capacity reduction must refuse while higher ordinals are held. *Neutral:* ADR-049 stands; this refines its capacity sentence.
+
+**Reversal cost and trigger.** Low before bookings is built. Trigger: none.
+
+**Related.** ADR-049; FRD 00 CQ-18, CQ-20; hospitality.md C8; `10-architecture.md` §17 R19, R21.
+
+---
+
+## ADR-061 — Vertical frontend registrations are imported from one sanctioned file, by the registries' readers
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 1 October 2026
+
+**Context.** Core owns four frontend registries a vertical contributes to: `registerPartyPanel`, `registerDashboardSection`, `registerModuleReport` and `registerReminderTab` (A6, A13, A14, A7). A registration is a module-level call, so the file that makes it must be *imported* for it to run, and core may not import a vertical (ADR-041; the A11 boundary lint rule). The Wave A gate also showed that a bare import is not enough on its own. A4b's deposit-panel registration was imported bare by `PartyModulePanels`, but its file was not listed in `package.json` `sideEffects`, so the production build dropped it from every client chunk while every jest test passed (`src/tests/sideEffectImports.test.ts` now guards this). Wave B's Library is the first vertical with a frontend, so the question (10-architecture §18, W-F3) had to be settled before library F01.
+
+**Decision.** Every vertical registers from exactly one file, `features/<module>/register.ts`, and those files are imported, as bare side-effect imports, from exactly one sanctioned file, `frontend/src/modules/registrations.ts`; that file and the `register.ts` glob are listed in `sideEffects`, and `registrations.ts` is imported by the components that READ the registries, never by the app shell.
+
+- `registrations.ts` lives outside `features/`, so no A11 boundary zone targets it. Core reaching a vertical through it is the one exemption, and it is named in the lint rule's comment. No other file may import a vertical's `register.ts`; a jest guard (added with library F01) fails for any other importer.
+- `package.json` `sideEffects` gains `./src/modules/registrations.ts` and `./src/modules/DigiKhaato/features/*/register.ts`. A file that is not listed is side-effect-free to the bundler, so `registrations.ts` alone would still lose its bare imports.
+- The readers (`PartyModulePanels`, the dashboard's section host, the reports index and the reminders tab host) each `import 'src/modules/registrations'`. The module is evaluated once, whichever reader loads first. The layout and `AppProviders` do not import it, so `/login` and the landing page pay nothing for any vertical.
+- A `register.ts` holds data and `dynamic()` component references only, never a slice, thunk, schema or service. It ships to every route that renders a registry reader, so its weight is that of a list. The panels, sections and reports themselves load in their own chunks.
+- A registration names its module, and the reader filters by `enabled_modules` as it does today. Importing a disabled module's `register.ts` draws nothing.
+- Released or not, a module's registration is listed. `UNRELEASED_MODULES` is enforced by the module gate the reader already applies, not by leaving a line out.
+
+**Options considered.** *One hand-written file (chosen):* four short lines a reader can audit in one glance; one exemption in one place; no build step. *A generated list (a script scanning `features/*/register.ts`):* nothing to forget. But it adds a build step and a generated file to keep in step for what will be four lines, and forgetting a line is caught anyway, because each vertical's own registry test asserts its registration is present after importing `registrations.ts`. *Importing `register.ts` from `AppProviders`:* simplest wiring, but every route, the login screen included, would pay for every vertical's registration data, which is the shell growth ADR-062 exists to stop. *Each vertical's route layout registers on mount:* the khata's panel and the dashboard's section must appear when the merchant has never opened the vertical's routes in this session, so a registration that waits for a vertical route is a panel that is missing until then.
+
+**Consequences.** *Positive:* the boundary rule keeps exactly one hole, and it is a named file. The A4b class of defect, a registration dropped by tree-shaking, is closed by the glob together with the existing guard. The shell does not grow with verticals. *Negative:* a new vertical must remember one line in `registrations.ts`, which its registry test catches. Every registry reader carries a bare import that looks redundant and must not be removed. Its comment says why, and the side-effect guard fails if the file stops being listed. *Neutral:* a registry reader's chunk grows by each vertical's registration data, about tens of bytes per entry.
+
+**Reversal cost and trigger.** Low: the list moves into a generator, or into another host file, without touching any vertical. Trigger: more than about eight verticals, or a `register.ts` that needs code beyond data and `dynamic()`. The second means the registration is doing a job that belongs in its panel.
+
+**Related.** ADR-041; ADR-044; ADR-062; 10-architecture §18 W-F3; FRD 00 PLT-X14; `src/tests/sideEffectImports.test.ts`; Wave A gate (`docs/platform/progress/wave-a-gate.md`).
+
+**Amendment, 1 October 2026 (Track T review, before any code was written against this record).** Three corrections:
+- **No message ids in `register.ts`.** `check-locales` treats a message id written as a literal in a file as rendered on every route that file reaches, which would pull the module's whole catalogue onto the khata, dashboard and reminders routes. A registration carries keys and `dynamic()` references only; the lazily loaded component renders its own copy from its own catalogue.
+- **The boundary zone is added by F01.** A11 deliberately left out the frontend zone forbidding core features from importing a vertical (no vertical existed). F01 adds it, with `src/modules/registrations.ts` outside every zone as the one sanctioned path, and the guard test asserting it is the only importer of any `register.ts`.
+- **Readers:** `ReminderSettingsDialog` is also a registry reader and imports `registrations.ts`; the reports hub becomes one when the first module report registers (B15/F11), not before.
+
+---
+
+## ADR-062 — Module invalidation entries are registered with the module's lazily injected slice
+
+**Status:** Accepted (architecture owner), owner may revisit · **Date:** 1 October 2026
+
+**Context.** Part 19 §19.3.6 makes invalidation checkable. `registry.ts` maps every thunk name to its `typePrefix` string, `map.ts` is a `Record<TMutationName, TInvalidationEntry>` that is total by type, and one listener applies it. The store imports the listener, so `registry.ts`, `map.ts` and everything they name are in the chunk `app/layout` loads. The thunks themselves were taken out of the shell in W4-P by mapping to strings. The entries were not, and the Wave A gate measured the shared shell growing 0.9 KB gz with no leak: every byte was invalidation entries, `API_PATHS`, the party warm-up and wider module ids (`bundle-budgets.json`, 30 Sep note). Waves B–D add three verticals and three engines, roughly fifty tasks, which is another 2–3 KB on every route if nothing changes, including `/login` and the landing page. CR-134 already injects route-local slices lazily with `combineSlices().inject()`; the invalidation map is the half of a module's Redux footprint that was not lazy (10-architecture §18, W-G1).
+
+**Decision.** A vertical's or engine's mutations and their invalidation entries are not added to the core `MUTATIONS` and `INVALIDATION`. Each module declares its own map, keyed by thunk `typePrefix`, and registers it with `registerInvalidation(map)` from the same module file that injects its slice, and the listener consults the core map and the registered maps.
+
+- `src/redux/invalidation/moduleRegistry.ts` (core) holds a `Map<string, TInvalidationEntry[]>` from `${typePrefix}/fulfilled` to entries, and exports `registerInvalidation`. Registration is idempotent per module key, so a hot reload or a second injection does not double an entry. The listener's predicate checks the core `FULFILLED` map, then the registered map. When both have entries for one action, the listener applies the union, with each slice signalled once and `now` winning over `next-mount`.
+- **Totality is kept per module.** A module's map is typed `Record<TLibraryMutationName, TInvalidationEntry>` over its own `MUTATIONS`, so a missing entry is still a compile error. `invalidation.registry.test.ts` is extended to parse every `features/<module>/redux/*Thunk.ts` against that module's registry, so a thunk in neither list still fails CI.
+- **Slice keys stay typed.** `TSliceKey = keyof RootState`, and `RootState` includes `LazyLoadedSlices` by module augmentation. A module map naming a core slice (`partyList`, `partyDetail`, `ledgerEntry`) or its own lazy slice is type-checked as today.
+- **Direction.** A module entry may invalidate core slices and its own. A core mutation that must invalidate a module slice (for example, archiving a party stales Library's member list) is expressed by the MODULE registering an entry under the core thunk's `typePrefix`. Core never names a module slice, and the union rule above applies both. If the module is not loaded, its slice is not in the store and there is nothing to stale. That is correct, not a gap, because the slice fetches fresh when it is first injected.
+- **Ordering is safe by construction.** A module's thunks are dispatched only from that module's chunks, and those chunks import the slice module that registers the map. So the registration happens before the module's first dispatch. A jest test asserts this per module: it imports the module's thunk file alone, then asserts the map is registered.
+- `resetAll` stays core-only. A module entry may not declare it.
+- Core's existing entries do not move. The rule applies to Wave B onward. The Wave A engine and core mutations that are already in `map.ts` stay there, because moving them buys nothing that a measured note cannot record.
+
+**Options considered.** *Per-module registration with the injected slice (chosen):* the shell stops growing with modules, and totality survives at module granularity. *Keep one total map and re-baseline at each gate with a measured note:* simplest, and keeps one table to read. But it accepts 2–3 KB on every route for features most tenants never enable, and the budget becomes a number that is raised rather than a limit. *Generate the map at build time and split it per route:* the same lazy effect with no runtime registry, but it needs a build step and a route-to-mutation analysis this codebase does not have (ADR-021 spirit: no new machinery for a two-file problem). *Thunks carry their own invalidation in `meta`:* co-locates the rule with the thunk, but scatters the "single normative statement" across every thunk file, and the map test could no longer show a reviewer one table per module.
+
+**Consequences.** *Positive:* `/login`, the landing page and every Shop & billing route stop paying for verticals' invalidation. Each module's invalidation is one file a reviewer can read, next to its slice. *Negative:* there is no longer one table holding every rule. A reviewer asking "what does archiving a party invalidate" reads the core map and greps `registerInvalidation(` for the core `typePrefix`. The map test prints the union per action to make that one command. A registration that is never imported fails silently in production, which is why the per-module registration test is mandatory and the slice file is the only place `registerInvalidation` may be called (lint: `no-restricted-syntax` outside `*Slice.ts`). *Neutral:* the listener does one extra `Map` lookup per fulfilled action.
+
+**Reversal cost and trigger.** Low: concatenating the module maps back into `map.ts` is mechanical. Trigger: if the per-module registration tests prove unreliable (a registration missing in a production build that jest passed), or if the measured shell saving at the Wave B gate is under 0.3 KB, revert to the single map and re-baseline instead.
+
+**Related.** CR-134 (lazy slices); Part 19 §19.3.6 and §19.3.9; ADR-061; 10-architecture §18 W-G1; `frontend/bundle-budgets.json` (30 Sep note); `src/redux/invalidation/{registry,map,listener}.ts`.
+
+**Amendment, 1 October 2026 (Track T review, before any code was written against this record).** The ordering argument above is wrong for this codebase: thunk files do not import slices (slices import thunks), so a map registered from the slice file is missing whenever a module thunk is dispatched before its slice is injected, and the mandated "import the thunk file alone" test could never pass. Corrected decision, which supersedes the slice-file wording above:
+- A module's registration lives in `features/<module>/redux/<module>Invalidation.ts`, which holds the module's `QUERIES` and `MUTATIONS` registries (name → `typePrefix`, as core's `registry.ts`) and its total `Record<TModuleMutationName, TInvalidationEntry>` map, and calls `registerInvalidation` once. **Every thunk file of the module bare-imports it**, so the map is registered by construction before any of the module's thunks can be dispatched; `package.json` `sideEffects` gains `./src/modules/DigiKhaato/features/*/redux/*Invalidation.ts`. The lint restriction moves accordingly: `registerInvalidation(` is allowed only in `*Invalidation.ts`.
+- **Keys:** the module map is written by mutation NAME (for type totality) and registered by `typePrefix`, converted through the module's own `MUTATIONS`; the registry test asserts every string is that thunk's `typePrefix`, as core's does.
+- **Queries** are listed in the module's `QUERIES` so the completeness test ("every `createAsyncThunk` is in exactly one list") covers module thunks too.
+- **`patch`** may name only the module's own slices. A core slice's reducer must not learn a module's action type (ADR-041), so a module write that moves a core figure uses `stale` or `refetch` on that core slice.
+
+---
+
 ## 38.4 Decisions deliberately not recorded here
 
 Three classes of decision appear across the specification and are intentionally absent from this part, so that their absence is not read as an oversight.
@@ -904,3 +1391,31 @@ Any ADR change that contradicts canon §0.4 must amend canon §0.4 in the same c
 ---
 
 **End of Part 38.**
+
+
+## ADR-063 — Durable sales draft identity is separate from posting idempotency
+
+**Date:** 16 October 2026. **Status:** implemented; release acceptance remains evidence-gated.
+
+**Context.** A lost first-create response followed by a retry/remount could create another draft. The 24-hour response cache is shorter than the seven-day local recovery window and a stored response would become stale after another device edits or posts the document. Hard-deleting a draft must not make its old retry key reusable.
+
+**Decision.** Use one sales-domain `DraftCreation` claim table across invoices/bills-of-supply, estimates, orders and challans, scoped by tenant, immutable actor identifier, family and client key. The unique insertion and document write share a transaction. Retry reads the current document without applying incoming contents. A nullable one-to-one `SET_NULL` relation makes deletion retain a tombstone. The shared editor persists the key before POST, serializes saves, and uses versioned PATCH/conflict review for current typing. Posting's existing idempotency rules are unchanged.
+
+**Alternatives.** Extending the global cache lifetime changes unrelated writes and still replays stale contents. Storing only a key on the document loses identity on hard deletion. A generic polymorphic identity table would require every deletion path to maintain tombstones manually; the domain FK makes this invariant enforceable now. Purchase recovery should reuse protocol logic with a typed domain adapter when implemented, rather than copying the sales editor or importing its financial model into purchases.
+
+**Consequences.** One small additive table/migration; no new dependency or infrastructure. Claims retain no form or financial snapshot. Tombstones grow with discarded keyed drafts and require an explicit future retention policy, not the short-lived posting-cache purge. Unowned legacy device copies are not attributed to another user. The full contract and documented limits are in `docs/shop-ims-readiness/09-draft-recovery-contract.md`.
+
+**Addendum, 16 October 2026 — purchases join, one owner per mechanism.** Purchase bills and purchase orders now use the same protocol. The claim/recover/tombstone mechanics moved to one owner, `apps.common.draft_creation` (plus the abstract `apps.common.models.DraftCreationBase`); sales and purchases each keep their own claim table with a foreign key to their own document (`sales_draft_creation`, new `purchases_draft_creation`, migration `purchases.0005_durable_draft_creation`), so the tombstone invariant stays enforced by the database. The purchase family is the document kind, so a bill key never recovers an order. On the client, `src/hooks/useDraftSaveQueue.ts` (one save lane, scope/teardown) and `src/utils/draftCreation.ts` (the saved/adopt/conflict/posted decision, the submitted-snapshot autosave rule) are shared; each editor supplies a typed adapter (`salesDraftReply`, `purchaseDraftReply`). No purchase financial, payable, stock-receipt, duplicate-supplier-invoice or recording rule changed. Unlike sales, the purchase editor keeps no device copy, so its key lives in memory only: a stored "new" key could let a second tab adopt the first tab's draft. A reload after a lost reply therefore starts a fresh bill and the first draft stays visible under Drafts.
+
+
+## ADR-064 — Camera barcode reading falls back to zxing-wasm, self-hosted (amends ADR-025, ADR-021)
+
+**Date:** 30 October 2026. **Status:** approved by the owner the same day ("Add that library"); implemented in C1.
+
+**Context.** ADR-025 chose the browser's own `BarcodeDetector` for camera scanning. Chrome on Android has it; iOS Safari does not, so an iPhone could not scan with its camera at all (design §C1 `pScan`, plan 13 §2.2).
+
+**Decision.** Use `barcode-detector@3.2.2` (its ponyfill, MIT) over `zxing-wasm@3.1.3` only where the native reader is missing. It is imported dynamically when the camera sheet opens, so no route's initial bundle grows. Its `.wasm` (≈1.1 MB) is copied from `node_modules` into `public/vendor/zxing_reader-<version>.wasm` by `scripts/copy-zxing-wasm.mjs` (the `prebuild` step) and located there with `prepareZXingModule`; it is never fetched from a CDN. Versions are pinned exactly.
+
+**Alternatives.** `@zxing/browser` (pure JS, larger, maintenance mode); typing the code on iPhones (the design's blocked path, kept as the fallback when the camera is refused).
+
+**Consequences.** One runtime dependency pair, loaded only on phones without a native reader at the moment they scan. Upgrading changes the wasm file name, so caches cannot serve a stale binary. `UbScanSheet.test.tsx` asserts the native path, the ponyfill path and the `/vendor` location.

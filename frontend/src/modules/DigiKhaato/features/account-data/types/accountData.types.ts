@@ -41,7 +41,9 @@ export interface SupportAccess {
 }
 
 export interface DeleteRequestInput {
-  readonly password: string;
+  /** A code sent to the owner's own mobile (nobody has a password). */
+  readonly challengeId: string;
+  readonly code: string;
   readonly confirmName: string;
   readonly reason: string;
 }

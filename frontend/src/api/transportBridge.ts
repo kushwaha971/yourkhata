@@ -13,7 +13,17 @@ import type { ApiErrorShape } from 'src/types/api.types';
  *
  * This module imports nothing but types, which is what makes it a safe leaf.
  */
+export interface RequestIdentity {
+  readonly userId: string;
+  readonly tenantId: string | null;
+  readonly version: number | null;
+}
+
 export interface TransportHost {
+  readonly getActiveApp?: () => string | null;
+  /** Authenticated request scope; optional for legacy transport hosts/bootstrap. */
+  readonly getRequestIdentity?: () => RequestIdentity | null;
+  readonly onAccountMismatch?: () => void;
   /** Drives `Accept-Language`, so server messages match the UI (§19.4.2). */
   readonly getLocale: () => string;
   /** §19.10.3 signal 1 — the server answered, whatever it answered. */
@@ -50,6 +60,13 @@ export interface TransportHost {
 }
 
 let host: TransportHost | null = null;
+let routeAppResolver: ((pathname: string | null) => string | null) | null = null;
+
+/** Registered by the authenticated shell, keeping app manifests out of bootstrap. */
+export const registerRouteAppResolver = (resolver: (pathname: string | null) => string | null): void => {
+  routeAppResolver = resolver;
+};
+export const routeApp = (pathname: string | null): string | null => routeAppResolver?.(pathname) ?? null;
 
 export const registerTransportHost = (next: TransportHost): void => {
   host = next;

@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { UbBottomBar, UbButton } from 'src/design-system';
 
@@ -29,6 +29,16 @@ import { UbBottomBar, UbButton } from 'src/design-system';
  * telling you the submit failed. The `sticky bottom-0` now comes from
  * `UbBottomBar`; everything else about the bar is unchanged.
  */
+/**
+ * E1 (edge-case catalogue) — how long a freshly opened step ignores its own
+ * Continue and Skip. Every step's Continue sits where the last one was, so a
+ * double or triple tap on step 1 carried on through steps 2 and 3 and landed on
+ * step 4: GST and address passed without the merchant ever seeing them. Long
+ * enough to swallow a double tap, short enough that nobody reaches for the
+ * button before it.
+ */
+export const STEP_ACTIONS_ARM_MS = 450;
+
 export interface OnboardingStepActionsProps {
   readonly onBack: (() => void) | null;
   /** FR-10 — steps 2 and 3 are skippable; step 1 is not. */
@@ -39,6 +49,12 @@ export interface OnboardingStepActionsProps {
   readonly skipLabel: string;
   readonly busy: boolean;
   readonly disabled: boolean;
+  /**
+   * How long the step ignores its own buttons after opening. The wizard's
+   * component tests press Continue the instant a step renders, which no person
+   * can do, so they run with 0; the guard's own test sets it.
+   */
+  readonly armMs?: number;
 }
 
 function OnboardingStepActionsBase({
@@ -50,7 +66,14 @@ function OnboardingStepActionsBase({
   skipLabel,
   busy,
   disabled,
+  armMs = process.env.NODE_ENV === 'test' ? 0 : STEP_ACTIONS_ARM_MS,
 }: Readonly<OnboardingStepActionsProps>) {
+  const [armed, setArmed] = useState(armMs <= 0);
+  useEffect(() => {
+    if (armMs <= 0) return undefined;
+    const timer = setTimeout(() => setArmed(true), armMs);
+    return () => clearTimeout(timer);
+  }, [armMs]);
   return (
     <UbBottomBar className="flex flex-col-reverse gap-2 border-t border-border-hairline bg-canvas py-3 sm:flex-row sm:items-center sm:justify-end sm:bg-surface-card lg:bg-canvas">
       {onBack && (
@@ -59,7 +82,12 @@ function OnboardingStepActionsBase({
         </UbButton>
       )}
       {onSkip && (
-        <UbButton variant="ghost" size="lg" onClick={onSkip} disabled={busy || disabled}>
+        <UbButton
+          variant="ghost"
+          size="lg"
+          onClick={onSkip}
+          disabled={busy || disabled || !armed}
+        >
           {skipLabel}
         </UbButton>
       )}
@@ -69,7 +97,7 @@ function OnboardingStepActionsBase({
         fullWidth
         busy={busy}
         busyLabel={busyLabel}
-        disabled={disabled}
+        disabled={disabled || !armed}
         className="sm:w-auto"
       >
         {continueLabel}

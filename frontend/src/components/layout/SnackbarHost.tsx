@@ -31,7 +31,7 @@ import { hideSnackbar, selectSnackbar } from 'src/redux/slice/snackbarSlice';
  *    snackbarSlice without it".
  */
 export function SnackbarHost(): React.JSX.Element {
-  const { snackbarOpen, snackbarMessage, snackbarSeverity, id, params, requestId } =
+  const { snackbarOpen, snackbarMessage, snackbarSeverity, id, params, requestId, action } =
     useAppSelector(selectSnackbar);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
@@ -39,6 +39,12 @@ export function SnackbarHost(): React.JSX.Element {
   const onDismiss = useCallback(() => {
     dispatch(hideSnackbar());
   }, [dispatch]);
+
+  const onAction = useCallback(() => {
+    if (!action) return;
+    dispatch(hideSnackbar());
+    dispatch(action.then);
+  }, [dispatch, action]);
 
   const resolved = id ? t(id, params) : snackbarMessage;
 
@@ -49,6 +55,8 @@ export function SnackbarHost(): React.JSX.Element {
       requestId={requestId}
       requestIdLabel={t('common.error.reference')}
       onDismiss={onDismiss}
+      actionLabel={action ? t(action.labelId) : undefined}
+      onAction={action ? onAction : undefined}
       dismissLabel={t('common.action.dismiss')}
       /* UAT D3 — a toast still on screen when the merchant presses Print
          ("Saved ₹500") is not part of the statement. `ub-print-hide` is the

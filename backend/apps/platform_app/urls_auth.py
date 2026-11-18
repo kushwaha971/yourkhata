@@ -29,12 +29,16 @@ from apps.platform_app.views.auth import (
     EmailVerifyRequestView,
     LogoutView,
     MeView,
+    MyMobileConfirmView,
+    MyMobileView,
     PasswordLoginView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
     PasswordSetView,
     RefreshView,
     RegisterView,
+    LeaveAppView,
+    SwitchAppView,
     SwitchTenantView,
 )
 from apps.platform_app.views.settings import SessionDetailView, SessionListView
@@ -45,7 +49,11 @@ urlpatterns = [
     path("refresh", RefreshView.as_view(), name="auth-refresh"),
     path("logout", LogoutView.as_view(), name="auth-logout"),
     path("me", MeView.as_view(), name="auth-me"),
+    path("me/mobile", MyMobileView.as_view(), name="auth-me-mobile"),
+    path("me/mobile/confirm", MyMobileConfirmView.as_view(), name="auth-me-mobile-confirm"),
     path("switch-tenant", SwitchTenantView.as_view(), name="auth-switch-tenant"),
+    path("switch-app", SwitchAppView.as_view(), name="auth-switch-app"),
+    path("leave-app", LeaveAppView.as_view(), name="auth-leave-app"),
     # PLT-09 (CR-013).
     path("sessions", SessionListView.as_view(), name="auth-sessions"),
     path("sessions/<uuid:session_id>", SessionDetailView.as_view(), name="auth-session-detail"),

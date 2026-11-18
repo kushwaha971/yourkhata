@@ -11,8 +11,12 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { relativeTimeView } from 'src/utils/relativeTime';
 
 import { selectPartyReminderId, selectPartyReminderTotals } from '../redux/reminderSlice';
-import { fetchPartyReminders } from '../redux/reminderThunk';
+import { fetchPartyReminders, partyReminderKey } from '../redux/reminderThunk';
 import { channelLabelId } from '../view-model/reminderDisplay';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/reminders';
 
 /**
  * LED-06 FR-6 — the khata's one line of reminder history: "Reminded 3 times ·
@@ -25,9 +29,10 @@ import { channelLabelId } from '../view-model/reminderDisplay';
  */
 export interface PartyReminderStripProps {
   readonly partyId: string;
+  readonly book?: 'main' | 'shop';
 }
 
-function PartyReminderStripBase({ partyId }: Readonly<PartyReminderStripProps>) {
+function PartyReminderStripBase({ partyId, book }: Readonly<PartyReminderStripProps>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const nowMs = useNowMs();
@@ -35,14 +40,14 @@ function PartyReminderStripBase({ partyId }: Readonly<PartyReminderStripProps>) 
   const totals = useAppSelector(selectPartyReminderTotals);
 
   useEffect(() => {
-    const request = dispatch(fetchPartyReminders(partyId));
+    const request = dispatch(fetchPartyReminders(book ? { partyId, book } : partyId));
     return () => request.abort();
-  }, [partyId, dispatch]);
+  }, [partyId, book, dispatch]);
 
   /* Nothing until this party's answer is in: a line that flashes "Not
      reminded yet" and then "Reminded 4 times" teaches the merchant to distrust
      it. */
-  if (heldFor !== partyId || !totals) return null;
+  if (heldFor !== partyReminderKey(book ? { partyId, book } : partyId) || !totals) return null;
 
   let line: string;
   if (totals.sent === 0 || !totals.lastSentAt) {

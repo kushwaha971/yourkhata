@@ -3,7 +3,7 @@
  * re-exports this line for line; features import from the top-level barrel and
  * never from a deep path (R-IM-3).
  */
-export { UbDataGrid } from './UbDataGrid';
+export { preloadGridTable, UbDataGrid } from './UbDataGrid';
 export type { UbDataGridProps } from './UbDataGrid';
 
 export { UbDataGridEmptyState } from './UbDataGridEmptyState';

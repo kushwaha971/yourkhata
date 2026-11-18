@@ -26,6 +26,12 @@ export const KNOWN_TYPES: ReadonlySet<string> = new Set([
   'deletion_cancelled',
   'support_access_request',
   'support_session_started',
+  // ── dues ── DUE-02 BR-2: the nightly run could not add some recurring charges (owners).
+  'dues.run_failed',
+  // Members & Fees (owner, 12 Nov 2026): the morning bell of fees newly overdue.
+  'library.overdue_today',
+  // Loans & Collections (12 Nov 2026): the morning bell of loans newly late.
+  'lending.late_today',
 ]);
 
 /**

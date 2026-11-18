@@ -120,9 +120,10 @@ ORDERINGS = (
     "-collection_date",
 )
 
-#: The per-request floor `test_query_budgets.py` documents: user, membership,
-#: and the plan-overrides read behind `ModuleEnabled`.
-REQUEST_FLOOR = 3
+#: The per-request floor `test_query_budgets.py` documents: user, the signed-out
+#: check on the device's session, membership, and the plan-overrides read behind
+#: `ModuleEnabled`.
+REQUEST_FLOOR = 4
 
 
 def _budget(budget_id: str) -> int:

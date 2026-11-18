@@ -46,7 +46,8 @@ export const MLCardContent = forwardRef<HTMLDivElement, MLCardProps>(function ML
   { className, ...rest },
   ref
 ) {
-  return <div ref={ref} className={cn('p-4', className)} {...rest} />;
+  // Owner, 12 Oct 2026: tighter on a phone, where every 8 px is a row of data.
+  return <div ref={ref} className={cn('p-3 sm:p-4', className)} {...rest} />;
 });
 
 export type MLBadgeVariant = 'neutral' | 'success' | 'warning' | 'error' | 'info';
@@ -80,7 +81,7 @@ const BADGE_VARIANT: Record<MLBadgeVariant, string> = {
   success: 'bg-success-dim text-success',
   warning: 'bg-warning-dim text-warning',
   error: 'bg-error-dim text-error',
-  info: 'bg-info-dim text-info',
+  info: 'bg-accent-quiet text-text-accent',
 };
 
 export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadge(
@@ -91,7 +92,7 @@ export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadg
     <span
       ref={ref}
       className={cn(
-        'ds-chip inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-2 py-0.5',
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-[9px] py-0.5 text-[11.5px] font-semibold leading-[15px]',
         BADGE_VARIANT[variant],
         className
       )}
@@ -100,7 +101,7 @@ export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadg
   );
 });
 
-export type MLAlertVariant = 'info' | 'success' | 'warning' | 'error';
+export type MLAlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral';
 
 export interface MLAlertProps extends HTMLAttributes<HTMLDivElement> {
   readonly variant?: MLAlertVariant;
@@ -113,6 +114,8 @@ const ALERT_VARIANT: Record<MLAlertVariant, string> = {
   warning: 'border-warning/40 bg-warning-dim text-text-primary',
   // §23.5: outlined block, never a filled red one.
   error: 'border-formError bg-formError-dim text-text-primary',
+  // A settled fact that needs no action (a cancelled receipt): grey, never red.
+  neutral: 'border-border-hairline bg-surface-sunken text-text-primary',
 };
 
 export const MLAlert = forwardRef<HTMLDivElement, MLAlertProps>(function MLAlert(
@@ -217,18 +220,18 @@ export interface MLButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BUTTON_VARIANT: Record<MLButtonVariant, string> = {
-  primary: 'bg-accent text-text-inverse hover:bg-accent-hover active:bg-accent-press',
+  primary: 'bg-cta text-cta-foreground hover:bg-cta-hover active:bg-cta-press',
   /* BrandHub's `secondary` is a FILL (`bg-[#f1f1f1] hover:bg-[#e6e6e6]`), not
      an outline. What this called `secondary` was actually its
      `outline-neutral`, and with the dark `--border-strong` rather than a
      hairline — so a secondary button read heavier than a primary one. Both now
      exist under the names BrandHub gives them. */
-  secondary: 'bg-surface-sunken text-text-primary hover:bg-surface-hover',
+  secondary: 'bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active',
   outlineNeutral:
-    'border border-border-subtle bg-surface-card text-text-primary hover:bg-surface-hover',
+    'border border-border-subtle bg-surface-card text-text-primary hover:bg-surface-hover active:bg-surface-active',
   /* `ghost` was `--text-accent` indigo, so every ghost button in the product
      read as a link. BrandHub's is plain ink. */
-  ghost: 'text-text-primary hover:bg-surface-hover',
+  ghost: 'text-text-primary hover:bg-surface-hover active:bg-surface-active',
   link: 'text-text-accent underline-offset-4 hover:underline',
   // §23.3: destructive is an OUTLINED danger in --form-error, never a red fill.
   destructive: 'border border-formError bg-transparent text-formError hover:bg-formError-dim',
@@ -237,10 +240,10 @@ const BUTTON_VARIANT: Record<MLButtonVariant, string> = {
 const BUTTON_SIZE: Record<MLButtonSize, string> = {
   /* Figma "button": 12 px side padding, 14/20 text in a 36 px box; the
      compact in-row variant is 28 px with 12/16 text. */
-  sm: 'h-7 px-3 ds-body-base-medium',
-  md: 'h-10 px-4 ds-body-base-medium',
+  sm: 'h-8 px-2.5 text-[13px] font-semibold',
+  md: 'h-10 px-4 text-button',
   // 44px is the mobile touch-target floor (R-A-3).
-  lg: 'h-11 px-5 ds-body-base-medium',
+  lg: 'h-[46px] px-5 text-[15px] font-semibold',
 };
 
 /**
@@ -255,7 +258,15 @@ export const mlButtonClasses = (
 ): string =>
   cn(
     'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0',
+    // R-A-3: a 44 × 44 hit area on a phone around every size — the 32 px
+    // icon-only header square, the 40 px `md`, the 28 px `sm` (globals.css).
+    'ub-hit',
     'transition-colors duration-fast ease-standard',
+    // Revamp F2 (05 §3, "Finger down"): every variant answers a press within a
+    // frame, by a press colour distinct from hover and a 0.98 squeeze. The
+    // baseline found tabs, rows and four of six variants doing nothing on a
+    // touch but their hover style. Transform only, so nothing reflows.
+    'active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100',
     'disabled:cursor-not-allowed disabled:opacity-45',
     BUTTON_VARIANT[variant],
     BUTTON_SIZE[size],

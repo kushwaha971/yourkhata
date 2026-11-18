@@ -1,5 +1,6 @@
 import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
+import type { LedgerBook } from 'src/types/domain.types';
 import { toQueryString } from 'src/utils/queryString';
 
 import type {
@@ -102,6 +103,21 @@ const toEntry = (row: LedgerEntryApiRow): LedgerEntry => ({
   /* CR-027. Spread only when present, so a row from a 201 (which carries no
      running balance) has no key rather than a `null` that reads like a value. */
   ...(row.running_balance != null ? { runningBalance: row.running_balance } : {}),
+  /* A2 — only when the server sent one; absent reads as `main`. */
+  ...(row.bucket ? { bucket: row.bucket } : {}),
+  /* LED-10 FR-5 — only a document-sourced row carries one. */
+  ...(row.source
+    ? {
+        source: {
+          type: row.source.type,
+          id: row.source.id,
+          number: row.source.number,
+          status: row.source.status ?? null,
+          kind: row.source.kind ?? null,
+          ...(row.source.adjustment ? { adjustment: true as const } : {}),
+        },
+      }
+    : {}),
 });
 
 const toWarning = (warning: {
@@ -134,6 +150,7 @@ const toWireBody = (values: LedgerEntryFormValues): Record<string, unknown> => {
   const isCredit = values.direction === 'credit';
   return {
     direction: values.direction,
+    ...(values.simple ? { simple: true } : {}),
     amount: values.amount,
     entry_date: values.entryDate,
     note: values.note.trim(),
@@ -175,6 +192,8 @@ export const listPartyEntries = async (
      * over a `?include_reversed=false` nobody needed.
      */
     readonly includeReversed?: boolean;
+    /** DEC-019 — the Shop's lines (`shop`) or, by default, the Udhaar book's. */
+    readonly book?: LedgerBook;
   } = {},
   signal?: AbortSignal
 ): Promise<LedgerPage> => {
@@ -182,6 +201,7 @@ export const listPartyEntries = async (
     cursor: params.cursor || undefined,
     limit: params.limit || undefined,
     include_reversed: params.includeReversed ? 'true' : undefined,
+    book: params.book === 'shop' ? 'shop' : undefined,
   });
   const response = await api.get<LedgerListApiResponse>(
     `${API_PATHS.PARTY_LEDGER_ENTRIES(partyId)}${query}`,

@@ -9,6 +9,7 @@ import {
   fetchCollectionSummary,
   fetchDueParties,
   fetchPartyReminders,
+  partyReminderKey,
   fetchReminderHistory,
   fetchReminderPreview,
   fetchReminderSettings,
@@ -192,14 +193,14 @@ const reminderSlice = createSlice({
       })
 
       .addCase(fetchPartyReminders.pending, (state, action) => {
-        if (state.partyId !== action.meta.arg) {
+        if (state.partyId !== partyReminderKey(action.meta.arg)) {
           state.partyRows = [];
           state.partyTotals = null;
         }
-        state.partyId = action.meta.arg;
+        state.partyId = partyReminderKey(action.meta.arg);
       })
       .addCase(fetchPartyReminders.fulfilled, (state, action) => {
-        if (state.partyId !== action.meta.arg) return;
+        if (state.partyId !== partyReminderKey(action.meta.arg)) return;
         state.partyRows = action.payload.rows as Draft<Reminder>[];
         state.partyTotals = action.payload.totals as Draft<ReminderTotals>;
       })
@@ -218,7 +219,8 @@ const reminderSlice = createSlice({
 
       .addCase(sendManualReminder.fulfilled, (state, action) => {
         /* The strip moves the moment the tap is recorded: "Reminded just now". */
-        if (state.partyId === action.payload.partyId) {
+        if (state.partyId === action.payload.partyId ||
+            state.partyId === `${action.payload.module === 'sales' ? 'shop' : 'main'}:${action.payload.partyId}`) {
           state.partyRows = [action.payload as Draft<Reminder>, ...state.partyRows].slice(0, 5);
           const totals = state.partyTotals;
           state.partyTotals = {

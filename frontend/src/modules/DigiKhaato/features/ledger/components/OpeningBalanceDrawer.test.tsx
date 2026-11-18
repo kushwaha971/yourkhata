@@ -3,11 +3,9 @@ import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { en, hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { todayInTenantTz } from 'src/utils/dates';
-
-import en from 'locales/en.json';
-import hi from 'locales/hi.json';
 
 import { useOpeningBalance } from '../hooks/useOpeningBalance';
 import { ledgerTimelineOpened, resetLedgerEntries } from '../redux/ledgerEntrySlice';
@@ -58,7 +56,7 @@ const entry = (over: Partial<LedgerEntry> = {}): LedgerEntry => ({
 
 const apiError = (code: string, details: Record<string, unknown> = {}) => ({
   code,
-  message: 'This party already has an opening balance. Correct it from the entry instead.',
+  message: 'This contact already has an opening balance. Correct it from the entry instead.',
   details,
   requestId: 'req_abc',
   status: code === 'validation_error' ? 400 : 409,
@@ -302,12 +300,12 @@ describe('the drawer', () => {
     expect(screen.getByLabelText('Amount')).toBeInTheDocument();
   });
 
-  it('starts a supplier-only party on "I owe them"', async () => {
+  it('starts a supplier-only party on "I will give"', async () => {
     /** §8 / PTY-01 FR-9. A supplier is somebody this business buys FROM, so
      *  what is carried over is what the business owes them. */
     await open('credit');
 
-    expect(await screen.findByRole('radio', { name: 'I owe them' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'I will give' })).toBeChecked();
   });
 
   it('says the whole sentence back, with the amount in it', async () => {
@@ -325,7 +323,7 @@ describe('the drawer', () => {
 
     expect(await screen.findByText('You will get ₹2,300.00')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: 'I owe them' }));
+    await user.click(screen.getByRole('radio', { name: 'I will give' }));
 
     expect(await screen.findByText('You will give ₹2,300.00')).toBeInTheDocument();
   });

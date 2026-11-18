@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import type { ApiErrorShape, PageMeta, RequestStatus } from 'src/types/api.types';
+import type { LedgerBook } from 'src/types/domain.types';
 
 import {
   DEFAULT_PARTY_FILTERS,
@@ -18,13 +19,17 @@ import {
   selectPartyListError,
   selectPartyListMeta,
   selectPartyListShowingSaved,
+  selectPartyListAppendFailed,
   selectPartyListStale,
   selectPartyListStatus,
   selectPartyListTotals,
   selectPartyListTotalsScope,
   selectPartyOverLimit,
+  selectPartyRolesOn,
   selectPartyRows,
+  selectPartyRowsQuery,
   selectPartySelection,
+  selectShopPartyCounts,
 } from '../redux/partyListSlice';
 import { fetchPartyList } from '../redux/partyListThunk';
 import { abortWarmPartyList, claimWarmPartyList } from '../redux/partyListWarmup';
@@ -32,11 +37,12 @@ import { partyTotals } from '../view-model/partyDisplay';
 
 import { usePartyListUrl } from './usePartyListUrl';
 
-import type { PartyBalanceFilter } from '../constants/partyFilters';
-import type { Party, PartyListFilters } from '../types/party.types';
+import type { PartyBalanceFilter, PartyKind } from '../constants/partyFilters';
+import type { Party, PartyListFilters, ShopPartyCounts } from '../types/party.types';
 import type { PartyListTotals } from '../view-model/partyDisplay';
 
 export interface UsePartyListResult {
+  readonly shopCounts: ShopPartyCounts | null;
   readonly rows: readonly Party[];
   readonly meta: PageMeta;
   readonly filters: PartyListFilters;
@@ -47,6 +53,8 @@ export interface UsePartyListResult {
   readonly totalsScope: 'filtered' | 'page';
   /** PTY-06 FR-12 — how many matched parties are over their limit, or null. */
   readonly overLimit: number | null;
+  /** A6 — the rows carried roles, so a module with roles is on. */
+  readonly rolesOn: boolean;
   readonly selectedIds: readonly string[];
   readonly setSelectedIds: (ids: readonly string[]) => void;
   /** Sorting is SERVER-side: it changes `ordering` and resets to page 1. */
@@ -64,6 +72,8 @@ export interface UsePartyListResult {
    * same query: show them under the "Showing saved list" banner, not the error.
    */
   readonly showingSaved: boolean;
+  /** R-DEC-33 — a phone's next page failed; the cards above it are still the answer. */
+  readonly appendFailed: boolean;
   /** Any narrowing at all is applied — the search box or any of the chips. */
   readonly isFiltered: boolean;
   /** How many, for the "Clear filters (2)" affordance (§19.3.4's example). */
@@ -77,19 +87,46 @@ export interface UsePartyListResult {
  * screen. It binds React to the store: selectors in, a thunk out, memoised
  * handlers back, and a plain typed result object (R-H-1, R-H-2). No JSX.
  */
-export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyListResult {
+export function usePartyList(
+  mode: 'replace' | 'append' = 'replace',
+  /**
+   * docs/platform/14 step 3b — `/customers` and `/suppliers` are this list with
+   * its type FIXED: it is their default (so their address stays clean), it is
+   * not counted as a filter the merchant applied, and Clear keeps it.
+   */
+  kind?: PartyKind,
+  /**
+   * DEC-019 — which app's money the list shows, fixed by the page the same way
+   * `kind` is: the Shop's Customers and Suppliers pass `shop`, the Udhaar book
+   * passes nothing (its book is the default).
+   */
+  book?: LedgerBook
+): UsePartyListResult {
   const dispatch = useAppDispatch();
+  const defaults = useMemo<PartyListFilters>(
+    () => ({
+      ...DEFAULT_PARTY_FILTERS,
+      ...(kind ? { type: kind } : {}),
+      book: book ?? 'main',
+      ...(book === 'shop' && Boolean(kind) ? { ordering: 'oldest_due_on' } : {}),
+    }),
+    [kind, book]
+  );
 
-  const rows = useAppSelector(selectPartyRows);
+  const rawRows = useAppSelector(selectPartyRows);
+  const rowsQuery = useAppSelector(selectPartyRowsQuery);
   const meta = useAppSelector(selectPartyListMeta);
   const filters = useAppSelector(selectPartyFilters);
   const status = useAppSelector(selectPartyListStatus);
   const error = useAppSelector(selectPartyListError);
   const stale = useAppSelector(selectPartyListStale);
   const showingSaved = useAppSelector(selectPartyListShowingSaved);
+  const appendFailed = useAppSelector(selectPartyListAppendFailed);
   const serverTotals = useAppSelector(selectPartyListTotals);
   const totalsScope = useAppSelector(selectPartyListTotalsScope);
   const overLimit = useAppSelector(selectPartyOverLimit);
+  const rolesOn = useAppSelector(selectPartyRolesOn);
+  const shopCounts = useAppSelector(selectShopPartyCounts);
 
   /**
    * The page-sum fallback, computed HERE rather than in the reducer.
@@ -105,7 +142,15 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
    * merchant told "₹2,40,000 receivable" has to know whether that is their book
    * or the twenty-five rows in front of them.
    */
-  const totals = useMemo(() => serverTotals ?? partyTotals(rows), [serverTotals, rows]);
+  // The slice is shared by Shop and Udhaar. Never paint the last book's money
+  // under the new book's title while the URL seed and its request settle.
+  const expectedBook = book ?? 'main';
+  const bookMatches = filters.book === expectedBook && (
+    rowsQuery?.book === expectedBook || (rowsQuery === null && rawRows.length === 0)
+  );
+  const rows = useMemo(() => (bookMatches ? rawRows : []), [bookMatches, rawRows]);
+  const scopedTotals = bookMatches ? serverTotals : null;
+  const totals = useMemo(() => scopedTotals ?? partyTotals(rows), [scopedTotals, rows]);
   const selectedIds = useAppSelector(selectPartySelection);
   const isImpaired = useAppSelector(selectNetworkImpaired);
 
@@ -165,8 +210,19 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
   // `GET /auth/me` instead of queueing behind it (see `partyListWarmup.ts`).
   // Claiming it takes over that exact request — abort handle included — rather
   // than issuing a second identical GET.
+  /* One request shape for the first load, a stale refresh and Try again: on a
+     phone a later page JOINS the cards. A retry sent as `replace` turned a
+     failed page 2 into a list holding page 2 alone. */
+  const fetchArg = useMemo(
+    () => ({
+      params: filters,
+      mode: mode === 'append' && filters.page > 1 ? ('append' as const) : ('replace' as const),
+    }),
+    [filters, mode]
+  );
   useEffect(() => {
-    const arg = { params: filters, mode };
+    const arg = fetchArg;
+    if (filters.book !== defaults.book) return undefined;
     // Claimed: the warm-up owns that request's lifetime, so there is nothing to
     // dispatch and nothing to abort here. Not claimed: this is something the
     // warm-up did not predict, so anything still speculating is superseded
@@ -175,7 +231,7 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
     abortWarmPartyList();
     const promise = dispatch(fetchPartyList(arg));
     return () => promise.abort();
-  }, [dispatch, filters, mode]);
+  }, [dispatch, fetchArg, filters.book, defaults.book]);
 
   // A mutation elsewhere marked us stale — refetch once, silently (§19.3.6).
   //
@@ -190,9 +246,21 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
   // actually does.
   useEffect(() => {
     if (!stale || isImpaired) return;
-    const promise = dispatch(fetchPartyList({ params: filters, mode: 'replace' }));
+    const promise = dispatch(fetchPartyList(fetchArg));
     return () => promise.abort();
-  }, [stale, isImpaired, dispatch, filters]);
+  }, [stale, isImpaired, dispatch, fetchArg]);
+
+  /* A6 (PLT-X04 EC-2) — a role the server does not know (its module was switched
+     off since the link was shared) is a 400 for the whole list. Drop that one
+     filter and let the list load, rather than leave an error screen over a
+     book that is fine. */
+  const roleRefused =
+    Boolean(filters.role) &&
+    error?.code === 'validation_error' &&
+    Boolean((error.details as Record<string, unknown> | undefined)?.role);
+  useEffect(() => {
+    if (roleRefused) dispatch(filtersChanged({ role: '' }));
+  }, [roleRefused, dispatch]);
 
   /**
    * Every narrowing the merchant has applied, counted.
@@ -221,12 +289,14 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
     () =>
       [
         filters.q,
-        filters.status !== DEFAULT_PARTY_FILTERS.status,
-        filters.type,
-        filters.balance,
+        filters.status !== defaults.status,
+        filters.type !== defaults.type,
+        filters.balance && filters.balance !== defaults.balance,
         filters.collection,
+        filters.late,
         filters.tag,
         filters.credit,
+        filters.role,
       ].filter(Boolean).length,
     [
       filters.q,
@@ -234,8 +304,11 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
       filters.type,
       filters.balance,
       filters.collection,
+      filters.late,
       filters.tag,
       filters.credit,
+      filters.role,
+      defaults,
     ]
   );
 
@@ -254,7 +327,7 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
    * slice is the only place that can keep them from disagreeing. The hook seeds
    * from the URL once and follows the slice afterwards.
    */
-  usePartyListUrl({ filters, defaults: DEFAULT_PARTY_FILTERS, onSeed: setFilters });
+  usePartyListUrl({ filters, defaults, onSeed: setFilters });
   const setPage = useCallback(
     (page: number, pageSize?: number) => {
       dispatch(pageChanged({ page, pageSize }));
@@ -291,20 +364,28 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
   const clearFilters = useCallback(() => {
     setSearchInput('');
     dispatch(filtersCleared());
-  }, [dispatch]);
+    if (kind) dispatch(filtersChanged({ type: kind }));
+    if (book) dispatch(filtersChanged({ book }));
+  }, [dispatch, kind, book]);
   const refetch = useCallback(() => {
-    void dispatch(fetchPartyList({ params: filters, mode: 'replace' }));
-  }, [dispatch, filters]);
+    void dispatch(fetchPartyList(fetchArg));
+  }, [dispatch, fetchArg]);
 
+  const visibleStatus = bookMatches ? status : 'loading';
+  const visibleMeta = bookMatches
+    ? meta
+    : { page: 1, pageSize: filters.pageSize, total: 0, totalPages: 0 };
   return {
     rows,
-    meta,
+    shopCounts: bookMatches ? shopCounts : null,
+    meta: visibleMeta,
     filters,
-    status,
-    error,
+    status: visibleStatus,
+    error: bookMatches ? error : null,
     totals,
     totalsScope,
     overLimit,
+    rolesOn,
     selectedIds,
     setSelectedIds,
     setOrdering,
@@ -315,9 +396,10 @@ export function usePartyList(mode: 'replace' | 'append' = 'replace'): UsePartyLi
     clearFilters,
     refetch,
     toggleBalance,
-    isLoading: status === 'loading',
-    isRefreshing: status === 'refreshing',
-    showingSaved,
+    isLoading: visibleStatus === 'loading',
+    isRefreshing: visibleStatus === 'refreshing',
+    showingSaved: bookMatches && showingSaved,
+    appendFailed: bookMatches && appendFailed,
     isFiltered: activeFilterCount > 0,
     activeFilterCount,
   };

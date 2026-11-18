@@ -1,15 +1,30 @@
 'use client';
 
+import { UbQrCode } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import type { PrintBranding } from 'src/print/brandingPrintService';
 import { formatBusinessDate } from 'src/utils/dates';
-import { formatAmount, formatInr } from 'src/utils/money';
+import { formatAmount, formatInr, withMinusSign } from 'src/utils/money';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
-import { documentTitleId, sgstLabelId } from '../../view-model/invoiceDisplay';
+import {
+  documentTitleId,
+  sgstLabelId,
+  isNotABill,
+  notTaxInvoiceId,
+} from '../../view-model/invoiceDisplay';
 
-import { pct, taxColumns, taxSummary, thermalName, trimQty, watermark } from './printModel';
-import { UbQrCode } from './UbQrCode';
+import {
+  businessColumn,
+  extraCell,
+  pct,
+  taxColumns,
+  taxSummary,
+  thermalName,
+  trimQty,
+  watermark,
+} from './printModel';
 
-import type { PrintBranding } from '../../redux/salesThunk';
 import type { SalesDocument, UpiIntent } from '../../types/sales.types';
 
 const COMPOSITION_FOOTER = 'Composition taxable person, not eligible to collect tax on supplies';
@@ -33,6 +48,7 @@ export function InvoicePrintThermal80({
 }>): React.JSX.Element {
   const columns = taxColumns(doc);
   const mark = watermark(doc);
+  const extra = businessColumn(doc);
   const supplier = doc.supplier;
   const who = doc.partySnapshot?.name || doc.walkInName || t('sales.walkIn.customer');
   const row = (label: string, value: string, strong = false) => (
@@ -47,7 +63,7 @@ export function InvoicePrintThermal80({
 
   return (
     <article
-      className="ub-print-sheet ub-print-thermal w-[72mm] bg-white font-mono text-[11px] leading-tight text-black"
+      className="ub-print-sheet ub-print-thermal w-[72mm] bg-white font-mono text-[0.6875rem] leading-tight text-printInk"
       data-print-template="thermal80"
       data-testid="print-thermal"
     >
@@ -58,7 +74,7 @@ export function InvoicePrintThermal80({
         )}
         <p className="font-bold">{supplier.legalName || supplier.name}</p>
         <p>{[supplier.address.line1, supplier.address.city].filter(Boolean).join(', ')}</p>
-        {supplier.phone && <p>{supplier.phone}</p>}
+        {supplier.phone && <p>{formatPhoneForDisplay(supplier.phone)}</p>}
         {supplier.gstin && <p>GSTIN {supplier.gstin}</p>}
         {branding?.docHeader && <p>{branding.docHeader}</p>}
       </header>
@@ -75,10 +91,17 @@ export function InvoicePrintThermal80({
       <p>
         {t('sales.print.to')}: {thermalName(who)}
       </p>
+      {doc.site && (
+        <p>
+          {t('sales.print.site')}: {thermalName(doc.site.name)}
+        </p>
+      )}
       <p className="border-b border-dashed border-black" />
+      {doc.vehicle?.number && <p>{`${t('sales.editor.vehicleNo')}: ${doc.vehicle.number}`}</p>}
       {doc.lines.map((line) => (
         <div key={line.lineNo} className="py-0.5">
           <p>{thermalName(line.description)}</p>
+          {extra && extraCell(line, extra) && <p>{`  ${extraCell(line, extra)}`}</p>}
           <p className="flex justify-between">
             <span>
               {trimQty(line.qty)} {line.unitCode} x {formatAmount(line.unitPrice)}
@@ -101,10 +124,16 @@ export function InvoicePrintThermal80({
       {columns === 'intra' &&
         row(t(sgstLabelId(doc.placeOfSupplyState, doc.isInterState)), formatAmount(doc.sgstTotal))}
       {columns === 'inter' && row(t('sales.tax.igst'), formatAmount(doc.igstTotal))}
-      {row(t('sales.totals.roundOff'), formatAmount(doc.roundOff))}
+      {row(t('sales.totals.roundOff'), withMinusSign(doc.roundOff, formatAmount))}
       {row(t('sales.print.total'), formatInr(doc.grandTotal), true)}
-      {doc.status !== 'draft' && row(t('sales.print.paid'), formatAmount(doc.amountPaid))}
-      {doc.status !== 'draft' && row(t('sales.print.balance'), formatAmount(doc.amountDue))}
+      {doc.status !== 'draft' &&
+        doc.kind !== 'sales_order' &&
+        doc.kind !== 'delivery_challan' &&
+        row(t('sales.print.paid'), formatAmount(doc.amountPaid))}
+      {doc.status !== 'draft' &&
+        !isNotABill(doc.kind) &&
+        row(t('sales.print.balance'), formatAmount(doc.amountDue))}
+      {isNotABill(doc.kind) && <p>{t(notTaxInvoiceId(doc.kind))}</p>}
       {columns !== 'none' &&
         taxSummary(doc.lines).map((s) => (
           <p key={s.rate}>
@@ -128,8 +157,14 @@ export function InvoicePrintThermal80({
       <footer className="mt-2 text-center">
         <p>{t('sales.print.thanks')}</p>
         {doc.kind === 'bill_of_supply' && <p>{COMPOSITION_FOOTER}</p>}
+        {doc.rx?.doctor && (
+          <p>{t(doc.rx.patient ? 'sales.print.rxFor' : 'sales.print.rx', { doctor: doc.rx.doctor, patient: doc.rx.patient ?? '' })}</p>
+        )}
         {doc.terms && <p className="line-clamp-2">{doc.terms}</p>}
-        {branding?.appName && <p>{branding.appName}</p>}
+        {/* CR-2026-09-29-BRAND-A: signed by the shop, never by the product. */}
+        <p data-testid="print-issued-by">
+          {t('sales.print.issuedBy', { business: supplier.legalName || supplier.name })}
+        </p>
       </footer>
     </article>
   );

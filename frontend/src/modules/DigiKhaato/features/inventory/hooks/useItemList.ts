@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -13,6 +14,7 @@ import { ITEM_ORDERINGS } from '../constants/inventoryConstants';
 import {
   itemFiltersChanged,
   selectItemListCounts,
+  selectItemListHasAny,
   selectItemListError,
   selectItemListPage,
   selectItemListPageSize,
@@ -76,6 +78,8 @@ export interface UseItemListResult {
   readonly filters: ItemListFilters;
   readonly totals: ItemListResult['totals'] | null;
   readonly counts: ItemListResult['counts'] | null;
+  /** The server's: whether any item exists at all; `null` until known. */
+  readonly hasAny: boolean | null;
   readonly status: RequestStatus;
   readonly error: ApiErrorShape | null;
   readonly page: number;
@@ -89,9 +93,13 @@ export interface UseItemListResult {
   readonly refetch: () => void;
 }
 
-export function useItemList(): UseItemListResult {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards already
+ * shown instead of replacing them. A desktop table pages by replacement.
+ */
+export function useItemList(mode: 'replace' | 'append' = 'replace'): UseItemListResult {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const { can, hasModule } = usePermissions();
   const canRead = hasModule('inventory') && can('inventory.item.read');
@@ -101,6 +109,7 @@ export function useItemList(): UseItemListResult {
   const error = useAppSelector(selectItemListError);
   const totals = useAppSelector(selectItemListTotals);
   const counts = useAppSelector(selectItemListCounts);
+  const hasAny = useAppSelector(selectItemListHasAny);
   const page = useAppSelector(selectItemListPage);
   const pageSize = useAppSelector(selectItemListPageSize);
   const total = useAppSelector(selectItemListTotal);
@@ -112,19 +121,25 @@ export function useItemList(): UseItemListResult {
      render, and a memo on it re-dispatches forever (LED-04's lesson). */
   const queryString = search?.toString() ?? '';
   const filters = useMemo(() => filtersFromQuery(new URLSearchParams(queryString)), [queryString]);
+  /* One argument for the first load, the stale refresh and Try again: a retried
+     page two must JOIN the cards, never replace them with page two alone. */
+  const query = useMemo(
+    () => ({ ...filters, mode: mode === 'append' && filters.page > 1 ? mode : 'replace' }) as const,
+    [filters, mode]
+  );
 
   useEffect(() => {
     if (!canRead) return undefined;
-    dispatch(itemFiltersChanged(filters));
-    const promise = dispatch(fetchItemList(filters));
+    dispatch(itemFiltersChanged(query));
+    const promise = dispatch(fetchItemList(query));
     return () => promise.abort();
-  }, [dispatch, canRead, filters]);
+  }, [dispatch, canRead, query]);
 
   useEffect(() => {
     if (!stale || impaired || !canRead) return undefined;
-    const promise = dispatch(fetchItemList(filters));
+    const promise = dispatch(fetchItemList(query));
     return () => promise.abort();
-  }, [dispatch, stale, impaired, canRead, filters]);
+  }, [dispatch, stale, impaired, canRead, query]);
 
   const update = useCallback(
     (patch: Partial<ItemListFilters>) => {
@@ -142,8 +157,8 @@ export function useItemList(): UseItemListResult {
   }, [router]);
 
   const refetch = useCallback(() => {
-    void dispatch(fetchItemList(filters));
-  }, [dispatch, filters]);
+    void dispatch(fetchItemList(query));
+  }, [dispatch, query]);
 
   const isFiltered = Boolean(
     filters.q ||
@@ -159,6 +174,7 @@ export function useItemList(): UseItemListResult {
       filters,
       totals,
       counts,
+      hasAny,
       status,
       error,
       page,
@@ -176,6 +192,7 @@ export function useItemList(): UseItemListResult {
       filters,
       totals,
       counts,
+      hasAny,
       status,
       error,
       page,

@@ -7,10 +7,12 @@ import * as Yup from 'yup';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 
+import { SHOP_APP } from '../constants/appChoices';
 import {
   BUSINESS_TYPES,
   GST_TYPES,
   type BusinessType,
+  type SignupFeature,
   type GstType,
 } from '../constants/businessTypes';
 import { GST_STATE_CODES } from '../constants/gstStates';
@@ -27,6 +29,12 @@ import { GST_STATE_CODES } from '../constants/gstStates';
 export interface BusinessStepFormValues {
   name: string;
   businessType: BusinessType | '';
+  /** R-DEC-64 — the Wholesale tile: the kind below is sold wholesale. */
+  sellsWholesale: boolean;
+  /** R-DEC-66 / G12 — set only on an Other shop's last screen. */
+  features?: Partial<Record<SignupFeature, boolean>>;
+  /** The apps ticked on step 1. `['shop']` when the server offered no choice. */
+  apps: string[];
   stateCode: string;
   ownerName: string | null;
 }
@@ -48,7 +56,14 @@ export interface AddressStepFormValues {
   email: string | null;
 }
 
-export const BUSINESS_STEP_FIELDS = ['name', 'businessType', 'stateCode', 'ownerName'] as const;
+export const BUSINESS_STEP_FIELDS = [
+  'name',
+  'businessType',
+  'sellsWholesale',
+  'apps',
+  'stateCode',
+  'ownerName',
+] as const;
 export const GST_STEP_FIELDS = ['gstType', 'gstin', 'legalName', 'pan'] as const;
 export const ADDRESS_STEP_FIELDS = [
   'line1',
@@ -77,10 +92,25 @@ export const useOnboardingSchemas = (): OnboardingSchemas => {
         // §10 — 2–160 chars, trimmed. `nameValidation` is the shared rule; only
         // the ceiling differs from its default.
         name: v.nameValidation(2, 160).defined(),
+        // One at least. The step never ticks one for the merchant, so this is
+        // the only thing standing between them and a business that runs nothing.
+        apps: Yup.array(Yup.string().defined()).min(1, t('validation.apps.required')).defined(),
+        // The kind of shop is a question about the Shop. It is required of a
+        // business that runs it and not asked of one that does not — the tiles
+        // are not even drawn then, so requiring it would block a library on a
+        // field it cannot see.
         businessType: Yup.mixed<BusinessType | ''>()
-          .oneOf([...BUSINESS_TYPES], t('validation.businessType.required'))
-          .required(t('validation.businessType.required'))
+          .when('apps', {
+            is: (apps: readonly string[] | undefined) => (apps ?? []).includes(SHOP_APP),
+            then: (schema) =>
+              schema
+                .oneOf([...BUSINESS_TYPES], t('validation.shopKind.required'))
+                .required(t('validation.shopKind.required')),
+            otherwise: (schema) => schema.oneOf([...BUSINESS_TYPES, '']),
+          })
           .defined(),
+        sellsWholesale: Yup.boolean().default(false),
+        features: Yup.mixed<Partial<Record<SignupFeature, boolean>>>().optional(),
         // EC-4 — `97` is in `GST_STATE_CODES` and `99` is not, so "in the list"
         // is the whole rule and there is no second place to keep it true.
         stateCode: v

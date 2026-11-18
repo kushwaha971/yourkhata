@@ -1,6 +1,7 @@
 import { POLL_STEPS } from '../constants/importKinds';
 
 import {
+  createdCount,
   commitBlockReason,
   fileSizeLabel,
   pollDelay,
@@ -30,6 +31,8 @@ const JOB: ImportJob = {
   warnings: [],
   previewRows: [],
   totals: {},
+  totalsProblems: {},
+  duplicates: 0,
   progress: null,
   hasErrorFile: true,
   canCommit: false,
@@ -58,10 +61,11 @@ describe('pollDelay (IMP-01 FR-8)', () => {
 });
 
 describe('commitBlockReason (FR-6, §8)', () => {
-  it('names the rows to fix when there are problems', () => {
+  it('names the rows to fix when nothing else could import', () => {
     /* The disabled Import button carries its reason BENEATH it — a phone has
-       no hover, so a tooltip would be a reason nobody can read. */
-    expect(commitBlockReason(JOB)).toEqual({
+       no hover, so a tooltip would be a reason nobody can read. QA B33: problem
+       rows block only when there is no good row to import instead. */
+    expect(commitBlockReason({ ...JOB, validRows: 0 })).toEqual({
       id: 'imports.review.blocked.errors',
       values: { count: 2 },
     });
@@ -106,8 +110,8 @@ describe('previewCell (AC-3)', () => {
      not what the khata will say once the row is saved. */
   it('groups a mobile as the party list does, and words a coded choice', () => {
     expect(previewCell('+919820000001', 'mobile', YES_NO)).toBe('+91 98200 00001');
-    const choice = (value: string) => (value === 'to_receive' ? 'They owe me' : value);
-    expect(previewCell('to_receive', 'label', { ...YES_NO, choice })).toBe('They owe me');
+    const choice = (value: string) => (value === 'to_receive' ? 'I will get' : value);
+    expect(previewCell('to_receive', 'label', { ...YES_NO, choice })).toBe('I will get');
     expect(previewCell('to_receive', 'label', YES_NO)).toBe('to_receive');
   });
 });
@@ -128,6 +132,15 @@ describe('the rest of the read', () => {
   it('formats money summary fields as rupees and counts as counts', () => {
     expect(summaryValue('opening_receivable', '2300.00')).toBe('₹2,300.00');
     expect(summaryValue('created_parties', 412)).toBe('412');
+  });
+
+  it('counts what a students or loans import created, and shows their money as rupees (QA F10)', () => {
+    // The completion card read `created_parties ?? created_items` and said "0 parties
+    // imported" over two hundred students.
+    expect(createdCount({ created_students: 212 })).toBe(212);
+    expect(createdCount({ created_loans: 40, lent: '35000.00' })).toBe(40);
+    expect(summaryValue('lent', '35000.00')).toBe('₹35,000.00');
+    expect(summaryValue('deposits_held', '500.00')).toBe('₹500.00');
   });
 
   it('labels a file size in the unit a person reads', () => {

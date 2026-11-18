@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { responseObserved } from 'src/redux/slice/networkSlice';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
@@ -14,6 +15,7 @@ import { resetPartyDetail } from '../redux/partyDetailSlice';
 import { resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
 
+// Preserve the existing shared-page contracts; personal Udhaar has its own replacement suite.
 import { PartyDetailPageContent } from './PartyDetailPageContent';
 
 /**
@@ -44,6 +46,17 @@ const ledgerService = jest.requireMock('modules/DigiKhaato/features/ledger/api/l
    reminders feature's; stubbed at its service boundary like the other two. */
 jest.mock('modules/DigiKhaato/features/reminders/api/reminderService');
 
+/* PTY-05's tag service, because the Edit drawer's tag picker lists the
+   tenant's tags when it opens. Unmocked, that request left the module boundary,
+   failed in jsdom as a network error, and `transportFailed` put the singleton
+   store's network state at `degraded` for every later test in the file — so
+   the NEW-2 block's refetches were suppressed (`usePartyDetail` does not
+   refetch while the link is impaired) and its five tests failed whenever the
+   "Escape on the edit drawer" test ran first. */
+jest.mock('../api/tagService');
+
+const tagService = jest.requireMock('../api/tagService') as { listTags: jest.Mock };
+
 const reminderService = jest.requireMock(
   'modules/DigiKhaato/features/reminders/api/reminderService'
 ) as {
@@ -67,9 +80,11 @@ const partyService = jest.requireMock('../api/partyService') as {
 };
 
 const mockPush = jest.fn();
+let mockPersonSearch = '';
+afterEach(() => { mockPersonSearch = ''; });
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => new URLSearchParams(mockPersonSearch),
   usePathname: () => '/parties/p1',
 }));
 
@@ -125,7 +140,13 @@ const apiError = (status: number) => ({
  * with an empty permission set proves those controls are absent and nothing
  * else, which is how a negative assertion passes for entirely the wrong reason.
  */
-const signIn = (permissions: readonly PermissionCode[]): void => {
+/* `role` defaults to the owner, because Edit, Archive and Restore are the owner's
+   or an admin's since 12 Oct 2026 — a session with no role sees none of them. */
+const signIn = (
+  permissions: readonly PermissionCode[],
+  role: string = 'owner',
+  activeApp: string = 'khata'
+): void => {
   store.dispatch(
     sessionLoaded({
       user: {
@@ -137,14 +158,19 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
         mustChangePassword: false,
         passwordExpiresAt: null,
       },
-      activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
+      activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
-      permissions: [...permissions],
+      // The khata app needs its own way in since the Money Book rebuild (11 Nov);
+      // the `main`-book page these tests cover is still Library's and Lending's.
+      permissions: [...permissions, 'khata.book.read'],
       // `ledger` among them, because the khata page's transactions card and its
       // two quick actions are gated on the module (§19.7.5): a tenant that has
       // not enabled it sees no card at all, which is a different screen and is
       // asserted separately.
-      enabledModules: ['parties', 'ledger'],
+      enabledModules: ['parties', 'ledger', 'khata'],
+      // DEC-019 — this page is the Udhaar book's khata (Gave money / Got money); opened
+      // from the Shop it is the person's bills instead, asserted separately.
+      activeApp,
       version: 1,
     })
   );
@@ -173,7 +199,13 @@ beforeEach(() => {
      tests, two describes away, and reads as a bug in archiving. */
   store.dispatch(resetLedgerForm());
   store.dispatch(resetLedgerEntries());
+  /* The network slice is a singleton too and nothing resets it: a test whose
+     request fails as a transport error leaves the link `degraded`, and every
+     refetch after it is withheld. A completed response is what puts it back
+     to `online`, exactly as in the product. */
+  store.dispatch(responseObserved());
   jest.clearAllMocks();
+  tagService.listTags.mockResolvedValue([]);
   partyService.getParty.mockResolvedValue(RESULT);
   partyService.setCollectionDate.mockResolvedValue(PARTY);
   partyService.archiveParty.mockResolvedValue({ ...PARTY, status: 'archived' as const });
@@ -337,10 +369,10 @@ describe('the khata page', () => {
      */
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    const gave = await screen.findByRole('button', { name: /You gave/ });
+    const gave = await screen.findByRole('button', { name: /Gave money/ });
     const more = screen.getByRole('button', { name: 'More actions' });
     expect(gave).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /You got/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Got money/ })).toBeInTheDocument();
     /* The two ledger actions are BUTTONS and everything else is behind the
        menu, which is the ordering that matters: a merchant at a counter is
        recording a sale far more often than editing an address, and the target
@@ -353,11 +385,11 @@ describe('the khata page', () => {
     const user = userEvent.setup();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    await user.click(await screen.findByRole('button', { name: /You gave/ }));
+    await user.click(await screen.findByRole('button', { name: /Gave money/ }));
 
     // The party's name is in the drawer title, which is the only thing that
     // tells a merchant WHOSE khata they are about to write to.
-    expect(await screen.findByText('You gave · Ramesh Traders')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money · Ramesh Traders')).toBeInTheDocument();
   });
 
   it('moves the header balance to the number the entry produced, before any refetch lands', async () => {
@@ -416,7 +448,7 @@ describe('the khata page', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     await screen.findByText('₹2,300.00');
 
-    await user.click(screen.getByRole('button', { name: /You gave/ }));
+    await user.click(screen.getByRole('button', { name: /Gave money/ }));
     await user.type(await screen.findByLabelText('Amount'), '500');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -438,8 +470,8 @@ describe('the khata page', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
     await screen.findByText('Ramesh Traders');
-    expect(screen.queryByRole('button', { name: /You gave/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /You got/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gave money/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Got money/ })).not.toBeInTheDocument();
   });
 
   it('draws no transactions card at all for a tenant without the ledger module', async () => {
@@ -484,7 +516,7 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('This party was not found')).toBeInTheDocument();
+    expect(await screen.findByText('This contact was not found')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to customers' })).toBeInTheDocument();
   });
@@ -494,9 +526,9 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('We could not load this party')).toBeInTheDocument();
+    expect(await screen.findByText('We could not load this contact')).toBeInTheDocument();
     // R-E-4: the id is what support asks for, so it stays on screen.
-    expect(screen.getByText(/req_abc123/)).toBeInTheDocument();
+    expect(screen.queryByText(/req_abc123/)).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
@@ -509,10 +541,169 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('This party is archived')).toBeInTheDocument();
+    expect(await screen.findByText('This contact is archived')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
   });
+});
+
+describe('opened from the Shop (DEC-019)', () => {
+  /**
+   * The owner, 12 Oct 2026: the Udhaar book and the Shop are separate apps that
+   * share only the person. Opened from the Shop's Customers this page is the
+   * person's BILLS — what is due on them and the lines behind it — and never
+   * their udhaar figure or the Udhaar book's Gave money / Got money.
+   */
+  const shopSession = (): void =>
+    signIn(
+      [
+        'parties.party.read',
+        'parties.party.write',
+        'ledger.entry.read',
+        'ledger.entry.write',
+        'ledger.reminder.write',
+      ],
+      'owner',
+      'shop'
+    );
+
+  it('keeps secondary Shop contact settings collapsed rather than in a permanent right rail', async () => {
+    /** R-DEC-14: the old desktop layout duplicated the phone number and competed with the bills. */
+    shopSession();
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+    const details = screen.getByRole('button', { name: 'Details' });
+    expect(details).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('shows what is due on bills in the Shop’s words, not the udhaar figure', async () => {
+    shopSession();
+    partyService.getParty.mockResolvedValue({
+      ...RESULT,
+      party: { ...PARTY, balance: '2300.00', shopBalance: '850.00' },
+    });
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+
+    expect(await screen.findByText('₹850.00')).toBeInTheDocument();
+    expect(screen.getByText('To collect')).toBeInTheDocument();
+    expect(screen.queryByText('₹2,300.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('You will get')).not.toBeInTheDocument();
+  });
+
+  /** BP-09: the person reminder must use the customer role, not the unrelated Udhaar amount. */
+  it('opens a Shop reminder and reads only its book history', async () => {
+    shopSession();
+    partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY,
+      balance: '2300.00', shopBalance: '400.00', isSupplier: true,
+      shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
+        supplierBalance: '600.00', supplierDue: '600.00', supplierCredit: '0.00',
+        daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null },
+    } });
+    reminderService.previewReminder.mockResolvedValue({ partyId: ID, book: 'shop',
+      balance: '1000.00', text: 'Shop bill amount 1000', smsText: 'Shop bill amount 1000', warnings: [] });
+    const user = userEvent.setup();
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+    await openMenu(user);
+    await user.click(await screen.findByRole('button', { name: 'Send reminder' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Send reminder' });
+    expect(await within(dialog).findByDisplayValue('Shop bill amount 1000')).toBeInTheDocument();
+    expect(reminderService.previewReminder).toHaveBeenCalledWith(ID, expect.anything(), 'shop');
+    expect(reminderService.listReminders).toHaveBeenCalledWith(
+      { partyId: ID, book: 'shop', page: 1, pageSize: 5 }, expect.anything());
+  }, 15000);
+
+  /**
+   * Owner, 13 Nov 2026: a role is shown only what it may use. The UPI code ends
+   * in "Mark received", which records the money, so an accountant (who reads
+   * payments but cannot record one) was offered a step the server refuses.
+   */
+  it.each([['payments.payment.read', false], ['payments.payment.write', true]] as const)(
+    'offers Collect by UPI only to a role that may record the money (%s)', async (code, offered) => {
+      shopSession();
+      const current = store.getState().session;
+      if (!current.user) throw new Error('Expected signed-in fixture');
+      store.dispatch(sessionLoaded({ ...current, user: current.user,
+        enabledModules: [...current.enabledModules, 'payments'],
+        permissions: [...current.permissions.filter((c) => !c.startsWith('payments.')), code] }));
+      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, shopBalance: '400.00',
+        shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
+          supplierBalance: '0.00', supplierDue: '0.00', supplierCredit: '0.00',
+          daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null } } });
+      const user = userEvent.setup();
+      renderWithProviders(<PartyDetailPageContent id={ID} />);
+      await screen.findByText('Ramesh Traders');
+      const more = screen.queryByRole('button', { name: 'More actions' });
+      if (more) await user.click(more);
+      else expect(offered).toBe(false);
+      const item = screen.queryByRole('button', { name: 'Collect by UPI' });
+      if (offered) expect(item).toBeInTheDocument();
+      else expect(item).not.toBeInTheDocument();
+    }, 15000);
+
+  /** Person revamp: the main payment action is reachable without opening overflow. */
+  it('puts role-specific actions on the Shop page and preserves the selected billing person', async () => {
+    shopSession();
+    const current = store.getState().session;
+    if (!current.user) throw new Error('Expected signed-in fixture');
+    store.dispatch(sessionLoaded({ ...current, user: current.user,
+      enabledModules: [...current.enabledModules, 'payments'],
+      permissions: [...current.permissions, 'payments.payment.write'] }));
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByTestId('shop-person-overview');
+    const dock = screen.getByTestId('shop-person-dock');
+    expect(within(dock).getByRole('button', { name: 'Receive payment' })).toBeInTheDocument();
+    expect(screen.queryByText('Gave money in all')).not.toBeInTheDocument();
+    expect(screen.queryByText('Credit limit')).not.toBeInTheDocument();
+  });
+
+  /** Owner: Customers, Suppliers and Udhaar are separate tasks, even for one contact. */
+  it.each([['', '₹1,000.00', '₹600.00'], ['from=suppliers', '₹600.00', '₹1,000.00']])(
+    'shows only the selected role amount for a dual-role person (%s)', async (query, shown, hidden) => {
+      mockPersonSearch = query;
+      shopSession();
+      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, isSupplier: true,
+        shop: { customerBalance: '1000.00', supplierBalance: '600.00', customerDue: '1000.00', customerCredit: '0', supplierDue: '600', supplierCredit: '0', daysOverdue: 42, oldestDueOn: null, lastActivityAt: null, lastActivityKind: null } } });
+      renderWithProviders(<PartyDetailPageContent id={ID} />);
+      const overview = await screen.findByTestId('shop-person-overview');
+      expect(within(overview).getByText(shown)).toBeInTheDocument();
+      expect(within(overview).queryByText(hidden)).not.toBeInTheDocument();
+      expect(within(overview).queryByText('As a customer')).not.toBeInTheDocument();
+      expect(within(overview).queryByText('As a supplier')).not.toBeInTheDocument();
+      await openMenu(userEvent.setup());
+      expect(screen.queryByRole('link', { name: 'Statement' })).not.toBeInTheDocument();
+    });
+
+  it('offers no Gave money / Got money, and reads the Shop’s lines', async () => {
+    shopSession();
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+
+    expect(await screen.findByText('Ramesh Traders')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gave money/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Got money/ })).not.toBeInTheDocument();
+    expect(ledgerService.listPartyEntries).not.toHaveBeenCalled();
+  });
+});
+
+it('does not invent a Student role for a customer when Library is active (QA B11)', async () => {
+  // The current navigation labels the app; the person's stored roles label the person.
+  signIn(['parties.party.read', 'ledger.entry.read'], 'owner', 'library');
+  const session = store.getState().session;
+  if (!session.user) throw new Error('The fixture must be signed in');
+  store.dispatch(
+    sessionLoaded({
+      ...session,
+      user: session.user,
+      apps: [
+        { code: 'library', labelId: 'nav.workspace.library', homePath: '/library', order: 10 },
+      ],
+    })
+  );
+  renderWithProviders(<PartyDetailPageContent id={ID} />);
+  await screen.findByText('Ramesh Traders');
+  expect(screen.getByText('Customer', { exact: true })).toBeInTheDocument();
+  expect(screen.queryByText('Student', { exact: true })).not.toBeInTheDocument();
 });
 
 describe('the promise date', () => {
@@ -560,7 +751,7 @@ describe('the promise date', () => {
     });
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     expect(screen.queryByLabelText('Promised to pay on')).not.toBeInTheDocument();
   });
@@ -705,7 +896,9 @@ describe('archiving from the khata page', () => {
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Archive' }));
 
-    expect(await screen.findByText('Ramesh Traders still owes you')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Ramesh Traders still has to give you money')
+    ).toBeInTheDocument();
     /* Inside the dialog: the header behind it is showing the same ₹2,300.00,
        which is the point — the dialog repeats the figure so the merchant does
        not have to look past a modal to read it. */
@@ -736,7 +929,7 @@ describe('archiving from the khata page', () => {
     await user.click(await screen.findByRole('button', { name: 'Archive' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Archive' }));
-    await screen.findByText('Ramesh Traders still owes you');
+    await screen.findByText('Ramesh Traders still has to give you money');
     return screen.getByRole('dialog');
   };
 
@@ -793,8 +986,9 @@ describe('archiving from the khata page', () => {
     const record = within(dialog).getByRole('button', { name: 'Record payment' });
     const footer = cancel.parentElement as HTMLElement;
     expect(footer).toContainElement(record);
-    expect(footer).toHaveClass('flex-col');
-    expect(footer).not.toHaveClass('flex-col-reverse');
+    // Three actions stack in DOM order (A5: the stack applies from three up).
+    expect(footer).toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col');
+    expect(footer).not.toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col-reverse');
 
     cancel.focus();
     await user.tab();
@@ -824,7 +1018,7 @@ describe('archiving from the khata page', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
   });
 
-  it('opens You got with the outstanding amount already in it', async () => {
+  it('opens Got money with the outstanding amount already in it', async () => {
     /**
      * Prevents the UAT finding: Record payment opened the drawer in the right
      * direction but EMPTY, so the merchant had to read ₹2,300.00 off the
@@ -839,7 +1033,7 @@ describe('archiving from the khata page', () => {
 
     const amount = await screen.findByLabelText('Amount');
     expect(amount).toHaveValue('2300.00');
-    expect(screen.getByRole('radio', { name: /You got/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Got money/ })).toBeChecked();
 
     await user.clear(amount);
     await user.type(amount, '500');
@@ -923,7 +1117,7 @@ describe('archiving from the khata page', () => {
     await user.click(await screen.findByRole('button', { name: 'Archive' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Archive' }));
-    await screen.findByText('You still owe Ramesh Traders');
+    await screen.findByText('You still have to give Ramesh Traders money');
     const blocked = screen.getByRole('dialog');
     // The figure is positive; the words carry the direction.
     expect(within(blocked).getByText('₹500.00')).toBeInTheDocument();
@@ -939,7 +1133,7 @@ describe('archiving from the khata page', () => {
 
     expect(
       within(dialog).getByText(
-        'Your ledger gets a ₹500.00 write-off, and what you owe Ramesh Traders becomes ₹0.'
+        'Your books get a ₹500.00 write-off, and what you pay Ramesh Traders becomes ₹0.'
       )
     ).toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Why are you writing this off?'), 'Shop closed');
@@ -985,7 +1179,7 @@ describe('archiving from the khata page', () => {
 
     expect(
       await within(dialog).findByText(
-        'Your ledger gets a ₹750.00 write-off, and what you owe Ramesh Traders becomes ₹0.'
+        'Your books get a ₹750.00 write-off, and what you pay Ramesh Traders becomes ₹0.'
       )
     ).toBeInTheDocument();
     expect(
@@ -1032,7 +1226,7 @@ describe('archiving from the khata page', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     await user.click(screen.getByRole('button', { name: 'Restore' }));
 
@@ -1049,7 +1243,7 @@ describe('archiving from the khata page', () => {
     signIn(['parties.party.read']);
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument();
   });
@@ -1269,8 +1463,25 @@ describe('sending a reminder from the khata page (LED-06)', () => {
     await waitFor(() =>
       expect(reminderService.createReminder).toHaveBeenCalledWith(ID, 'whatsapp_manual', undefined)
     );
-    await waitFor(() => expect(reminderService.sendReminder).toHaveBeenCalledWith('r1'));
+    await waitFor(() =>
+      expect(reminderService.sendReminder).toHaveBeenCalledWith('r1', PREVIEW_TEXT)
+    );
     expect(ledgerService.postLedgerEntry).not.toHaveBeenCalled();
+  });
+
+  it('records the words the merchant actually sent after editing them', async () => {
+    /* Prevents: MSG-10 — the log keeping the server's template while the
+       customer received the merchant's own words. */
+    const user = userEvent.setup();
+    const sheet = await openReminder(user);
+    const box = await within(sheet).findByRole('textbox', { name: 'Message' });
+    await user.clear(box);
+    await user.type(box, 'Ramesh ji, kal aa jaana');
+    await user.click(within(sheet).getByRole('link', { name: 'WhatsApp' }));
+
+    await waitFor(() =>
+      expect(reminderService.sendReminder).toHaveBeenCalledWith('r1', 'Ramesh ji, kal aa jaana')
+    );
   });
 
   it('records nothing for a sheet that was opened and closed', async () => {
@@ -1333,7 +1544,7 @@ describe('sending a reminder from the khata page (LED-06)', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('Reminded 3 times · last 2 days ago (SMS)')).toBeInTheDocument();
     expect(reminderService.listReminders).toHaveBeenCalledWith(
-      { partyId: ID, page: 1, pageSize: 5 },
+      { partyId: ID, book: 'main', page: 1, pageSize: 5 },
       expect.anything()
     );
   });
@@ -1440,7 +1651,7 @@ describe('focus returns to ⋯ when a dialog opened from the header menu closes 
   it.each([
     ['the reminder sheet', 'Send reminder', 'Send reminder'],
     ['the archive dialog', 'Archive', 'Archive Ramesh Traders?'],
-    ['the edit drawer', 'Edit', 'Edit party'],
+    ['the edit drawer', 'Edit', 'Edit contact'],
     ['the opening balance drawer', 'Add opening balance', 'Opening balance'],
   ])('returns focus to ⋯ after Escape on %s', async (_label, item, dialogName) => {
     const user = userEvent.setup();
@@ -1503,7 +1714,7 @@ describe('an archived party’s timeline (QA O4)', () => {
   };
 
   it('offers no Correct / Reverse ⋯ on its rows, because the server refuses both', async () => {
-    /* Prevents QA O4: the khata page hid You gave / You got for an archived
+    /* Prevents QA O4: the khata page hid Gave money / Got money for an archived
        party but each timeline row's ⋯ still offered "Correct this entry /
        Reverse this entry", which the server answers with 409 party_archived.
        Hidden rather than disabled (§19.7.5). */
@@ -1521,7 +1732,7 @@ describe('an archived party’s timeline (QA O4)', () => {
     });
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
     expect(await screen.findByText('Cement bags')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'More actions for Cement bags' })
@@ -1552,7 +1763,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
    * NEW-2. After a save, only the header balance moved: `partyDetailSlice`
    * patched `balance` from `meta.party_balance` and nothing else, so the credit
    * block ("₹250.00 over the ₹1,000.00 limit", the bar) and the timeline's
-   * "You gave in all" / "You got in all" kept the figures of the page load
+   * "Gave money in all" / "Got money in all" kept the figures of the page load
    * until a reload. The credit bar is what a merchant reads before lending
    * more, and it was telling them about a balance that no longer existed.
    *
@@ -1621,7 +1832,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     createdAt: '2026-09-17T10:00:00Z',
   });
 
-  it('over the limit → further over: the caption and "You gave in all" move with the entry', async () => {
+  it('over the limit → further over: the caption and "Gave money in all" move with the entry', async () => {
     partyService.getParty
       .mockResolvedValueOnce(detail('1250.00', credit('1250.00', '0.00', '250.00', 125, 'over')))
       .mockResolvedValue(detail('1450.00', credit('1450.00', '0.00', '450.00', 145, 'over')));
@@ -1636,7 +1847,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('₹250.00 over the ₹1,000.00 limit')).toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,250.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,250.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -1658,7 +1869,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     expect(await screen.findByText('₹450.00 over the ₹1,000.00 limit')).toBeInTheDocument();
     expect(screen.queryByText('₹250.00 over the ₹1,000.00 limit')).not.toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,450.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,450.00')).toBeInTheDocument();
   });
 
   it('under the limit → near it: the bar and the caption come from the server’s new block', async () => {
@@ -1704,10 +1915,10 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     expect(
       screen.getByRole('progressbar', { name: /Credit used — ₹250.00 left of ₹1,000.00/ })
     ).toHaveAttribute('aria-valuenow', '75');
-    expect(await screen.findByText('You gave in all, ₹750.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹750.00')).toBeInTheDocument();
   });
 
-  it('a reversal takes a party back under the limit, and "You gave in all" drops', async () => {
+  it('a reversal takes a party back under the limit, and "Gave money in all" drops', async () => {
     /* The typo case LED-03 exists for: ₹400 written twice at a busy counter.
        Undoing it takes the party from ₹200 over to ₹200 left — the difference
        between refusing the next sale and making it. */
@@ -1728,7 +1939,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('₹200.00 over the ₹1,000.00 limit')).toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,200.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,200.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -1742,7 +1953,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     expect(await screen.findByText('₹200.00 left of ₹1,000.00')).toBeInTheDocument();
     expect(screen.queryByText('₹200.00 over the ₹1,000.00 limit')).not.toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹800.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹800.00')).toBeInTheDocument();
     // The header's instant patch is still there, and still the 200's figure.
     expect(screen.getAllByText('₹800.00').length).toBeGreaterThan(0);
   });
@@ -1833,7 +2044,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     });
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    expect(await screen.findByText('You gave in all, ₹600.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹600.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -1852,7 +2063,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 });
 
 /**
- * PRODUCT (owner-compatible): on a phone the header's You gave / You got pair
+ * PRODUCT (owner-compatible): on a phone the header's Gave money / Got money pair
  * scrolls away with a long khata, and the merchant had to scroll back to the
  * top to record the next entry. The pair STAYS in the header — the owner's
  * tab-like pair under the title — and a docked copy appears at the bottom only
@@ -1862,7 +2073,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
  * `scrollPast(true)` reports the observed pair as having gone above the top
  * of the viewport, `scrollPast(false)` as back on screen.
  */
-describe('the docked You gave / You got pair on a phone', () => {
+describe('the docked Gave money / Got money pair on a phone', () => {
   let observed: { callback: IntersectionObserverCallback; target: Element | null }[] = [];
 
   const scrollPast = (past: boolean): void => {
@@ -1930,15 +2141,16 @@ describe('the docked You gave / You got pair on a phone', () => {
 
     // On screen: one pair, in the header, and no dock.
     expect(screen.queryByTestId('khata-dock')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /You gave/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Gave money/ })).toHaveLength(1);
 
     scrollPast(true);
     const dock = await screen.findByTestId('khata-dock');
     expect(dock).toHaveAttribute('data-ub-bottom-bar');
-    // Phone only: from `sm` up the header pair sits beside the title.
-    expect(dock).toHaveClass('sm:hidden');
-    expect(within(dock).getByRole('button', { name: /You gave/ })).toBeInTheDocument();
-    expect(within(dock).getByRole('button', { name: /You got/ })).toBeInTheDocument();
+    // Below `lg` only (docs/mobile-redesign): the phone layer docks the pair;
+    // a desktop keeps it beside the title.
+    expect(dock).toHaveClass('lg:hidden');
+    expect(within(dock).getByRole('button', { name: /Gave money/ })).toBeInTheDocument();
+    expect(within(dock).getByRole('button', { name: /Got money/ })).toBeInTheDocument();
 
     scrollPast(false);
     await waitFor(() => expect(screen.queryByTestId('khata-dock')).not.toBeInTheDocument());
@@ -1952,10 +2164,10 @@ describe('the docked You gave / You got pair on a phone', () => {
     scrollPast(true);
 
     const dock = await screen.findByTestId('khata-dock');
-    await user.click(within(dock).getByRole('button', { name: /You got/ }));
+    await user.click(within(dock).getByRole('button', { name: /Got money/ }));
 
     await screen.findByLabelText('Amount');
-    expect(screen.getByRole('radio', { name: /You got/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Got money/ })).toBeChecked();
   });
 
   it('is not offered for an archived party', async () => {
@@ -1977,5 +2189,75 @@ describe('the docked You gave / You got pair on a phone', () => {
     scrollPast(true);
 
     expect(screen.queryByTestId('khata-dock')).not.toBeInTheDocument();
+  });
+});
+
+/* ── Owner, 12 Oct 2026 — editing and filing a person away is a manager's act ── */
+
+describe('who may edit, archive and restore a party', () => {
+  /** Every party codename plus the ledger read, so a missing control below is
+   *  the ROLE's doing and never a codename's. */
+  const EVERY: readonly PermissionCode[] = [
+    'parties.party.read',
+    'parties.party.write',
+    'parties.party.delete',
+    'ledger.entry.read',
+  ];
+
+  it.each(['staff', 'cashier_custom'])(
+    'hides Edit and Archive from %s holding every party codename',
+    async (role) => {
+      /** Prevents drawing two controls the server refuses (`PartyManagerActions`). */
+      const user = userEvent.setup();
+      signIn(EVERY, role);
+      renderWithProviders(<PartyDetailPageContent id={ID} />);
+      await screen.findByText('Ramesh Traders');
+
+      await openMenu(user);
+      // The positive first: the menu is open and still offers the statement.
+      expect(await screen.findByRole('button', { name: 'Statement' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    }
+  );
+
+  it.each(['owner', 'admin'])('offers %s Edit and Archive', async (role) => {
+    const user = userEvent.setup();
+    signIn(EVERY, role);
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+
+    await openMenu(user);
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+  });
+
+  it('keeps the promise date for staff — it is the counter’s, not an edit of the person', async () => {
+    /** The server keeps a `collection_date`-only PATCH open to the write right;
+     *  the control must not vanish along with Edit. */
+    const user = userEvent.setup();
+    signIn(EVERY, 'staff');
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+
+    await user.click(screen.getByRole('button', { name: 'Today' }));
+    await waitFor(() => expect(partyService.setCollectionDate).toHaveBeenCalled());
+  });
+
+  it('offers Restore to an admin and not to staff holding the delete codename', async () => {
+    partyService.getParty.mockResolvedValue({
+      ...RESULT,
+      party: { ...PARTY, status: 'archived' as const },
+    });
+    signIn(EVERY, 'staff');
+    const { unmount } = renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('This contact is archived');
+    expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument();
+    unmount();
+
+    signIn(EVERY, 'admin');
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('This contact is archived');
+    expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
   });
 });

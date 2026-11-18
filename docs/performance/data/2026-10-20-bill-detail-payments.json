@@ -1,0 +1,139 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 390,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 390,
+      "state": "payment-review",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 390,
+      "state": "payment-saved",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 390,
+      "state": "payment-refreshed",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-financial-proof",
+      "posts": 1,
+      "bucket": "shop",
+      "direction": "in",
+      "beforeDue": "220.00",
+      "afterDue": "219.00",
+      "payment": "01a15773-c3db-70e7-95e3-2dc63f65d8d5"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "viewportWidth": 390,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-review",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-saved",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-refreshed",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-financial-proof",
+      "posts": 1,
+      "bucket": "shop",
+      "direction": "in",
+      "beforeDue": "219.00",
+      "afterDue": "218.00",
+      "payment": "01a15773-d0f1-703d-8f41-f975ae2897b4"
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "failures": []
+}

@@ -119,8 +119,17 @@ def test_prod_settings_refuse_the_development_defaults(monkeypatch: pytest.Monke
     """A production process that boots with a development key must fail."""
     monkeypatch.setenv("UB_SECRET_KEY", "dev-insecure-change-me-not-for-production")
     monkeypatch.setenv("UB_DEBUG", "0")
-    with pytest.raises(AssertionError, match="UB_SECRET_KEY"):
-        importlib.reload(importlib.import_module("config.settings.prod"))
+    # `prod` star-imports `base`, and reloading `prod` alone re-reads a `base`
+    # that was evaluated at startup — against a developer's backend/.env, whose
+    # real UB_SECRET_KEY and UB_DEBUG=1 then hide the very defaults this test
+    # plants. Re-evaluate `base` under the patched environment first.
+    importlib.reload(importlib.import_module("config.settings.base"))
+    try:
+        with pytest.raises(AssertionError, match="UB_SECRET_KEY"):
+            importlib.reload(importlib.import_module("config.settings.prod"))
+    finally:
+        monkeypatch.undo()
+        importlib.reload(importlib.import_module("config.settings.base"))
 
 
 def test_the_custom_response_headers_are_exposed_cross_origin() -> None:
@@ -216,3 +225,44 @@ def test_only_the_local_settings_module_names_the_e2e_lever() -> None:
         if "UB_E2E_RELAX_THROTTLES" in p.read_text(encoding="utf-8")
     }
     assert names == {"local"}
+
+
+# ── A1: UB_UNRELEASED_MODULES is refused in production (PLT-X11 BR-3) ────────
+
+
+def _boot(module: str, extra: dict[str, str]) -> subprocess.CompletedProcess:
+    env = {k: v for k, v in os.environ.items() if k != "UB_UNRELEASED_MODULES"}
+    env.update(_PROD_LIKE_ENV)
+    env.update(extra)
+    env["DJANGO_SETTINGS_MODULE"] = module
+    return subprocess.run(
+        [sys.executable, "-c", f"import importlib; importlib.import_module({module!r})"],
+        cwd=SETTINGS_DIR.parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+
+@pytest.mark.parametrize("module", ["config.settings.prod", "config.settings.staging"])
+def test_production_refuses_to_boot_with_unreleased_modules_shown(module: str) -> None:
+    """T-PLT-X11-3: a production process started with the development flag would
+    show every merchant a module that is not built. It must fail to start."""
+    refused = _boot(module, {"UB_UNRELEASED_MODULES": "1", "UB_ENV_NAME": "production"})
+    assert refused.returncode != 0
+    assert "UB_UNRELEASED_MODULES" in refused.stderr
+    assert _boot(module, {"UB_UNRELEASED_MODULES": "0"}).returncode == 0
+
+
+@pytest.mark.parametrize("env_name", ["ci", "e2e"])
+def test_the_ci_and_e2e_environments_may_show_unreleased_modules(env_name: str) -> None:
+    """The positive control: the e2e stack runs with production posture and the
+    flag on, or no module could be tested end to end before release."""
+    booted = _boot("config.settings.prod", {"UB_UNRELEASED_MODULES": "1", "UB_ENV_NAME": env_name})
+    assert booted.returncode == 0, booted.stderr
+
+
+def test_the_unreleased_flag_defaults_off() -> None:
+    """The suite itself runs without it, so every other test sees what a merchant sees."""
+    assert settings.UB_UNRELEASED_MODULES is False

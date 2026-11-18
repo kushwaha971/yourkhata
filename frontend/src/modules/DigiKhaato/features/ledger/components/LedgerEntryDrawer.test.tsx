@@ -83,10 +83,10 @@ const signIn = (role: string, permissions: string[]): void => {
 };
 
 /** The page's job, reduced to the two lines that matter to the drawer. */
-function Harness(): React.JSX.Element | null {
+function Harness({ simple = false }: Readonly<{ simple?: boolean }>): React.JSX.Element | null {
   const form = useLedgerEntryForm();
   if (!form.open) return null;
-  return <LedgerEntryDrawer form={form} partyName="Ramesh Traders" />;
+  return <LedgerEntryDrawer form={form} partyName="Ramesh Traders" simple={simple} />;
 }
 
 const openDrawer = (direction: 'debit' | 'credit' = 'debit'): void => {
@@ -116,7 +116,7 @@ describe('the entry drawer', () => {
     openDrawer('debit');
     renderWithProviders(<Harness />);
 
-    expect(await screen.findByText('You gave · Ramesh Traders')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money · Ramesh Traders')).toBeInTheDocument();
   });
 
   it('does not open in a red state', async () => {
@@ -138,7 +138,7 @@ describe('the entry drawer', () => {
      */
     openDrawer('debit');
     renderWithProviders(<Harness />);
-    await screen.findByText('You gave · Ramesh Traders');
+    await screen.findByText('Gave money · Ramesh Traders');
 
     expect(screen.queryByText('Enter an amount greater than 0')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Amount')).toHaveAttribute('aria-invalid', 'false');
@@ -153,19 +153,19 @@ describe('the entry drawer', () => {
      */
     openDrawer('debit');
     renderWithProviders(<Harness />);
-    await screen.findByText('You gave · Ramesh Traders');
+    await screen.findByText('Gave money · Ramesh Traders');
 
     expect(screen.queryByLabelText('Received via')).not.toBeInTheDocument();
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('radio', { name: 'You got' }));
+    await user.click(screen.getByRole('radio', { name: 'Got money' }));
 
     expect(await screen.findByLabelText('Received via')).toBeInTheDocument();
   });
 
   it('keeps what was typed when the direction is switched', async () => {
     /**
-     * FR-4 / EC-9. A merchant taps "You gave", types the amount, and realises
+     * FR-4 / EC-9. A merchant taps "Gave money", types the amount, and realises
      * it was the other way round. Without this the switch costs a close, a
      * reopen and retyping — at the counter, with somebody waiting.
      */
@@ -175,7 +175,7 @@ describe('the entry drawer', () => {
 
     const amount = await screen.findByLabelText('Amount');
     await user.type(amount, '500');
-    await user.click(screen.getByRole('radio', { name: 'You got' }));
+    await user.click(screen.getByRole('radio', { name: 'Got money' }));
 
     // Padded, because `UbMoneyInput` groups and pads on blur and the switch
     // blurs the field. What matters is that the figure survived at all.
@@ -233,16 +233,14 @@ describe('the entry drawer', () => {
      * screen that fails to OPEN because a convenience could not be read would
      * be a very poor trade for saving one tap.
      */
-    const getItem = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation(() => {
-        throw new Error('denied');
-      });
+    const getItem = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
 
     openDrawer('credit');
     renderWithProviders(<Harness />);
 
-    expect(await screen.findByText('You got · Ramesh Traders')).toBeInTheDocument();
+    expect(await screen.findByText('Got money · Ramesh Traders')).toBeInTheDocument();
     getItem.mockRestore();
   });
 
@@ -274,7 +272,7 @@ describe('the entry drawer', () => {
 
     await waitFor(() => expect(ledgerService.postLedgerEntry).toHaveBeenCalled());
     // Still open, still holding the amount.
-    expect(screen.getByText('You gave · Ramesh Traders')).toBeInTheDocument();
+    expect(screen.getByText('Gave money · Ramesh Traders')).toBeInTheDocument();
     // Padded, because `UbMoneyInput` groups and pads on blur and the switch
     // blurs the field. What matters is that the figure survived at all.
     expect(screen.getByLabelText('Amount')).toHaveValue('500.00');
@@ -384,9 +382,7 @@ describe('the entry drawer', () => {
     await user.type(await screen.findByLabelText('Amount'), '500');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() =>
-      expect(store.getState().snackbar.id).toBe('ledger.entry.savedOverLimit')
-    );
+    await waitFor(() => expect(store.getState().snackbar.id).toBe('ledger.entry.savedOverLimit'));
     expect(store.getState().snackbar.params).toEqual({
       over: '10,000.00',
       limit: '50,000.00',
@@ -474,3 +470,16 @@ describe('the credit limit', () => {
     expect(screen.getByText(/Ask the owner to record this one/)).toBeInTheDocument();
   });
 });
+
+ it('personal Udhaar saves amount with an empty optional note and no payment method', async () => {
+  /** Personal money between friends must not require hidden business fields or invent Cash. */
+  const user = userEvent.setup();
+  openDrawer('credit'); renderWithProviders(<Harness simple />);
+  const amount = await screen.findByLabelText('Amount');
+  expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
+  expect(screen.queryByText('Payment mode')).not.toBeInTheDocument();
+  await user.type(amount, '500');
+  await user.click(screen.getByRole('button', {name:'Save'}));
+  await waitFor(() => expect(ledgerService.postLedgerEntry).toHaveBeenCalled());
+  expect(ledgerService.postLedgerEntry.mock.calls[0][1]).toMatchObject({simple:true,amount:'500.00',note:'',paymentMode:'',reference:''});
+ });

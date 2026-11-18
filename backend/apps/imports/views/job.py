@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import write_audit
+from apps.common.book_access import allowed_books
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import BusinessRuleViolation, NoActiveTenant, NotFound, PermissionDenied
@@ -34,7 +35,7 @@ from apps.common.permissions import ModuleEnabled
 from apps.common.renderers import EnvelopeJSONRenderer, PassthroughCsvRenderer
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
-from apps.common.throttling import ScopedUserRateThrottle
+from apps.common.throttling import ScopedUserRateThrottle, durable_throttle
 from apps.imports import registry
 from apps.imports.constants import AUDIT_IMPORT_ERROR_FILE, ImportStatus
 from apps.imports.models import ImportJob
@@ -53,12 +54,19 @@ def _tenant(request: Any) -> Any:
     return tenant
 
 
+def _holds(request: Any, spec: registry.ImporterSpec, codename: str) -> bool:
+    """The merged codename, and for a kind that posts money, that book's own grant."""
+    if not request_has(request, codename):
+        return False
+    return spec.book is None or spec.book in allowed_books(request, codename)
+
+
 def _may_read(request: Any, spec: registry.ImporterSpec | None) -> bool:
-    return spec is not None and request_has(request, spec.read_permission)
+    return spec is not None and _holds(request, spec, spec.read_permission)
 
 
 def _may_write(request: Any, spec: registry.ImporterSpec | None) -> bool:
-    return spec is not None and all(request_has(request, c) for c in spec.required_permissions)
+    return spec is not None and all(_holds(request, spec, c) for c in spec.required_permissions)
 
 
 def _job_or_404(request: Any, job_id: Any) -> tuple[ImportJob, registry.ImporterSpec | None]:
@@ -76,12 +84,19 @@ def _can_commit(request: Any, job: ImportJob, spec: registry.ImporterSpec | None
     """The button's state, decided by the server (an accountant sees it disabled)."""
     if spec is None or not _may_write(request, spec):
         return False
-    if job.error_rows or job.valid_rows == 0:
+    # QA B33 — problem rows no longer block: the good rows can be imported and the
+    # rest skipped. Only a file with nothing importable cannot be committed.
+    if job.valid_rows == 0:
         return False
     if job.status == ImportStatus.READY:
         return True
     error = (job.result or {}).get("error") or {}
     return job.status == ImportStatus.FAILED and error.get("at") == "commit"
+
+
+def _tenant_key(request: Any, view: Any) -> str | None:
+    tenant = get_effective_tenant(request)
+    return f"tenant:{tenant.id}" if tenant is not None else None
 
 
 class _ImportView(APIView):
@@ -96,7 +111,9 @@ class ImportJobListView(_ImportView):
 
     def get_throttles(self) -> list[Any]:
         if self.request.method == "POST":
-            return [ScopedUserRateThrottle(UPLOAD_SCOPE)]
+            # Durable (Part 27 §27.11): an upload stores a file, and a LocMem
+            # count per gunicorn worker was the budget times the worker count.
+            return [durable_throttle(UPLOAD_SCOPE)]
         return [ScopedUserRateThrottle("user")]
 
     def get(self, request: Any) -> Any:
@@ -131,18 +148,51 @@ class ImportJobDetailView(_ImportView):
         return StandardResponse.ok(job_detail(job, can_commit=_can_commit(request, job, spec)))
 
 
+class ImportRowsView(_ImportView):
+    """`GET /imports/{id}/rows?page=&page_size=&problems=1` — every row before
+    importing, a page at a time (QA B34: the review showed only the first 20)."""
+
+    def get(self, request: Any, job_id: Any) -> Any:
+        from apps.imports.constants import ROWS_PAGE_MAX, ROWS_PAGE_SIZE
+
+        job, _spec = _job_or_404(request, job_id)
+
+        def number(key: str, default: int, top: int) -> int:
+            try:
+                return max(1, min(int(request.query_params.get(key) or default), top))
+            except (TypeError, ValueError):
+                return default
+
+        page = number("page", 1, 10_000)
+        size = number("page_size", ROWS_PAGE_SIZE, ROWS_PAGE_MAX)
+        problems = request.query_params.get("problems") in ("1", "true")
+        rows, total = engine.rows_page(job, page=page, page_size=size, problems=problems)
+        return StandardResponse.ok(
+            rows, meta={"page": page, "page_size": size, "total": total, "problems": problems}
+        )
+
+
 class ImportCommitView(_ImportView):
     """`POST /imports/{id}/commit` → 202 (FR-6)."""
 
     def get_throttles(self) -> list[Any]:
-        return [ScopedUserRateThrottle("party_write")]
+        # Part 27 §27.11 "Import commit 5/hour/tenant" — a commit writes up to
+        # 10,000 rows in one job, so it is the tenant's budget, not a person's.
+        return [
+            ScopedUserRateThrottle("party_write"),
+            durable_throttle("import_commit", key=_tenant_key),
+        ]
 
     @idempotent("import_commit")
     def post(self, request: Any, job_id: Any) -> Any:
         job, spec = _job_or_404(request, job_id)
         if not _may_write(request, spec):
             raise PermissionDenied("Only someone who can add these records can import them.")
-        job = engine.request_commit(ctx=Ctx.from_request(request), job=job)
+        job = engine.request_commit(
+            ctx=Ctx.from_request(request),
+            job=job,
+            data=request.data if isinstance(request.data, dict) else {},
+        )
         job = ImportJob.objects.select_related("file_attachment", "created_by").get(pk=job.pk)
         return StandardResponse.accepted(
             job_detail(job, can_commit=False), message="Import started"
@@ -193,7 +243,7 @@ class ImportErrorFileView(_ImportView):
             default_storage.open(attachment.storage_key, "rb"),
             content_type="text/csv; charset=utf-8",
             as_attachment=True,
-            filename=f"digikhaato-{job.kind}-problems.csv",
+            filename=f"yourkhata-{job.kind}-problems.csv",
         )
         response["Cache-Control"] = "private, no-store"
         return response
@@ -213,6 +263,6 @@ class ImportTemplateView(_ImportView):
         response = HttpResponse(
             engine.template_csv(spec).encode("utf-8"), content_type="text/csv; charset=utf-8"
         )
-        response["Content-Disposition"] = f'attachment; filename="digikhaato-{kind}-template.csv"'
+        response["Content-Disposition"] = f'attachment; filename="yourkhata-{kind}-template.csv"'
         response["Cache-Control"] = "private, max-age=300"
         return response

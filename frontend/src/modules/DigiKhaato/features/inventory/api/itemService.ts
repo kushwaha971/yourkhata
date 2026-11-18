@@ -2,6 +2,8 @@ import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
 
+import { toTagBody } from './tagService';
+
 import type {
   Item,
   ItemFormValues,
@@ -9,6 +11,8 @@ import type {
   ItemListResult,
   ItemListRow,
   ItemSaveResult,
+  ItemSchedule,
+  KindLine,
   MovementFilters,
   MovementPage,
   StockMovement,
@@ -35,8 +39,11 @@ export interface ItemRowWire {
    *  `reports.financial.read` (INV-08 EC-4) — absent, never zero. */
   readonly purchase_price?: string;
   readonly tax_code: string;
+  readonly kind_line?: KindLine | null;
   readonly hsn_sac?: string | null;
   readonly tax_inclusive_selling?: boolean;
+  /** WP-07 — sent with the cost keys only: today's GST plus cess, for the margin. */
+  readonly gst_percent?: string | null;
   readonly track_stock: boolean;
   readonly on_hand: string | null;
   readonly avg_cost?: string | null;
@@ -45,6 +52,25 @@ export interface ItemRowWire {
   readonly stock_value?: string | null;
   readonly status: 'active' | 'archived';
   readonly match_field?: 'name' | 'sku' | 'barcode' | null;
+  readonly units?: readonly {
+    readonly code: string;
+    readonly factor: string;
+    readonly barcode: string | null;
+    readonly selling_price: string | null;
+    readonly allow_decimal: boolean;
+  }[];
+  readonly scanned_unit?: string | null;
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  readonly tracking?: 'none' | 'serial' | 'batch';
+  readonly next_batch?: { readonly batch_no: string; readonly expiry: string } | null;
+  readonly warranty_months?: number | null;
+  readonly product?: { readonly id: string; readonly name: string } | null;
+  readonly attributes?: { readonly size?: string; readonly colour?: string };
+  readonly part_numbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fits_vehicle?: string | null;
+  readonly salt?: string | null;
+  readonly schedule?: string;
   readonly updated_at: string;
 }
 
@@ -63,6 +89,10 @@ export interface MovementWire {
     readonly type: string;
     readonly id: string | null;
     readonly number: string | null;
+    /** A sale or purchase document's kind (`invoice`, `purchase_bill`, …), when resolved. */
+    readonly kind?: string;
+    /** That document's status (`void` once cancelled), when resolved. */
+    readonly status?: string;
   };
   readonly reverses_id: string | null;
   readonly is_backdated: boolean;
@@ -125,8 +155,10 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
   sellingPrice: row.selling_price,
   purchasePrice: row.purchase_price ?? null,
   taxCode: row.tax_code,
+  kindLine: row.kind_line ?? null,
   hsnSac: row.hsn_sac ?? null,
   taxInclusiveSelling: row.tax_inclusive_selling ?? false,
+  gstPercent: row.gst_percent ?? null,
   trackStock: row.track_stock,
   onHand: row.on_hand,
   avgCost: row.avg_cost ?? null,
@@ -135,6 +167,27 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
   stockValue: row.stock_value ?? null,
   status: row.status,
   matchField: row.match_field ?? null,
+  units: (row.units ?? []).map((unit) => ({
+    code: unit.code,
+    factor: unit.factor,
+    barcode: unit.barcode,
+    sellingPrice: unit.selling_price,
+    allowDecimal: unit.allow_decimal,
+  })),
+  scannedUnit: row.scanned_unit ?? null,
+  addons: row.addons ?? [],
+  tracking: row.tracking ?? 'none',
+  nextBatch: row.next_batch
+    ? { batchNo: row.next_batch.batch_no, expiry: row.next_batch.expiry }
+    : null,
+  warrantyMonths: row.warranty_months ?? null,
+  product: row.product ?? null,
+  attributes: row.attributes ?? {},
+  partNumbers: row.part_numbers ?? [],
+  rack: row.rack ?? null,
+  fitsVehicle: row.fits_vehicle ?? null,
+  salt: row.salt ?? null,
+  schedule: (row.schedule ?? '') as ItemSchedule,
   updatedAt: row.updated_at,
 });
 
@@ -248,6 +301,7 @@ export const listItems = async (
       /** `stock_value` is null for a member without `reports.financial.read`. */
       totals: { items: number; stock_value: string | null };
       counts: { all: number; in: number; low: number; out: number };
+      has_any?: boolean;
     };
   }>(`${API_PATHS.ITEMS}${query}`, ubConfig({ signal, suppressErrorSnackbar: true }));
   const { meta } = response.data;
@@ -259,31 +313,42 @@ export const listItems = async (
     totalPages: meta.total_pages,
     totals: { items: meta.totals.items, stockValue: meta.totals.stock_value },
     counts: meta.counts,
+    ...(typeof meta.has_any === 'boolean' ? { hasAny: meta.has_any } : {}),
   };
 };
 
 /**
- * The picker's search (`useItemSearch`): active items matching `q`, 20 at most.
- * A picker's failure is not a page's: it toasts like any other request.
+ * The picker's search (`useItemSearch`): one page of active items matching
+ * `q` — or, with nothing typed, every active item by name, so the picker lists
+ * on open (owner, 5 Oct 2026). A picker's failure is not a page's: it toasts
+ * like any other request.
  */
+export const ITEM_SEARCH_PAGE_SIZE = 20;
+
 export const searchItems = async (
   q: string,
+  page: number,
   signal?: AbortSignal,
-  options: { readonly trackedOnly?: boolean } = {}
-): Promise<readonly ItemListRow[]> => {
+  options: { readonly trackedOnly?: boolean; readonly status?: 'active' | 'archived' } = {}
+): Promise<{ readonly rows: readonly ItemListRow[]; readonly hasMore: boolean }> => {
   const query = toQueryString({
-    q,
-    status: 'active',
+    q: q || undefined,
+    status: options.status ?? 'active',
     type: options.trackedOnly ? 'goods' : undefined,
-    page_size: 20,
+    page,
+    page_size: ITEM_SEARCH_PAGE_SIZE,
     ordering: 'name',
   });
-  const response = await api.get<{ data: readonly ItemRowWire[] }>(
-    `${API_PATHS.ITEMS}${query}`,
-    ubConfig({ signal })
-  );
+  const response = await api.get<{
+    data: readonly ItemRowWire[];
+    meta?: { page?: number; total_pages?: number };
+  }>(`${API_PATHS.ITEMS}${query}`, ubConfig({ signal }));
   const rows = response.data.data.map(toItemRow);
-  return options.trackedOnly ? rows.filter((row) => row.trackStock) : rows;
+  const meta = response.data.meta;
+  return {
+    rows: options.trackedOnly ? rows.filter((row) => row.trackStock) : rows,
+    hasMore: (meta?.page ?? page) < (meta?.total_pages ?? 0),
+  };
 };
 
 /** GET /items/lookup — the scanner's exact path. `null` for a 404, never a throw. */
@@ -298,7 +363,12 @@ export const lookupItemByBarcode = async (
     );
     return toItemRow(response.data.data);
   } catch (error) {
-    const status = (error as { response?: { status?: number } }).response?.status;
+    // The transport rejects with the normalised ApiErrorShape (`status` on
+    // the error itself), not axios's `response.status`. Reading only the
+    // latter turned every "no such barcode" into a throw, so a scanned
+    // unknown code did nothing at all on the live app (found by c1-scan).
+    const shaped = error as { status?: number | null; response?: { status?: number } };
+    const status = shaped.status ?? shaped.response?.status;
     if (status === 404 || status === 400) return null;
     throw error;
   }
@@ -334,6 +404,21 @@ export interface ItemBody {
     readonly unit_cost: string | null;
     readonly as_of: string | undefined;
   };
+  readonly part_numbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fits_vehicle?: string | null;
+  readonly salt?: string | null;
+  readonly schedule?: ItemSchedule;
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  readonly tracking?: 'none' | 'serial' | 'batch';
+  readonly warranty_months?: number | null;
+  readonly variants?: { readonly sizes: readonly string[]; readonly colours: readonly string[] };
+  readonly units?: readonly {
+    readonly unit_id: string;
+    readonly factor: string;
+    readonly selling_price: string | null;
+    readonly barcode: string | null;
+  }[];
 }
 
 /**
@@ -344,7 +429,11 @@ export interface ItemBody {
  */
 export const toItemBody = (
   values: ItemFormValues,
-  { withOpening, omitPurchasePrice = false }: { withOpening: boolean; omitPurchasePrice?: boolean }
+  {
+    withOpening,
+    omitPurchasePrice = false,
+    withUnits = true,
+  }: { withOpening: boolean; omitPurchasePrice?: boolean; withUnits?: boolean }
 ): ItemBody => {
   const isService = values.itemType === 'service';
   const track = !isService && values.trackStock;
@@ -373,6 +462,50 @@ export const toItemBody = (
           },
         }
       : {}),
+    // D P1a — the whole list, so a row removed in the form is removed on the
+    // server. The form starts from the item's own units, so a business whose
+    // form does not show the group sends back exactly what it had.
+    ...(withUnits && !isService
+      ? {
+          units: values.extraUnits
+            .filter((row) => row.unitId && row.factor)
+            .map((row) => ({
+              unit_id: row.unitId,
+              factor: row.factor,
+              selling_price: row.price || null,
+              barcode: row.barcode.trim() || null,
+            })),
+        }
+      : {}),
+    // D P2 — a new garment: the server makes one item per size × colour, and
+    // a single barcode or opening stock would belong to none of them.
+    ...(values.hasVariants && !isService && (values.sizes.length || values.colours.length)
+      ? {
+          variants: { sizes: values.sizes, colours: values.colours },
+          barcode: null,
+          opening_stock: undefined,
+        }
+      : {}),
+    // D P1b — like units, the form starts from the item's own values.
+    ...(withUnits && !isService
+      ? {
+          part_numbers: values.partNumbers.map((code) => code.trim()).filter(Boolean),
+          addons: values.addons
+            .filter((row) => row.name.trim())
+            .map((row) => ({ name: row.name.trim(), price: row.price || '0' })),
+          rack: values.rack.trim() || null,
+          fits_vehicle: values.fitsVehicle.trim() || null,
+          tracking: values.tracking,
+          // G4 — a medicine's salt and schedule (blank for any other item).
+          salt: values.salt.trim() || null,
+          schedule: values.schedule,
+          warranty_months: values.tracking === 'serial' ? values.warrantyMonths || null : null,
+        }
+      : {}),
+    // G2a — the first tag rides with a NEW item (one transaction on the server).
+    ...(withOpening && !isService && values.tag?.tagNo.trim()
+      ? { tag: toTagBody(values.tag) }
+      : {}),
   };
 };
 
@@ -380,22 +513,29 @@ interface SaveWire {
   readonly data: ItemDetailWire;
   readonly meta?: {
     readonly warnings?: readonly { code: string; field?: string; message: string }[];
+    readonly variants?: number;
   };
 }
 
 const toSaveResult = (body: SaveWire): ItemSaveResult => ({
   item: toItem(body.data),
   warnings: body.meta?.warnings ?? [],
+  ...(body.meta?.variants ? { variants: body.meta.variants } : {}),
 });
 
-/** POST /items. The caller mints the idempotency key once per logical save. */
+/**
+ * POST /items. The caller mints the idempotency key once per logical save.
+ * `omitPurchasePrice` for a member who cannot see costs (WP-07): the server
+ * refuses a cost from someone not allowed to read one.
+ */
 export const createItem = async (
   values: ItemFormValues,
-  idempotencyKey: string
+  idempotencyKey: string,
+  { omitPurchasePrice = false }: { omitPurchasePrice?: boolean } = {}
 ): Promise<ItemSaveResult> => {
   const response = await api.post<SaveWire>(
     API_PATHS.ITEMS,
-    toItemBody(values, { withOpening: true }),
+    toItemBody(values, { withOpening: true, omitPurchasePrice }),
     ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
   );
   return toSaveResult(response.data);
@@ -448,4 +588,16 @@ export const listMovements = async (
     nextCursor: response.data.meta.next_cursor,
     hasMore: response.data.meta.has_more,
   };
+};
+
+/** D P2 — one garment's sizes and colours, with stock, for the bill line's picker. */
+export const listVariants = async (
+  productId: string,
+  signal?: AbortSignal
+): Promise<readonly ItemListRow[]> => {
+  const response = await api.get<{ data: readonly ItemRowWire[] }>(
+    `${API_PATHS.ITEMS}${toQueryString({ product_id: productId, page_size: 60, ordering: 'name' })}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
+  return response.data.data.map(toItemRow);
 };

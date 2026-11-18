@@ -4,9 +4,13 @@ import {
   forwardRef,
   memo,
   useCallback,
+  useEffect,
+  useRef,
   useState,
   type InputHTMLAttributes,
 } from 'react';
+
+import { flushSync } from 'react-dom';
 
 import { MLInput } from 'src/design-system/primitives';
 import { cn } from 'src/utils/cn';
@@ -26,18 +30,33 @@ import { cn } from 'src/utils/cn';
  * Indian grouping is 2,2,3 — ₹12,34,567.89, not ₹1,234,567.89 — and a merchant
  * reading a figure wants to see it that way. But formatting WHILE someone types
  * fights them: the caret jumps every time a separator is inserted, and
- * backspacing over a comma does nothing visible. So the field shows exactly
- * what was typed while it has focus and groups it when focus leaves.
+ * backspacing over a comma does nothing visible. So the field shows the raw
+ * value while it has focus — including a value that ARRIVES while it has
+ * focus, like the amount owed prefilled into an autofocused drawer — and
+ * groups it when focus leaves.
+ *
+ * Native select() can focus before it establishes its selection. The focus
+ * handler waits one microtask for that call, commits the raw render
+ * synchronously, then maps the selection to the same digits without commas.
+ * A later render must not collapse a fresh select-all and append replacement
+ * text to the old amount (QA S-D2; UX16 browser regression). Blur cancels a
+ * pending focus transition. Every edit is parsed from what was shown (commas
+ * and ₹ dropped) and truncated to the caller's decimal places.
  *
  * ── What it accepts ─────────────────────────────────────────────────────────
- * Digits, one decimal point, and nothing else. A `-` is not rejected with an
- * error message; it simply cannot be typed, because a negative amount is never
- * what a merchant means. Direction is a separate control, always — "they owe
- * me" and "I owe them" are two buttons, not a minus sign a shopkeeper has to
- * decode.
+ * Digits and one decimal point. A negative amount is never what a merchant
+ * means — direction is a separate control, always: "they owe me" and "I owe
+ * them" are two buttons, not a minus sign a shopkeeper has to decode.
+ *
+ * QA B14 (12 Oct 2026) — the minus used to be dropped silently, so a typed
+ * "−50" became 50 and was saved with a success toast. It is now KEPT, as a
+ * leading `-`, so the form's money validators refuse it in words ("Enter 0 or
+ * more") instead of the input quietly changing the number.
  */
-export interface UbMoneyInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange'> {
+export interface UbMoneyInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'value' | 'onChange'
+> {
   /** A decimal string, e.g. `"2300.00"`, or null/empty for no amount. */
   readonly value: string | null | undefined;
   /** Receives a plain decimal string — never grouped, never a number. */
@@ -46,14 +65,48 @@ export interface UbMoneyInputProps
   /** Defaults to `₹`. A partner in another currency passes its own. */
   readonly currencySymbol?: string;
   readonly decimalPlaces?: number;
+  /** Optional entry precision for unit rates; ordinary money keeps decimalPlaces. */
+  readonly maxDecimalPlaces?: number;
+  /**
+   * G1 (design §G1 "₹ 12,710 / g"): a unit after the amount. Set, the symbol
+   * sits right beside the figure and the unit follows it, the whole group
+   * right-aligned in the box (`""` for the symbol beside the figure with no
+   * unit); unset, the box is drawn exactly as before.
+   */
+  readonly unit?: string;
+  /**
+   * Shop round (11 Nov 2026): an amount the form fills in while the field
+   * already has focus (the amount owed, prefilled into an autofocused sheet)
+   * arrives with no focus event, so the caret sat after "340.00" and a typed
+   * part payment was refused digit by digit. Set, an amount that arrives from
+   * outside while focused is selected, so the first key replaces it.
+   */
+  readonly selectWhenFilled?: boolean;
   readonly className?: string;
 }
 
-/** Digits and at most one point. Everything else never reaches the value. */
+/** Digits, at most one point, and a leading `-` if a minus was typed (QA B14). */
 export const sanitiseAmount = (raw: string): string => {
+  const sign = /[-−]/.test(raw) ? '-' : '';
   const kept = raw.replace(/[^\d.]/g, '');
   const [whole = '', ...rest] = kept.split('.');
-  return rest.length > 0 ? `${whole}.${rest.join('').replace(/\./g, '')}` : whole;
+  return sign + (rest.length > 0 ? `${whole}.${rest.join('').replace(/\./g, '')}` : whole);
+};
+
+/** Runs `format` on the magnitude and puts a leading minus back. */
+const signed = (value: string, format: (magnitude: string) => string): string =>
+  value.startsWith('-') ? `-${format(value.slice(1))}` : format(value);
+
+/**
+ * At most `decimalPlaces` after the point, by truncation (QA S-D2: a third
+ * decimal was accepted, so the form held "1392.005" while the confirm label
+ * read ₹1,392.00). `"12.345"` → `"12.34"`; with no places the point goes.
+ */
+export const capDecimals = (value: string, decimalPlaces: number): string => {
+  const point = value.indexOf('.');
+  if (point < 0) return value;
+  if (decimalPlaces <= 0) return value.slice(0, point);
+  return value.slice(0, point + 1 + decimalPlaces);
 };
 
 /**
@@ -73,6 +126,8 @@ export const sanitiseAmount = (raw: string): string => {
  */
 export const padDecimals = (value: string, decimalPlaces: number): string => {
   if (!value) return '';
+  if (value.startsWith('-'))
+    return value === '-' ? value : signed(value, (m) => padDecimals(m, decimalPlaces));
   const [whole = '', fraction = ''] = value.split('.');
   const safeWhole = whole || '0';
   if (decimalPlaces <= 0) return safeWhole;
@@ -86,6 +141,8 @@ export const padDecimals = (value: string, decimalPlaces: number): string => {
  */
 export const groupIndian = (value: string, decimalPlaces: number): string => {
   if (!value) return '';
+  if (value.startsWith('-'))
+    return value === '-' ? value : signed(value, (m) => groupIndian(m, decimalPlaces));
   const [whole = '0', fraction = ''] = value.split('.');
   const padded = fraction.padEnd(decimalPlaces, '0').slice(0, decimalPlaces);
   const last3 = whole.slice(-3);
@@ -102,6 +159,9 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
       invalid,
       currencySymbol = '₹',
       decimalPlaces = 2,
+      maxDecimalPlaces = decimalPlaces,
+      unit,
+      selectWhenFilled = false,
       className,
       onFocus,
       onBlur,
@@ -110,49 +170,157 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
     ref
   ) {
     const [focused, setFocused] = useState(false);
-
-    const handleChange = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) => onChange(sanitiseAmount(event.target.value)),
-      [onChange]
+    const focusRequest = useRef(0);
+    const own = useRef<HTMLInputElement | null>(null);
+    // What this field last sent, so a value it did not send is "from outside".
+    const sent = useRef<string | null>(null);
+    const setRef = useCallback(
+      (node: HTMLInputElement | null) => {
+        own.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) ref.current = node;
+      },
+      [ref]
     );
 
-    const shown =
-      focused || !value ? (value ?? '') : groupIndian(value, decimalPlaces);
+    const handleChange = useCallback(
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const next = capDecimals(sanitiseAmount(event.target.value), maxDecimalPlaces);
+        sent.current = next;
+        onChange(next);
+      },
+      [onChange, maxDecimalPlaces]
+    );
+
+    useEffect(() => {
+      const input = own.current;
+      if (!selectWhenFilled || !input || !value || value === sent.current) return;
+      if (input.ownerDocument.activeElement === input) input.select();
+    }, [selectWhenFilled, value]);
+
+    const raw = capDecimals(value ?? '', maxDecimalPlaces);
+    const shown = focused || !value ? raw : groupIndian(value, decimalPlaces);
+
+    const field = (
+      <MLInput
+        ref={setRef}
+        // `inputMode="decimal"` rather than `type="number"`: a number input
+        // gives a phone the right keypad but also spinners, scroll-wheel
+        // increments and a browser-localised decimal separator, none of
+        // which belong on an amount.
+        type="text"
+        inputMode="decimal"
+        // With a unit the hidden twin sets the width; without size=1 an input
+        // keeps its own ~20-character width and the figure drifts from ₹.
+        size={unit !== undefined ? 1 : undefined}
+        autoComplete="off"
+        value={shown}
+        onChange={handleChange}
+        invalid={invalid}
+        onFocus={(event) => {
+          const input = event.currentTarget;
+          const request = ++focusRequest.current;
+          if (input.value !== raw) {
+            // Native select() may focus the field before it establishes its
+            // range. Wait for that call to finish, then commit the raw render
+            // and restore the same digits before the next input event.
+            queueMicrotask(() => {
+              if (
+                request !== focusRequest.current ||
+                !input.isConnected ||
+                input.ownerDocument.activeElement !== input
+              )
+                return;
+              const shown = input.value;
+              const rawOffset = (offset: number | null) =>
+                shown.slice(0, offset ?? shown.length).replace(/,/g, '').length;
+              const start = rawOffset(input.selectionStart);
+              const end = rawOffset(input.selectionEnd);
+              const selectedAll = input.selectionStart === 0 && input.selectionEnd === shown.length;
+              flushSync(() => setFocused(true));
+              input.setSelectionRange(
+                Math.min(start, input.value.length),
+                selectedAll ? input.value.length : Math.min(end, input.value.length)
+              );
+            });
+          } else setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          focusRequest.current += 1;
+          setFocused(false);
+          // Committed to the caller's precision on the way out, so the form
+          // holds "2300.00" rather than "2300." or "2300".
+          if (value) {
+            sent.current = padDecimals(value, maxDecimalPlaces);
+            onChange(sent.current);
+          }
+          onBlur?.(event);
+        }}
+        className={
+          unit !== undefined
+            ? 'ds-num col-start-1 row-start-1 h-auto w-full min-w-0 border-0 bg-transparent p-0 text-right shadow-none outline-none focus-visible:border-0 disabled:bg-transparent'
+            : cn('ds-num text-right', currencySymbol && 'pl-7', invalid && 'border-formError')
+        }
+        {...rest}
+      />
+    );
+
+    if (unit !== undefined) {
+      return (
+        // The box is drawn here, not by the input: the input is only as wide as
+        // its figure (the hidden twin sizes it), so ₹ and the unit can hug it.
+        // A label, so a tap anywhere in the box focuses the figure; the caller
+        // names the field with aria-label rather than wrapping it in another.
+        <label
+          className={cn(
+            'ds-body-base-regular flex h-10 w-full cursor-text items-center justify-end gap-1 rounded-control border bg-surface-card px-3 text-text-primary transition-colors duration-fast ease-standard',
+            invalid
+              ? 'border-formError focus-within:shadow-[inset_0_0_0_1px_hsl(var(--form-error))]'
+              : 'border-border-hairline focus-within:border-text-primary hover:border-border-subtle',
+            rest.disabled && 'cursor-not-allowed bg-surface-sunken text-text-muted',
+            className
+          )}
+        >
+          {currencySymbol && (
+            <span aria-hidden className="ds-num shrink-0 max-lg:text-[1rem]">
+              {currencySymbol}
+            </span>
+          )}
+          <span className="inline-grid min-w-[2ch]">
+            <span
+              aria-hidden // 16 px below lg, as globals.css gives every input there (no iOS zoom):
+              // the twin must measure the figure in the size it is drawn.
+              className="ds-num invisible col-start-1 row-start-1 whitespace-pre max-lg:text-[1rem]"
+            >
+              {shown || rest.placeholder || ' '}
+            </span>
+            {field}
+          </span>
+          {unit && (
+            <span aria-hidden className="shrink-0 text-text-secondary max-lg:text-[1rem]">
+              {unit}
+            </span>
+          )}
+        </label>
+      );
+    }
 
     return (
       <div className={cn('relative flex w-full items-center', className)}>
-        <span
-          aria-hidden
-          className="ds-body pointer-events-none absolute left-3 text-text-tertiary"
-        >
-          {currencySymbol}
-        </span>
-        <MLInput
-          ref={ref}
-          // `inputMode="decimal"` rather than `type="number"`: a number input
-          // gives a phone the right keypad but also spinners, scroll-wheel
-          // increments and a browser-localised decimal separator, none of
-          // which belong on an amount.
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          value={shown}
-          onChange={handleChange}
-          invalid={invalid}
-          onFocus={(event) => {
-            setFocused(true);
-            onFocus?.(event);
-          }}
-          onBlur={(event) => {
-            setFocused(false);
-            // Committed to the caller's precision on the way out, so the form
-            // holds "2300.00" rather than "2300." or "2300".
-            if (value) onChange(padDecimals(value, decimalPlaces));
-            onBlur?.(event);
-          }}
-          className={cn('pl-7 text-right ds-num', invalid && 'border-formError')}
-          {...rest}
-        />
+        {/* An empty symbol draws nothing and reserves no space: a table cell
+            whose header names the unit ("Disc. %", design §A4 billTable). */}
+        {currencySymbol && (
+          <span
+            aria-hidden
+            // The design draws ₹ in the field's own ink and size (.inp, 15 px on a
+            // phone, 14 px on a desktop), not as a grey hint.
+            className="pointer-events-none absolute left-3 text-[15px] text-text-primary lg:text-[14px]"
+          >
+            {currencySymbol}
+          </span>
+        )}
+        {field}
       </div>
     );
   }

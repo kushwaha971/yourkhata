@@ -5,8 +5,8 @@ import { toApiError } from 'src/utils/apiError';
 
 import type {
   ExpenseCategory,
-  ExpenseFilters,
   ExpenseFormValues,
+  ExpenseListArg,
   ExpensePage,
   ExpenseSaveResult,
 } from '../types/expense.types';
@@ -29,7 +29,7 @@ const service = () => import('../api/expenseService');
 /** QUERY. One page of the expense list with its filtered totals. */
 export const fetchExpenses = createAsyncThunk<
   ExpensePage,
-  ExpenseFilters,
+  ExpenseListArg,
   { rejectValue: ApiErrorShape }
 >('expenseList/fetchExpenses', async (filters, { signal, rejectWithValue }) => {
   try {
@@ -68,11 +68,15 @@ export const createExpenseCategory = createAsyncThunk<
 /** MUTATION. Record one expense, with the key the hook minted for this save. */
 export const createExpense = createAsyncThunk<
   ExpenseSaveResult,
-  { readonly values: ExpenseFormValues; readonly idempotencyKey: string },
+  {
+    readonly values: ExpenseFormValues;
+    readonly idempotencyKey: string;
+    readonly app?: string;
+  },
   { rejectValue: ApiErrorShape }
->('expenseForm/createExpense', async ({ values, idempotencyKey }, { rejectWithValue }) => {
+>('expenseForm/createExpense', async ({ values, idempotencyKey, app }, { rejectWithValue }) => {
   try {
-    return await (await service()).createExpense(values, idempotencyKey);
+    return await (await service()).createExpense(values, idempotencyKey, app);
   } catch (error) {
     return rejectWithValue(toApiError(error, 'expenses.save.error'));
   }

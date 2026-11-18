@@ -13,7 +13,7 @@ import {
 import type { AuditRow } from '../types/audit.types';
 
 const KNOWN: Record<string, string> = {
-  'audit.action.party.created': 'Added party',
+  'audit.action.party.created': 'Added contact',
   'audit.actor.system': 'System (scheduled job)',
   'audit.value.on': 'On',
   'audit.value.off': 'Off',
@@ -46,7 +46,7 @@ describe('auditDisplay', () => {
   it('uses the locale label and falls back to readable words, never a raw code', () => {
     // A new server action must not print `member.role_changed` mid-log — the
     // statement printed `ledger.entry.type.manual_got` the same way.
-    expect(actionLabel('party.created', t)).toBe('Added party');
+    expect(actionLabel('party.created', t)).toBe('Added contact');
     expect(actionLabel('member.role_changed', t)).toBe('Role changed');
   });
 

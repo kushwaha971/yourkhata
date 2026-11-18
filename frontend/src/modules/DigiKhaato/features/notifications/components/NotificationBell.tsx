@@ -6,7 +6,11 @@ import dynamic from 'next/dynamic';
 
 import { Bell } from 'lucide-react';
 
-import { UbBox, UbButton } from 'src/design-system';
+import {
+  UbBox,
+  UbButton,
+  UbDialogLoading,
+} from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 
@@ -16,13 +20,14 @@ import { badgeText } from '../view-model/notificationDisplay';
 /**
  * NTF-01 FR-4 — the bell, on every app route, so it is kept to a button and
  * a count; the count is kept fresh by `useNotificationPoll`, mounted once by
- * the shell. The panel (rows, relative times, the read calls) is a `dynamic()`
+ * the shell. The panel (rows, relative times, the read calls) is a `dynamic(, { ssr: false })`
  * chunk loaded the first time the bell is pressed.
  */
 const NotificationPanel = dynamic(
   () => import('./NotificationPanel').then((m) => m.NotificationPanel),
   {
     ssr: false,
+  loading: () => <UbDialogLoading />,
   }
 );
 
@@ -57,7 +62,7 @@ export function NotificationBell({
         <UbBox
           as="span"
           aria-hidden
-          className="pointer-events-none absolute right-0.5 top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-white"
+          className="pointer-events-none absolute right-0.5 top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] font-semibold leading-none text-white"
         >
           {badge}
         </UbBox>

@@ -1,15 +1,21 @@
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
+import { accountContact } from 'src/utils/accountIdentity';
 
 import { accessStateOf } from '../view-model/credentialsShare';
+import { hasAnyMemberAction, memberActionsFor } from '../view-model/memberActions';
+import { roleText } from '../view-model/roleDisplay';
 
 import {
   MemberAccessCell,
   MemberMetaCell,
+  MemberMoreCell,
+  MemberRoleCell,
   MemberNameCell,
   MemberRegenerateCell,
 } from './MemberRow';
 
 import type { Member } from '../types/member.types';
+import type { MemberActionViewer } from '../view-model/memberActions';
 
 /**
  * Part 19 §19.9.4 — a MODULE-LEVEL column factory, memoised by the screen on
@@ -45,6 +51,11 @@ export interface MemberColumnDeps {
   readonly nowMs: number;
   readonly canWrite: boolean;
   readonly onRegenerate: (membershipId: string) => void;
+  /** Owner, 12 Oct 2026 — who is looking, for `memberActionsFor`. */
+  readonly viewer: MemberActionViewer;
+  readonly onOpenActions: (membershipId: string) => void;
+  /** Owner, 14 Nov 2026 — the open app's name: a column says each member's group there. */
+  readonly appLabel?: string | null;
 }
 
 export const createMemberColumns = ({
@@ -53,6 +64,9 @@ export const createMemberColumns = ({
   nowMs,
   canWrite,
   onRegenerate,
+  viewer,
+  onOpenActions,
+  appLabel,
 }: MemberColumnDeps): readonly UbDataGridColumn<Member>[] => [
   {
     id: 'name',
@@ -60,7 +74,14 @@ export const createMemberColumns = ({
     priority: 1,
     cardSlot: 'title',
     widthShare: 34,
-    cell: (member) => <MemberNameCell name={member.fullName} email={member.email} />,
+    // The contact line is a real email or the mobile they sign in with — never
+    // a mobile account's placeholder address (accountIdentity.ts).
+    cell: (member) => (
+      <MemberNameCell
+        name={member.fullName}
+        email={accountContact({ email: member.email, mobile: member.mobile })}
+      />
+    ),
   },
   {
     id: 'access',
@@ -82,13 +103,52 @@ export const createMemberColumns = ({
       );
     },
   },
+  ...(appLabel
+    ? [
+        {
+          id: 'group',
+          header: t('team.members.column.group', { app: appLabel }),
+          // Before the role: a phone card shows the first two lines only, and
+          // on this page the group says more than the role.
+          priority: 1 as const,
+          cardSlot: 'meta' as const,
+          widthShare: 18,
+          cell: (member: Member) => {
+            const access = member.access;
+            const label = !access
+              ? ''
+              : !access.canUse
+                ? t('team.access.cannotUse', { app: appLabel })
+                : // Short in the list: the long wording is cut on a phone card.
+                  (access.groupName ?? t('team.access.noGroupShort'));
+            return (
+              <MemberRoleCell
+                label={label}
+                caption={access && access.canUse && access.changes > 0 ? t('team.access.changes', { count: access.changes }) : null}
+                inactive={Boolean(access && !access.canUse)}
+              />
+            );
+          },
+        },
+      ]
+    : []),
   {
     id: 'role',
     header: t('team.members.column.role'),
     priority: 2,
     cardSlot: 'meta',
     widthShare: 14,
-    cell: (member) => <MemberMetaCell text={t(`tenant.role.${member.role}`)} />,
+    cell: (member) => {
+      const text = roleText(t, {
+        code: member.role,
+        labelId: member.roleLabelId,
+        module: member.roleModule,
+        active: member.roleActive,
+      });
+      return (
+        <MemberRoleCell label={text.label} caption={text.caption} inactive={!member.roleActive} />
+      );
+    },
   },
   {
     id: 'lastLogin',
@@ -108,17 +168,40 @@ export const createMemberColumns = ({
     cardSlot: 'trailing',
     widthShare: 16,
     align: 'end',
-    cell: (member) => (
-      <MemberRegenerateCell
-        membershipId={member.id}
-        label={t('team.regenerate.action')}
-        canWrite={canWrite}
-        // Hidden once they have chosen their own password, and for somebody
-        // only invited: the server refuses both, and a control whose only
-        // outcome is a refusal teaches the merchant to distrust the screen.
-        visible={member.mustChangePassword && member.status !== 'invited'}
-        onRegenerate={onRegenerate}
-      />
-    ),
+    cell: (member) => {
+      // Owner, 12 Oct 2026: for the owner and admins the row's actions live
+      // behind one ⋯ — Edit, Block or Unblock, Remove, and the reissue that
+      // used to be the only button here. Three or four buttons in a card's
+      // trailing slot is the "Delet" defect PTY-05 found at 360 px.
+      if (hasAnyMemberAction(memberActionsFor(viewer, member))) {
+        return (
+          <MemberMoreCell
+            membershipId={member.id}
+            label={t('team.member.actions', {
+              name:
+                member.fullName || accountContact({ email: member.email, mobile: member.mobile }),
+            })}
+            canWrite={canWrite}
+            onOpen={onOpenActions}
+          />
+        );
+      }
+      return (
+        <MemberRegenerateCell
+          membershipId={member.id}
+          label={t('team.regenerate.action')}
+          canWrite={canWrite}
+          // Hidden once they have chosen their own password, and for somebody
+          // only invited: the server refuses both, and a control whose only
+          // outcome is a refusal teaches the merchant to distrust the screen.
+          visible={
+            member.mustChangePassword &&
+            member.status !== 'invited' &&
+            member.status !== 'suspended'
+          }
+          onRegenerate={onRegenerate}
+        />
+      );
+    },
   },
 ];

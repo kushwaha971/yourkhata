@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { MLCalendar } from 'src/design-system/primitives';
 
 /**
@@ -16,23 +18,89 @@ export interface UbDateCalendarProps {
   readonly onSelect: (date: Date | undefined) => void;
   readonly min?: Date;
   readonly max?: Date;
+  /** The APP's language (react-intl's), never the device's. */
+  readonly locale?: string;
+  /** The month arrows' names; react-day-picker's own are English sentences. */
+  readonly previousMonthLabel?: string;
+  readonly nextMonthLabel?: string;
+  readonly monthDropdownLabel?: string;
+  readonly yearDropdownLabel?: string;
 }
+
+/**
+ * Sprint 12 i18n sweep — the popover spoke English on a Hindi screen. The
+ * field's face already read "28 सित॰ 2026" (QA P-D6), but react-day-picker
+ * formats with date-fns' default en-US locale, so the month header over the
+ * grid said "September 2026", the weekday row "Su Mo Tu", and every day button
+ * announced "Monday, September 28th, 2026". `Intl` prints all three for hi-IN
+ * with no date-fns locale bundle (ADR-021): "सितंबर 2026", "रवि सोम मंगल", and
+ * "सोमवार, 28 सितंबर 2026". English keeps react-day-picker's own formats, which
+ * are what the owner signed off.
+ */
+const hindiFormatters = () => {
+  const caption = new Intl.DateTimeFormat('hi-IN', { month: 'long', year: 'numeric' });
+  const weekday = new Intl.DateTimeFormat('hi-IN', { weekday: 'short' });
+  const day = new Intl.DateTimeFormat('hi-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return {
+    formatters: {
+      formatCaption: (date: Date) => caption.format(date),
+      formatWeekdayName: (date: Date) => weekday.format(date),
+    },
+    labelDayButton: (date: Date) => day.format(date),
+  };
+};
 
 export function UbDateCalendar({
   selected,
   onSelect,
   min,
   max,
+  locale,
+  previousMonthLabel,
+  nextMonthLabel,
+  monthDropdownLabel = 'Month',
+  yearDropdownLabel = 'Year',
 }: Readonly<UbDateCalendarProps>): React.JSX.Element {
   const disabled = [...(min ? [{ before: min }] : []), ...(max ? [{ after: max }] : [])];
+  const hindi = useMemo(() => (locale?.startsWith('hi') ? hindiFormatters() : null), [locale]);
+  const monthNames = useMemo(
+    () => new Intl.DateTimeFormat(locale?.startsWith('hi') ? 'hi-IN' : 'en-IN', { month: 'long' }),
+    [locale]
+  );
+  // DayPicker otherwise ends year-dropdown navigation at THIS year, hiding
+  // future plan dates. Keep a century each way and include any selected outlier;
+  // the field's own bounds still govern which days can actually be selected.
+  const year = new Date().getFullYear();
+  const startMonth = min ?? new Date(Math.min(year - 100, selected?.getFullYear() ?? year), 0);
+  const endMonth = max ?? new Date(Math.max(year + 100, selected?.getFullYear() ?? year), 11);
   return (
     <MLCalendar
       mode="single"
       selected={selected}
       defaultMonth={selected ?? max}
+      captionLayout="dropdown"
+      startMonth={startMonth}
+      endMonth={endMonth}
       onSelect={onSelect}
       disabled={disabled.length ? disabled : undefined}
       initialFocus
+      formatters={{
+        ...hindi?.formatters,
+        formatMonthDropdown: (date) => monthNames.format(date),
+      }}
+      labels={{
+        labelMonthDropdown: () => monthDropdownLabel,
+        labelYearDropdown: () => yearDropdownLabel,
+        ...(previousMonthLabel ? { labelPrevious: () => previousMonthLabel } : {}),
+        ...(nextMonthLabel ? { labelNext: () => nextMonthLabel } : {}),
+        ...(hindi ? { labelDayButton: hindi.labelDayButton } : {}),
+      }}
+      lang={locale?.startsWith('hi') ? 'hi' : undefined}
       className="[&_[data-selected-single=true]]:!bg-primary [&_[data-selected-single=true]]:!text-white [&_button]:border-0 [&_button]:shadow-none"
     />
   );

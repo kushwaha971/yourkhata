@@ -2,15 +2,13 @@ import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { store } from 'src/redux/store';
+import { en, hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { chooseOption } from 'src/tests/selectHelper';
 
-import en from 'locales/en.json';
-import hi from 'locales/hi.json';
-
 import { fetchSession } from '../../auth/redux/sessionThunk';
 import { resetOnboarding } from '../redux/onboardingSlice';
-import { createTenant } from '../redux/onboardingThunk';
+import { createTenant, loadOfferedApps } from '../redux/onboardingThunk';
 
 import { OnboardingStepPageContent } from './OnboardingStepPageContent';
 
@@ -24,6 +22,19 @@ import { OnboardingStepPageContent } from './OnboardingStepPageContent';
 jest.mock('../api/onboardingService');
 jest.mock('../../auth/api/authService');
 
+/**
+ * NEW-1's three key tests failed in the full run and passed alone. The cause
+ * was time, not keys: filling step 1 drives the real Radix state select and
+ * the tile grid, about 1.6 s alone on the 2-CPU box, and the two tests that
+ * fill it TWICE (a remount, a reload) took 3.2 s. Two jest workers on two CPUs
+ * roughly double that, past jest's 5 s default, and a timed-out test is not
+ * stopped: its second fill kept typing and clicking into the NEXT test ("forgets
+ * the key…"), which then found the wrong listbox. `--testTimeout=2500` alone
+ * reproduces exactly those three failures. The budget below fits a test that
+ * fills real forms; every assertion is unchanged.
+ */
+jest.setTimeout(20_000);
+
 const onboardingService = jest.requireMock('../api/onboardingService') as {
   createTenant: jest.Mock;
   fetchCurrentTenant: jest.Mock;
@@ -32,6 +43,7 @@ const onboardingService = jest.requireMock('../api/onboardingService') as {
   updateGstStep: jest.Mock;
   updateAddressStep: jest.Mock;
   completeOnboarding: jest.Mock;
+  fetchOfferedApps: jest.Mock;
 };
 const authService = jest.requireMock('../../auth/api/authService') as { getSession: jest.Mock };
 
@@ -48,7 +60,7 @@ jest.mock('next/navigation', () => ({
 const tenant = (over: Record<string, unknown> = {}) => ({
   id: 't1',
   name: 'Sharma General Store',
-  businessType: 'retail',
+  businessType: 'kirana',
   stateCode: '27',
   gstType: 'unregistered',
   gstin: null,
@@ -66,6 +78,10 @@ const tenant = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   mockSearch = '';
   store.dispatch(resetOnboarding());
+  // The server offered no app choice — the wizard as it was before 11 Oct
+  // 2026, which is what every test above the "choosing apps" block is about.
+  // Settled here rather than awaited so step 1 is on screen at first render.
+  store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
   // NEW-1 — step 1's idempotency key now outlives a reload in localStorage,
   // which jsdom keeps across tests; each test starts with none persisted.
   window.localStorage.clear();
@@ -80,16 +96,53 @@ beforeEach(() => {
   });
 });
 
+describe('a member the owner blocked (owner, 12 Oct 2026)', () => {
+  afterEach(() => {
+    store.dispatch({ type: 'session/sessionAnonymous', payload: null });
+  });
+
+  it('is told which business blocked them before being offered a new one', () => {
+    /* Without it a blocked salesman signs in to no business and is walked into
+       setting up his own, with no word of why the shop vanished. */
+    store.dispatch({
+      type: 'session/sessionLoaded',
+      payload: {
+        user: { id: 'u1', name: 'Ramesh', email: null, mobile: '+919822012345', locale: 'en' },
+        activeTenant: null,
+        tenants: [],
+        permissions: [],
+        enabledModules: [],
+        version: null,
+        blockedFrom: ['Gupta Kirana Store'],
+      },
+    });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    expect(
+      screen.getByText('Your access to Gupta Kirana Store has been blocked by its owner')
+    ).toBeInTheDocument();
+  });
+
+  it('says nothing to someone nobody blocked', () => {
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    expect(screen.queryByText(/has been blocked by its owner/)).not.toBeInTheDocument();
+  });
+});
+
 describe('the wizard — step 1 (FR-2)', () => {
-  it('renders the four-step progress and the nine business-type tiles', () => {
+  it('renders the four-step progress and the design\'s ten shop-kind tiles', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
-    const grid = screen.getByRole('radiogroup', { name: 'What kind of business?' });
+    const grid = screen.getByRole('radiogroup', { name: 'What do you sell?' });
     expect(grid).toBeInTheDocument();
-    // The nine types of FR-7's table, each with its one-line hint (§8).
-    expect(screen.getAllByRole('radio')).toHaveLength(9);
-    expect(screen.getByText('Walk-in customers, udhaar')).toBeInTheDocument();
+    // B1 / R-DEC-63: the design's ten kinds, in its order, each with its hint.
+    const radios = screen.getAllByRole('radio');
+    expect(radios).toHaveLength(10);
+    expect(radios.map((r) => r.getAttribute('data-kind'))).toEqual([
+      'kirana', 'medical', 'electronics', 'garments', 'hardware',
+      'auto_parts', 'wholesale', 'food', 'jewellery', 'other',
+    ]);
+    expect(screen.getByText('paint, sanitary')).toBeInTheDocument();
   });
 
   it('creates the tenant and advances to step 2', async () => {
@@ -98,7 +151,7 @@ describe('the wizard — step 1 (FR-2)', () => {
 
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -106,7 +159,7 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(onboardingService.createTenant).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Sharma General Store',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
       }),
       // EC-7 — the caller's idempotency key, reused on every retry.
@@ -116,12 +169,96 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(store.getState().onboarding.completedStep).toBe(1);
   });
 
+  it('asks "Wholesale of what?" and sends the kind with sells_wholesale', async () => {
+    /** Prevents (R-DEC-64): a wholesaler saved as a kind with no wholesale, or
+     * as the bare 'wholesale' type that says nothing about what they sell. */
+    const user = userEvent.setup();
+    onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await user.type(screen.getByLabelText(/Business name/), 'Patil Traders');
+    await user.click(screen.getByRole('radio', { name: /Wholesale/ }));
+    const what = screen.getByRole('radiogroup', { name: 'Wholesale of what?' });
+    // The same kinds, without Wholesale itself.
+    expect(within(what).getAllByRole('radio')).toHaveLength(9);
+    expect(within(what).queryByRole('radio', { name: /Wholesale/ })).toBeNull();
+    await user.click(within(what).getByRole('radio', { name: /Kirana/ }));
+    await chooseOption(user, /^State/, /Maharashtra/);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalled());
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      businessType: 'kirana',
+      sellsWholesale: true,
+    });
+  });
+
+  it('asks Other what kind of shop and what it needs, then sends both', async () => {
+    /** Prevents (R-DEC-66 / G12): an agri shop saved as a bare "other" with no
+     * batch and expiry, or the owner's switches thrown away. */
+    const user = userEvent.setup();
+    onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await user.type(screen.getByLabelText(/Business name/), 'Patil Krishi Kendra');
+    await user.click(screen.getByRole('radio', { name: /^Other/ }));
+    await user.click(screen.getByRole('radio', { name: /Agri inputs/ }));
+    // Agri starts with batch and expiry on; the owner adds sizes too.
+    expect(screen.getByRole('switch', { name: /Batch and expiry/ })).toBeChecked();
+    await user.click(screen.getByRole('switch', { name: /Sizes and colours/ }));
+    // The Other tile stays lit while a kind is picked under it.
+    expect(screen.getByRole('radio', { name: /^Other/ })).toBeChecked();
+    await chooseOption(user, /^State/, /Maharashtra/);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalled());
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      businessType: 'agri',
+      features: { service_items: false, alt_units: false, batches: true, variants: true },
+    });
+  });
+
+  it('explains the question under its title, before the tiles (design pPick)', () => {
+    /** Prevents: "Tap one. This sets your menus…" read last, under ten tiles. */
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    const body = screen.getByText(/Tap one\. This sets your menus/);
+    const firstTile = screen.getByRole('radio', { name: /Kirana/ });
+    expect(body.compareDocumentPosition(firstTile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'What do you sell?' })).toHaveAttribute(
+      'aria-describedby',
+      expect.stringContaining('-description')
+    );
+  });
+
+  it('does not turn the name red when a tile is tapped before it is typed', async () => {
+    /** Prevents (B-thread, 30 Oct 2026, seen on the live app at 390): the name
+     * field opens focused, a merchant taps "Kirana" first, the blur marked the
+     * empty name touched and "Enter a name." came up in red before they had
+     * done anything wrong. The message waits for Continue. */
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    await user.click(screen.getByLabelText(/Business name/));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
+    expect(screen.queryByText('Enter a name.')).toBeNull();
+    expect(screen.getByLabelText(/Business name/)).toHaveAttribute('aria-invalid', 'false');
+    // Continue still says it, and it clears as soon as a name is typed.
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Business name/), 'Sharma Store');
+    await waitFor(() => expect(screen.queryByText('Enter a name.')).toBeNull());
+  });
+
+  it('has no "+ I also sell…": one business is one kind (R-DEC-64)', () => {
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    expect(screen.queryByRole('button', { name: /I also sell/ })).toBeNull();
+  });
+
   it('refuses a one-character business name before it reaches the wire', async () => {
     const user = userEvent.setup();
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     await user.type(screen.getByLabelText(/Business name/), 'S');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -154,7 +291,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma General Stor',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -184,7 +321,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     expect(onboardingService.updateBusinessStep).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Sharma General Store',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
       })
     );
@@ -219,7 +356,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
 
     const first = renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
@@ -230,7 +367,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(2));
@@ -245,7 +382,7 @@ describe('the wizard — step 2 (FR-3)', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -334,7 +471,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -347,7 +484,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     renderWithProviders(<OnboardingStepPageContent step={4} />);
 
     expect(screen.getByText('What we will set up')).toBeInTheDocument();
-    expect(screen.getByText('Retail shop')).toBeInTheDocument();
+    expect(screen.getByText('Kirana')).toBeInTheDocument();
     // D-L5 — no defaults for unbuilt screens: bills (due days), items (units)
     // and expenses (categories) were all unbuilt when this was written.
     expect(screen.queryByText('Bill due in')).not.toBeInTheDocument();
@@ -371,14 +508,14 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
 
     expect(screen.getByText('Ready to use')).toBeInTheDocument();
     expect(screen.getByText('Customers & suppliers')).toBeInTheDocument();
-    expect(screen.getByText('Udhaar khata')).toBeInTheDocument();
+    expect(screen.getByText('Money book')).toBeInTheDocument();
     expect(screen.queryByText('What you get')).not.toBeInTheDocument();
     expect(screen.queryByText('Stock')).not.toBeInTheDocument();
     expect(screen.queryByText('Bills & estimates')).not.toBeInTheDocument();
     expect(screen.queryByText('On')).not.toBeInTheDocument();
   });
 
-  it('applies the preset and lands on the customer list (there is no dashboard)', async () => {
+  it('UAT D5: applies the preset and lands on the dashboard, like sign-in', async () => {
     const user = userEvent.setup();
     await atSummary();
     onboardingService.completeOnboarding.mockResolvedValue({
@@ -390,7 +527,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     await user.click(screen.getByRole('button', { name: /Start using/ }));
 
     await waitFor(() => expect(onboardingService.completeOnboarding).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/parties'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/dashboard'));
   });
 
   /**
@@ -421,7 +558,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     await user.click(screen.getByRole('button', { name: /Start using/ }));
 
     await waitFor(() => expect(onboardingService.completeOnboarding).toHaveBeenCalledTimes(1));
-    expect(replace).not.toHaveBeenCalledWith('/parties');
+    expect(replace).not.toHaveBeenCalledWith('/dashboard');
     // The step is still on screen and still submittable …
     expect(screen.getByRole('button', { name: /Start using/ })).toBeInTheDocument();
     // … and the screen itself reports nothing.
@@ -439,7 +576,7 @@ describe('the wizard — Hindi', () => {
 
     // Twice: once as the stepper's label for step 1, once as the card title.
     expect(screen.getAllByText('अपने व्यापार के बारे में बताएँ').length).toBeGreaterThan(0);
-    expect(screen.getByRole('radio', { name: /खुदरा दुकान/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /किराना/ })).toBeInTheDocument();
     // The state list is a constant, not a locale file, and is Hindi too. It has
     // to be opened to be asserted now: `UbCombobox` renders its options into a
     // popover on demand, where a native `<select>` kept all 38 in the document
@@ -464,7 +601,7 @@ describe('the wizard — the page is a rail and a form half (layout A)', () => {
 
     // The three things the rail carries: the mark, the four steps, the line of
     // reassurance that Zoho puts in an illustrated panel we do not have.
-    expect(within(rail).getByRole('img', { name: 'DigiKhaato' })).toBeInTheDocument();
+    expect(within(rail).getByRole('img', { name: 'YourKhata' })).toBeInTheDocument();
     expect(within(rail).getAllByRole('listitem')).toHaveLength(4);
     expect(within(rail).getByText(en['onboarding.rail.reassurance'] as string)).toBeInTheDocument();
   });
@@ -511,6 +648,8 @@ describe('the wizard — the page is a rail and a form half (layout A)', () => {
     const main = screen.getByRole('main');
 
     expect(main.className).toContain('max-w-[560px]');
+    // B1 (dPick): the design's 820 px card from lg, so five tiles fit a row.
+    expect(main.className).toContain('lg:max-w-[820px]');
     expect(main.className).toContain('mx-auto');
     // NOT `lg:mx-0`. That pinned a 560px form to the left edge of a column over
     // 1100px wide on a 1440 screen, leaving ~560px of empty page to its right —
@@ -558,7 +697,9 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
 
     const name = screen.getByLabelText(/Business name/);
     const state = screen.getByLabelText(/^State/);
-    const tiles = screen.getByRole('radiogroup', { name: 'What kind of business?' });
+    const tiles = screen.getByRole('radiogroup', {
+      name: 'What do you sell?',
+    });
 
     // The state used to be stranded BELOW the nine tiles. It is a select, not a
     // tile, and it belongs with the other thing the merchant types.
@@ -568,23 +709,23 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
     expect(name.closest('.rounded-card')).toBe(state.closest('.rounded-card'));
   });
 
-  it('lets the tile grid follow the width it has: 1, then 2, then 3', () => {
+  it('draws the design\'s three columns on a phone and five from md', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
-    const tiles = screen.getByRole('radiogroup', { name: 'What kind of business?' });
+    const tiles = screen.getByRole('radiogroup', {
+      name: 'What do you sell?',
+    });
 
-    // One column at 360 px — two 160 px tiles wrap a label and a hint to four
-    // ragged lines each, nine times over.
-    expect(tiles.className).toContain('grid-cols-1');
-    expect(tiles.className).toContain('sm:grid-cols-2');
-    // The third column arrives with the rail, because from there it is the
-    // form's measure and not the viewport that decides how many fit.
-    expect(tiles.className).toContain('lg:grid-cols-3');
+    // B1 (pPick / dPick): the design's ten short kinds fit three across at
+    // 320 px — the live harness measures that nothing is cut (e2e/b1-pick.mjs).
+    expect(tiles.className).toContain('grid-cols-3');
+    expect(tiles.className).toContain('md:grid-cols-5');
   });
 
   it('keeps every tile at the 44 px target', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     for (const tile of screen.getAllByRole('radio')) {
-      expect(tile.className).toContain('min-h-[88px]');
+      // B1: the design's tile is at least 96 px (`.tile`), above the 44 px target.
+      expect(tile.className).toContain('min-h-[96px]');
     }
   });
 });
@@ -620,6 +761,7 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
     await store.dispatch(fetchSession());
     // What a reload does to the wizard: nothing it held in memory survives.
     store.dispatch(resetOnboarding());
+    store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
   };
 
   afterEach(async () => {
@@ -641,13 +783,50 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
     await waitFor(() =>
       expect(screen.getByLabelText(/Business name/)).toHaveValue('Sharma General Store')
     );
-    expect(screen.getByRole('radio', { name: /Retail shop/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Kirana/ })).toBeChecked();
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(onboardingService.updateBusinessStep).toHaveBeenCalledTimes(1));
     expect(onboardingService.createTenant).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith('/onboarding/step/2');
+  });
+
+  it('moves focus with the choice when arrows pick a kind', async () => {
+    /** Prevents: arrows change the picked tile while focus stays behind, so
+     * the ring and the screen reader point at a tile that is not chosen. */
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    screen.getByRole('radio', { name: /Kirana/ }).focus();
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    await waitFor(() => expect(screen.getByRole('radio', { name: /Medical/ })).toHaveFocus());
+    expect(screen.getByRole('radio', { name: /Medical/ })).toBeChecked();
+  });
+
+  it('re-lights Wholesale and its kind after a reload (R-DEC-64)', async () => {
+    /** Prevents: a wholesaler who reloads mid-setup sees a plain Kirana, and
+     * Continue then saves wholesale off without them touching it. */
+    const user = userEvent.setup();
+    await reloadWithSession(ownerTenant(1));
+    const saved = tenant({ sellsWholesale: true });
+    onboardingService.fetchCurrentTenant.mockResolvedValue(saved);
+    onboardingService.updateBusinessStep.mockResolvedValue({ tenant: saved, warnings: [] });
+
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('radiogroup', { name: 'Wholesale of what?' })).toBeInTheDocument()
+    );
+    expect(screen.getAllByRole('radio', { name: /Wholesale/ })[0]).toBeChecked();
+    const what = screen.getByRole('radiogroup', { name: 'Wholesale of what?' });
+    expect(within(what).getByRole('radio', { name: /Kirana/ })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(onboardingService.updateBusinessStep).toHaveBeenCalledTimes(1));
+    expect(onboardingService.updateBusinessStep.mock.calls[0][0]).toMatchObject({
+      businessType: 'kirana',
+      sellsWholesale: true,
+    });
   });
 
   it('keeps a reload on step 3 on step 3, instead of throwing the merchant back to step 1', async () => {
@@ -723,7 +902,7 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
 
   const fillStepOne = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
   };
@@ -740,6 +919,7 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
 
     // The reload: the slice — where the key used to live — is wiped.
     store.dispatch(resetOnboarding());
+    store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
     expect(store.getState().onboarding.tenantCreateKey).toBeNull();
 
     onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
@@ -830,6 +1010,7 @@ describe('the wizard — "Add a business" with an unfinished business (M2)', () 
     authService.getSession.mockResolvedValue(finishedSession);
     await store.dispatch(fetchSession());
     store.dispatch(resetOnboarding());
+    store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
   });
 
   afterEach(async () => {
@@ -853,7 +1034,7 @@ describe('the wizard — "Add a business" with an unfinished business (M2)', () 
       screen.getByText('Its details are filled in below. Continuing will finish setting it up.')
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/Business name/)).toHaveValue('Race 4');
-    expect(screen.getByRole('radio', { name: /Retail shop/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Kirana/ })).toBeChecked();
   });
 
   it('continues it through POST /tenants, never a PATCH of the business it was opened from', async () => {
@@ -925,6 +1106,7 @@ describe('the wizard — "Add a business" from an unfinished active business (M2
     authService.getSession.mockResolvedValue(sessionWith(activeTenant));
     await store.dispatch(fetchSession());
     store.dispatch(resetOnboarding());
+    store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
     mockSearch = search;
   };
 
@@ -957,7 +1139,7 @@ describe('the wizard — "Add a business" from an unfinished active business (M2
     expect(screen.queryByText(/unfinished business/)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/Business name/), 'New Branch');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1068,6 +1250,7 @@ describe('the wizard — the progress bar during a resume (L7)', () => {
     });
     await store.dispatch(fetchSession());
     store.dispatch(resetOnboarding());
+    store.dispatch({ type: loadOfferedApps.rejected.type, meta: { aborted: false } });
     let answer: (value: unknown) => void = () => undefined;
     onboardingService.fetchCurrentTenant.mockReturnValue(
       new Promise((resolve) => {
@@ -1124,7 +1307,7 @@ describe('the wizard — step 1 submitted in two tabs at once (L8)', () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
   };
@@ -1159,3 +1342,187 @@ describe('the wizard — step 1 submitted in two tabs at once (L8)', () => {
     expect(push).not.toHaveBeenCalledWith('/onboarding/step/2');
   });
 });
+
+/**
+ * Owner, 11 Oct 2026 — step 1 asks what the business will run.
+ *
+ * Until this change the wizard asked no such question: `POST /tenants` gave
+ * every business the Shop, and the hint under the shop tiles told a library to
+ * add its own app "from the business menu" afterwards. Library and Lending
+ * were released, registered and on the plan, and could not be seen here.
+ */
+describe('the wizard — choosing what to use (step 1)', () => {
+  const OFFER = [
+    { code: 'library', labelId: 'nav.workspace.library' },
+    { code: 'lending', labelId: 'nav.workspace.lending' },
+    { code: 'shop', labelId: 'nav.workspace.shop' },
+  ];
+
+  const offer = (apps: readonly { code: string; labelId: string }[] = OFFER): void => {
+    store.dispatch(resetOnboarding());
+    onboardingService.fetchOfferedApps.mockResolvedValue(apps);
+  };
+
+  const fillNameAndState = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+    await user.type(await screen.findByLabelText(/Business name/), 'Vidya Reading Room');
+    await chooseOption(user, /^State/, /Maharashtra/);
+  };
+
+  it('offers every app the server lists, with what each is for, and ticks none', async () => {
+    offer();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    const group = await screen.findByRole('group', { name: 'What do you want to use?' });
+    const boxes = within(group).getAllByRole('checkbox');
+    expect(boxes.map((box) => box.textContent)).toEqual([
+      expect.stringContaining('Library'),
+      expect.stringContaining('Ledger'),
+      expect.stringContaining('Business'),
+    ]);
+    expect(within(group).getByText(/Members, seats, monthly fees/)).toBeInTheDocument();
+    expect(within(group).getByText(/Loans given, instalments due/)).toBeInTheDocument();
+    // Nobody is handed an app they did not ask for.
+    boxes.forEach((box) => expect(box).toHaveAttribute('aria-checked', 'false'));
+    // The kind-of-shop tiles are the Shop's question, and nobody chose the Shop.
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+  });
+
+  it('creates a library-only business without asking what kind of shop it is', async () => {
+    const user = userEvent.setup();
+    offer();
+    onboardingService.createTenant.mockResolvedValue({
+      tenant: tenant({ name: 'Vidya Reading Room', businessType: 'other', apps: ['library'] }),
+      warnings: [],
+    });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await fillNameAndState(user);
+    await user.click(screen.getByRole('checkbox', { name: /Library/ }));
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      name: 'Vidya Reading Room',
+      apps: ['library'],
+      businessType: null,
+    });
+  });
+
+  it('sends several apps together, and asks the shop question only once Shop is ticked', async () => {
+    const user = userEvent.setup();
+    offer();
+    onboardingService.createTenant.mockResolvedValue({
+      tenant: tenant({ apps: ['lending', 'shop'] }),
+      warnings: [],
+    });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await fillNameAndState(user);
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Ledger/ }));
+    await user.click(await screen.findByRole('radio', { name: /Kirana/ }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
+    // The server's order, whatever order they were ticked in.
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      apps: ['lending', 'shop'],
+      businessType: 'kirana',
+    });
+  });
+
+  it('refuses to continue with nothing chosen, and says so on the field', async () => {
+    const user = userEvent.setup();
+    offer();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await fillNameAndState(user);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Choose at least one')).toBeInTheDocument();
+    expect(onboardingService.createTenant).not.toHaveBeenCalled();
+  });
+
+  it('unticking the Shop takes its question away and the business type with it', async () => {
+    const user = userEvent.setup();
+    offer();
+    onboardingService.createTenant.mockResolvedValue({
+      tenant: tenant({ apps: ['lending'] }),
+      warnings: [],
+    });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await fillNameAndState(user);
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
+    await user.click(await screen.findByRole('radio', { name: /Wholesale/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Ledger/ }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
+    // A type picked while the Shop was ticked is not sent for a business
+    // that, in the end, does not run the Shop.
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      apps: ['lending'],
+      businessType: null,
+    });
+  });
+
+  it('takes the only app on offer without asking', async () => {
+    offer([{ code: 'shop', labelId: 'nav.workspace.shop' }]);
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    expect(await screen.findByRole('checkbox', { name: /Business/ })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+    expect(screen.getByRole('radiogroup')).toBeInTheDocument();
+  });
+
+  it('gives an app this client has never heard of a tile of its own', async () => {
+    offer([...OFFER, { code: 'clinic', labelId: 'nav.workspace.shop' }]);
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    const group = await screen.findByRole('group', { name: 'What do you want to use?' });
+    // Registered on the server tomorrow, visible here without a release: the
+    // defect this block exists for was an app missing from sign-up.
+    expect(within(group).getAllByRole('checkbox')).toHaveLength(4);
+    expect(within(group).getByText(/Its own menu and screens/)).toBeInTheDocument();
+  });
+
+  it('falls back to the Shop, asking nothing, when the server offers no list', async () => {
+    store.dispatch(resetOnboarding());
+    onboardingService.fetchOfferedApps.mockRejectedValue({ code: 'not_found', message: 'x' });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    expect(await screen.findByRole('radiogroup')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('group', { name: 'What do you want to use?' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('says the choice back on the last step, and leaves the shop rows out for a library', async () => {
+    offer();
+    onboardingService.fetchCurrentTenant.mockResolvedValue(
+      tenant({ onboardingStep: 3, businessType: 'other', apps: ['library'] })
+    );
+    authService.getSession.mockResolvedValue({
+      user: { id: 'u1', name: 'Ramesh', mobile: '+919876543210', locale: 'en' },
+      activeTenant: { id: 't1', name: 'Vidya Reading Room', role: 'owner', onboardingStep: 3 },
+      tenants: [],
+      permissions: [],
+      enabledModules: ['library', 'parties', 'ledger'],
+      version: null,
+    });
+    await act(async () => {
+      await store.dispatch(fetchSession());
+    });
+    renderWithProviders(<OnboardingStepPageContent step={4} />);
+
+    expect(await screen.findByText('You will use')).toBeInTheDocument();
+    expect(screen.getByText('Library')).toBeInTheDocument();
+    expect(screen.queryByText('Business type')).not.toBeInTheDocument();
+  });
+});
+

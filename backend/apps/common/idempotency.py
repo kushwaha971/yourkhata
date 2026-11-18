@@ -134,7 +134,12 @@ def idempotent(scope: str, *, keyed_by: str = "tenant") -> Callable:
                     )
                 claimed = True
             except IntegrityError:
-                record = model.objects.get(**lookup)
+                # The holder may have failed and released the key between our
+                # lost INSERT and this read: that attempt is over, and the
+                # client's retry gets the real answer (not a 500).
+                record = model.objects.filter(**lookup).first()
+                if record is None:
+                    raise IdempotencyInProgress() from None
                 claimed = False
 
             if not claimed:

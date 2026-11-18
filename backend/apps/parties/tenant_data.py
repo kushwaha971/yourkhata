@@ -13,3 +13,11 @@ register(
     TenantTable("parties.Tag", export_name="tags.csv"),
     TenantTable("parties.PartyTag", export_name="party_tags.csv", tenant_path="party__tenant"),
 )
+
+# ── A6 ── PLT-X04 relations
+register(TenantTable("parties.PartyRelation", export_name="party_relations.csv"))
+
+# ── BP-16 ── Shop promises (R-DEC-26): the business's follow-ups, exported.
+register(TenantTable("parties.ShopPromise", export_name="shop_promises.csv"))
+
+# Personal Udhaar: which user this private scope belongs to; bookkeeping, not a record.

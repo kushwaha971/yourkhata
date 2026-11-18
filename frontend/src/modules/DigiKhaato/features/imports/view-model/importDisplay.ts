@@ -35,7 +35,8 @@ export const commitBlockReason = (
   job: ImportJob
 ): { readonly id: string; readonly values?: Record<string, number> } | null => {
   if (job.canCommit) return null;
-  if (job.errorRows > 0)
+  // QA B33 — problem rows block only when nothing else could import.
+  if (job.validRows === 0 && job.errorRows > 0)
     return { id: 'imports.review.blocked.errors', values: { count: job.errorRows } };
   if (job.validRows === 0) return { id: 'imports.review.blocked.empty' };
   return { id: 'imports.review.blocked.permission' };
@@ -86,7 +87,25 @@ export const previewCell = (
 };
 
 /** The completion card's money fields, which are formatted as rupees. */
-const MONEY_SUMMARY_FIELDS = new Set(['opening_receivable', 'opening_payable', 'stock_value']);
+const MONEY_SUMMARY_FIELDS = new Set([
+  'opening_receivable',
+  'opening_payable',
+  'stock_value',
+  'deposits_held',
+  'old_dues',
+  'lent',
+  'collected',
+]);
+
+/** How many records the import created, whatever its kind called them. */
+export const createdCount = (summary: Readonly<Record<string, string | number>>): number =>
+  Number(
+    summary.created_parties ??
+      summary.created_items ??
+      summary.created_students ??
+      summary.created_loans ??
+      0
+  );
 
 export const summaryValue = (field: string, value: string | number | undefined): string => {
   if (value === undefined || value === null) return '—';

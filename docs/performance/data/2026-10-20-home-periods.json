@@ -1,0 +1,218 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "daily-table",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "this-week",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "this-month",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "this-year",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "all-time",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "year-group",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "daily-table",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "this-week",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "this-month",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "this-year",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "all-time",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "year-group",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "daily-table",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "this-week",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "this-month",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "this-year",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "all-time",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "year-group",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "daily-table",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "this-week",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "this-month",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "this-year",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "all-time",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "year-group",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  }
+]

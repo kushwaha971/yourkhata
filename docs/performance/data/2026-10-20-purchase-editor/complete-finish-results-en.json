@@ -1,0 +1,655 @@
+{
+  "results": [
+    {
+      "tag": "390-light-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "paid-now",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "advance",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "large-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "record-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "uncertain-leave",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "name": "payment-refused",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "facts": [
+    {
+      "tag": "390-light-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "0.000",
+      "stockAfter": "2.000"
+    },
+    {
+      "tag": "390-light-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "390-dark-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "4.000",
+      "stockAfter": "6.000"
+    },
+    {
+      "tag": "390-dark-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "320-light-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "8.000",
+      "stockAfter": "10.000"
+    },
+    {
+      "tag": "320-light-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "320-dark-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "12.000",
+      "stockAfter": "14.000"
+    },
+    {
+      "tag": "320-dark-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "1024-light-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "16.000",
+      "stockAfter": "18.000"
+    },
+    {
+      "tag": "1024-light-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "1024-dark-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "20.000",
+      "stockAfter": "22.000"
+    },
+    {
+      "tag": "1024-dark-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "1280-light-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "24.000",
+      "stockAfter": "26.000"
+    },
+    {
+      "tag": "1280-light-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    },
+    {
+      "tag": "1280-dark-en",
+      "case": "lost-record",
+      "status": "paid",
+      "total": "94.00",
+      "paid": "94.00",
+      "posts": 1,
+      "stockBefore": "28.000",
+      "stockAfter": "30.000"
+    },
+    {
+      "tag": "1280-dark-en",
+      "case": "explicit-pay-later",
+      "status": "recorded",
+      "paid": "0.00",
+      "due": "94.00"
+    }
+  ],
+  "failures": []
+}

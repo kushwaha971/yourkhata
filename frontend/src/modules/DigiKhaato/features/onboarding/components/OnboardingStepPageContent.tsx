@@ -5,8 +5,10 @@ import { useCallback, useMemo } from 'react';
 import { UbBottomBar, UbButton, UbPageSkeleton, UbStack, UbStatusBanner } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectBlockedFrom } from 'src/redux/slice/sessionSlice';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
 
+import { SHOP_APP } from '../constants/appChoices';
 import { ONBOARDING_STEPS } from '../constants/businessTypes';
 import { useEffectiveModules, useOnboarding } from '../hooks/useOnboarding';
 
@@ -53,11 +55,20 @@ export function OnboardingStepPageContent({
   const appName = useAppSelector(selectAppName);
   const onboarding = useOnboarding(routeStep);
   const effectiveModules = useEffectiveModules();
+  const blockedFrom = useAppSelector(selectBlockedFrom);
 
   const steps = useMemo(
     () => ONBOARDING_STEPS.map((entry) => ({ key: entry.key, label: t(entry.labelId) })),
     [t]
   );
+
+  // Step 4 says the step-1 choice back, in the names the switcher will use.
+  const chosenApps = onboarding.offeredApps
+    ? onboarding.offeredApps.filter((app) => (onboarding.draft.apps ?? []).includes(app.code))
+    : null;
+  const appNames = chosenApps && chosenApps.length > 0 ? chosenApps.map((a) => t(a.labelId)) : null;
+  const runsShop =
+    chosenApps === null || chosenApps.length === 0 || chosenApps.some((a) => a.code === SHOP_APP);
 
   const backToAddress = useCallback(() => onboarding.goToStep(3), [onboarding]);
   const finish = useCallback(() => void onboarding.finish(), [onboarding]);
@@ -78,6 +89,17 @@ export function OnboardingStepPageContent({
             tone="offline"
             title={t('common.network.offline')}
             description={t('onboarding.offline.body')}
+          />
+        )}
+
+        {/* Owner, 12 Oct 2026: a member the owner blocked signs in to no
+            business. Say which one and why, before offering them a business of
+            their own — otherwise the shop just seems to have vanished. */}
+        {onboarding.step <= 1 && blockedFrom.length > 0 && (
+          <UbStatusBanner
+            tone="warning"
+            title={t('onboarding.blocked.title', { business: blockedFrom.join(', ') })}
+            description={t('onboarding.blocked.body')}
           />
         )}
 
@@ -121,6 +143,8 @@ export function OnboardingStepPageContent({
             <PresetSummaryCard
               businessType={onboarding.draft.businessType ?? 'other'}
               effectiveModules={effectiveModules.length > 0 ? effectiveModules : null}
+              appNames={appNames}
+              runsShop={runsShop}
             />
             {/* CR-2026-09-19-G — the review step's own action bar. Same
                 `UbBottomBar` as `OnboardingStepActions`, for the same reason:

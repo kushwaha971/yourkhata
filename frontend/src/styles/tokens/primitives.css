@@ -5,6 +5,10 @@
  */
 
 :root {
+  --print-ink: 220 14.29% 12.35%;
+  --print-paper: 0 0% 100%;
+  --print-muted: 220 8.74% 40.39%;
+  --print-fill: 220 13.04% 95.49%;
   /* ── Spacing, radius, layout (§23.2.1) ─────────────────────────────────── */
   --space-0: 0;
   --space-1: 4px;
@@ -43,7 +47,10 @@
   --radius-card: var(--radius-lg);
   --radius-control: var(--radius-md);
 
-  --sidebar-width: 180px;
+  /* Revamp F4 (07-screens/02, Counter Mode v5): 232 px. At 180 the app tree's
+     indent left a row about 120 px of text, and "Delivery challans",
+     "Purchase orders" and "Income & expenses" were cut mid-word. */
+  --sidebar-width: 232px;
   --sidebar-collapsed: 64px;
   --topbar-height: 60px;
   --content-max: 1440px;
@@ -53,6 +60,11 @@
   --grid-gap: 20px;
   /* DigiKhaato mobile overrides (§23.2.1). */
   --bottom-nav-h: calc(64px + env(safe-area-inset-bottom, 0px));
+  /* docs/mobile-redesign — how far bottom furniture (a sticky action bar, the
+   * FAB) must sit above the phone's navigation bar. 0 unless `UbBottomNav` is on
+   * the page and the viewport is below `lg` (the rule after this block), so
+   * desktop computes exactly the `bottom: 0` it always had. */
+  --ub-nav-offset: 0px;
 
   /* ── Bottom furniture, and the one inset that clears it ─────────────────
    * CR-2026-09-19-G. The global toast is `position: fixed` at the bottom of
@@ -77,47 +89,59 @@
   );
 
   /* ── Typography (§23.2.2) ──────────────────────────────────────────────── */
-  /* Clash Grotesk/Display carry no Devanagari; the roles are kept and the faces
-     substituted with Inter + Noto Sans Devanagari (§23.2.2 font decision). */
-  --font-display: 'DK Rupee', var(--font-dm-sans, 'DM Sans'), var(--font-inter, 'Inter'), var(--font-noto-devanagari, 'Noto Sans Devanagari'), system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-ui: 'DK Rupee', var(--font-dm-sans, 'DM Sans'), var(--font-inter, 'Inter'), var(--font-noto-devanagari, 'Noto Sans Devanagari'), system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
-  --font-metric: var(--font-inter, 'Inter'), var(--font-noto-devanagari, 'Noto Sans Devanagari'), system-ui, sans-serif;
+  /* Fixed paper/ink materials in the decorative auth illustration. */
+  --art-ink: 220 14% 12.35%;
+  --art-muted: 220 5% 56%;
+  --art-faint: 215 9% 74%;
+  --art-paper: 34.29 46.67% 97.06%;
+  --art-get: 120 59.48% 30%;
+  --art-give: 3.62 71.29% 40.98%;
+  --art-spine: 5.68 62.91% 29.61%;
+  --art-red-rule: 0 89.58% 81.18%;
+  --art-success-wash: 158 64% 95%;
+  --art-coin-dark: 37.97 90.2% 32%;
+  --art-coin-light: 36.67 100% 69.41%;
+  --font-sans: var(--font-jakarta), var(--font-mukta), system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-ui: var(--font-sans);
+  --font-metric: var(--font-sans);
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
 
-  --size-display: 44px;
-  --size-h1: 20px;
-  --size-h2: 18px;
-  --size-h3: 16px;
-  --size-h4: 14px;
-  --size-body: 14px;
-  --size-body-sm: 12px;
-  --size-caption: 12px;
-  --size-label: 12px;
-  --size-label-caps: 10px;
-  --size-micro: 10px;
+  --size-display: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  /* Design `.ptitle` 22 px on a phone, `.phd h1` 26 px from lg up. */
+  --size-h1: 1.375rem;
+  --size-h2: clamp(1.125rem, 1.02rem + 0.5vw, 1.375rem);
+  --size-h3: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --size-h4: 1rem;
+  --size-body: 0.9375rem; /* Design body and subtitle: 15 px at every width. */
+  --size-body-sm: 0.875rem;
+  --size-caption: 0.75rem;
+  --size-label: 0.875rem;
+  --size-label-caps: 0.75rem;
+  --size-micro: 0.75rem;
   /* The brand wordmark (§23.2.6, CR-2026-09-19-D). It is a NAME, not a heading,
      so it gets its own four tiers rather than borrowing `ds-h*` — a wordmark
      set in the page's heading tier competes with the page's heading. */
-  --size-wordmark-sm: 15px;
-  --size-wordmark-md: 18px;
-  --size-wordmark-lg: 22px;
-  --size-wordmark-xl: 26px;
-  --size-metric-xl: 52px;
-  --size-metric-lg: 38px;
-  --size-metric-md: 24px;
-  --size-metric-sm: 20px;
+  --size-wordmark-sm: 0.9375rem;
+  --size-wordmark-md: 1.125rem;
+  --size-wordmark-lg: 1.375rem;
+  --size-wordmark-xl: 1.625rem;
+  --size-metric-xl: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  --size-metric-lg: clamp(1.125rem, 1.02rem + 0.5vw, 1.375rem);
+  --size-metric-md: clamp(1.125rem, 1.02rem + 0.5vw, 1.375rem);
+  --size-metric-sm: 1rem;
 
-  --leading-tight: 1.05;
+  --leading-tight: 1.2;
   --leading-snug: 1.25;
-  --leading-normal: 1.5;
+  --leading-normal: 1.4;
   --leading-relaxed: 1.65;
   --leading-label: 1.4;
   /* Devanagari matras clip below 1.5 — the Hindi label tier is taller (§23.2.2). */
   --leading-label-hi: 1.5;
-  --size-label-hi: 12.5px;
+  --size-label-hi: 0.875rem;
 
-  --track-display: -0.025em;
-  --track-heading: -0.015em;
+  --track-display: -0.01em;
+  --track-heading: -0.01em;
   --track-body: 0;
   --track-label: 0;
   --track-label-caps: 0.09em;
@@ -138,6 +162,14 @@
   --dur-base: 220ms;
   --dur-slow: 360ms;
   --dur-reveal: 640ms;
+  /* The public pages (`/`): a section's entrance, the step between staggered
+     children, the hero's rotating word, a tab panel's crossfade and a device
+     frame straightening on hover. */
+  --dur-section: 500ms;
+  --dur-stagger: 60ms;
+  --dur-rotate: 450ms;
+  --dur-panel: 250ms;
+  --dur-tilt: 600ms;
   --transition-control:
     background-color var(--dur-fast) var(--ease-standard),
     border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
@@ -150,6 +182,11 @@
     --dur-base: 0ms;
     --dur-slow: 0ms;
     --dur-reveal: 0ms;
+    --dur-section: 0ms;
+    --dur-stagger: 0ms;
+    --dur-rotate: 0ms;
+    --dur-panel: 0ms;
+    --dur-tilt: 0ms;
   }
 }
 
@@ -162,5 +199,19 @@
 @media (min-width: 768px) {
   :root {
     --ub-toast-gap: var(--space-6);
+  }
+}
+
+/* `UbBottomNav` is `lg:hidden`; while it is on the page below `lg`, everything
+   pinned to the bottom edge sits on top of it instead of under it. */
+@media (max-width: 1023.98px) {
+  :root:has([data-ub-bottom-nav]) {
+    --ub-nav-offset: var(--bottom-nav-h);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --size-h1: 1.625rem;
   }
 }

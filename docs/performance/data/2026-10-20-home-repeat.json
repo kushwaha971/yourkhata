@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "sale",
+    "sourceDate": "2026-10-16",
+    "posts": 0
+  },
+  {
+    "kind": "purchase",
+    "sourceDate": "2026-10-18",
+    "posts": 0
+  },
+  {
+    "kind": "expense",
+    "sourceDate": "2026-10-16",
+    "posts": 0
+  }
+]

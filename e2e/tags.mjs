@@ -45,10 +45,11 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/tags';
 const wantShots = process.argv.includes('--shots');
@@ -187,7 +188,7 @@ const signIn = async (page, who) => {
    * and a harness that gives up on it reports a product defect that is not one.
    */
   for (const attempt of [1, 2]) {
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.fill('input[type="email"], input[name="email"]', who.email);
     await page.fill('input[type="password"], input[name="password"]', who.password);
     await page.click('button[type="submit"]');
@@ -197,7 +198,9 @@ const signIn = async (page, who) => {
     // `load` is a state this app can legitimately never reach.
     await page.waitForURL((u) => !u.pathname.startsWith('/login'), { waitUntil: 'commit', timeout: 45000 }).catch(() => {});
     await page.waitForTimeout(600);
-    await page.goto(`${FRONTEND}/parties`, {
+    // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
+    // does, so the session is in that app (from the Shop the page shows bills instead).
+    await page.goto(`${FRONTEND}/khata`, {
       waitUntil: 'domcontentloaded',
       timeout: 45000,
     });
@@ -302,7 +305,7 @@ async function sweepTaggedBook(ctx, size) {
   // 4. The party form, with the Tags picker open on the create-inline row.
   await at('form', async () => {
     await openList(page);
-    await page.getByRole('button', { name: /^Add party/i }).first().click();
+    await page.getByRole('button', { name: /^Add contact/i }).first().click();
     await settle(page, 900);
     await capture(page, size, '04-form-drawer-tags-field');
     await page.getByRole('combobox', { name: 'Tags' }).first().click();
@@ -504,10 +507,16 @@ async function checks(browser, token) {
 
   // 2. The filter reaches the wire with the NAME intact.
   {
+    // Owner, 6 Oct 2026: tags are a multi-choice group in the Filters sheet,
+    // and the stat cards open from "Details" (remembered on this device).
+    if (await page.getByRole('button', { name: 'Details' }).count()) {
+      await page.getByRole('button', { name: 'Details' }).click();
+    }
     const before = listRequests.length;
-    await page.getByRole('combobox', { name: 'Tag' }).first().click();
-    await settle(page, 500);
-    await page.getByRole('option', { name: 'Camp Area' }).first().click();
+    await page.getByTestId('filters-button').click();
+    await settle(page, 800);
+    await page.getByRole('checkbox', { name: /^Camp Area/ }).first().click();
+    await page.getByTestId('filters-apply').click();
     await settle(page, 1500);
     const issued = listRequests.slice(before);
     record(
@@ -553,8 +562,8 @@ async function checks(browser, token) {
       ''
     );
     record(
-      'and the chip shows what is applied',
-      (await page.getByRole('button', { name: 'Remove tag Camp Area' }).count()) > 0,
+      'and a pill shows what is applied',
+      (await page.getByText('Tag: Camp Area').count()) > 0,
       ''
     );
   }
@@ -563,7 +572,7 @@ async function checks(browser, token) {
   {
     const beforeTags = (await get('/parties/tags', token)).data.length;
     await openList(page);
-    await page.getByRole('button', { name: /^Add (customer|party)/i }).first().click();
+    await page.getByRole('button', { name: /^Add (customer|party|contact)/i }).first().click();
     await settle(page, 900);
     await page.getByRole('textbox', { name: /^Name/i }).first().fill('Inline Tag Test');
     await page.getByRole('combobox', { name: 'Tags' }).first().click();
@@ -580,10 +589,10 @@ async function checks(browser, token) {
     await settle(page, 500);
     record(
       'Escape closes the tag picker without taking the half-filled form with it',
-      (await page.getByRole('button', { name: 'Save party' }).count()) > 0,
+      (await page.getByRole('button', { name: 'Save contact' }).count()) > 0,
       ''
     );
-    await page.getByRole('button', { name: 'Save party' }).first().click();
+    await page.getByRole('button', { name: 'Save contact' }).first().click();
     await settle(page, 2500);
 
     const after = (await get('/parties/tags', token)).data;
@@ -650,7 +659,7 @@ async function run() {
     );
   }
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
 
   await checks(browser, token);
 

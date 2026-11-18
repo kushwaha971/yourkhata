@@ -35,6 +35,8 @@ LIST_COLUMNS = (
     "is_customer",
     "is_supplier",
     "balance",
+    # DEC-019 — the Shop's Customers and Suppliers lists (`?book=shop`) show this one.
+    "shop_balance",
     "status",
     "last_activity_at",
     "collection_date",
@@ -107,7 +109,7 @@ def list_parties(*, tenant: Any, search: str | None = None) -> QuerySet[Party]:
 TOTALS_ZERO = {"receivable": Decimal("0.00"), "payable": Decimal("0.00"), "count": 0}
 
 
-def party_totals(queryset: QuerySet[Party]) -> dict:
+def party_totals(queryset: QuerySet[Party], *, field: str = "balance") -> dict:
     """`meta.totals` — one aggregate over the filtered, UNPAGINATED set.
 
     The aggregate runs on the queryset the filters produced and before the
@@ -120,6 +122,8 @@ def party_totals(queryset: QuerySet[Party]) -> dict:
     `Coalesce` because `SUM` over no rows is NULL, and a filtered-empty list
     must report ₹0.00 rather than a missing key.
     """
+    # DEC-019 — `field` is the book the list is reading: `balance` (the Udhaar book) or
+    # `shop_balance` (the Shop's bills). The header must add up the column the rows show.
     money = DecimalField(max_digits=14, decimal_places=2)
     # One aggregate, three numbers. `count` rides along rather than taking a
     # `queryset.count()` of its own: the page query already costs a COUNT for
@@ -129,7 +133,7 @@ def party_totals(queryset: QuerySet[Party]) -> dict:
         receivable=Coalesce(
             Sum(
                 Case(
-                    When(balance__gt=0, then=F("balance")),
+                    When(**{f"{field}__gt": 0}, then=F(field)),
                     default=Decimal("0.00"),
                     output_field=money,
                 )
@@ -140,7 +144,7 @@ def party_totals(queryset: QuerySet[Party]) -> dict:
         payable=Coalesce(
             Sum(
                 Case(
-                    When(balance__lt=0, then=-F("balance")),
+                    When(**{f"{field}__lt": 0}, then=-F(field)),
                     default=Decimal("0.00"),
                     output_field=money,
                 )
@@ -162,9 +166,13 @@ def party_totals(queryset: QuerySet[Party]) -> dict:
         # says: on the default unfiltered list that is the whole book, which is
         # the case the number is for, and on a narrowed one it answers the
         # narrower question the merchant just asked.
+        # A2 (BR-5) — over the TRADE figure, as `filter_credit` and `limit_status` are.
         over_limit=Count(
             "id",
-            filter=Q(credit_limit__isnull=False, balance__gt=F("credit_limit")),
+            filter=Q(
+                credit_limit__isnull=False,
+                credit_limit__lt=F("balance"),
+            ),
         ),
     )
     return {

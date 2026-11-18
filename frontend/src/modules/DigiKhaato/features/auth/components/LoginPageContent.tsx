@@ -10,16 +10,13 @@ import {
   UbCheckbox,
   UbField,
   UbForm,
-  UbLink,
   UbStack,
   UbStatusBanner,
-  UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
-import { ROUTES } from 'src/routes';
 
 import { useAuthRedirect } from '../hooks/useAuthRedirect';
 import { useLogin } from '../hooks/useLogin';
@@ -44,7 +41,7 @@ import type { PasswordLoginFormValues } from '../validation/authSchemas';
  *    page footer now — see `LanguagePicker` for why "first control on the
  *    screen" was the wrong reading of FR-8.
  *  · The heading is two parts: "Sign in", then the quieter "to open your
- *    DigiKhaato book". A mark sits above it, in `AuthShell`.
+ *    YourKhata book". A mark sits above it, in `AuthShell`.
  *  · The hint under the address field — "The address you signed up with" — is
  *    gone. It said what the label said. The password rule stays, because a rule
  *    the user cannot guess is the one kind of hint worth the line.
@@ -206,16 +203,6 @@ export function LoginPageContent(): React.JSX.Element {
         </UbStack>
       </AuthPanel>
 
-      {/* CR-2026-09-19-A — there is no longer an OTP verify that registers a
-          user on the way past, so the way to an account has to be visible.
-          Last, and outside the panel: a secondary route out of this screen,
-          which is where all three references put it. */}
-      <UbText variant="body-sm" tone="tertiary" align="center">
-        {t('auth.signUp.prompt', { appName })}{' '}
-        <UbLink href={ROUTES.SIGNUP} variant="inherit">
-          {t('auth.signUp.link')}
-        </UbLink>
-      </UbText>
     </UbStack>
   );
 }

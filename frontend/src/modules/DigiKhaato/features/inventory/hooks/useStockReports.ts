@@ -27,6 +27,8 @@ export interface UseStockSummaryResult {
   readonly summary: StockSummaryResult | null;
   readonly status: RequestStatus;
   readonly error: ApiErrorShape | null;
+  /** 09 §8.7 — the business has stock tracking switched off. */
+  readonly moduleOff: boolean;
   readonly canRead: boolean;
   readonly refetch: () => void;
 }
@@ -35,6 +37,8 @@ export interface UseLowStockResult {
   readonly low: LowStockResult | null;
   readonly status: RequestStatus;
   readonly error: ApiErrorShape | null;
+  /** 09 §8.7 — the business has stock tracking switched off. */
+  readonly moduleOff: boolean;
   readonly canRead: boolean;
   readonly page: number;
   readonly setPage: (page: number) => void;
@@ -55,7 +59,8 @@ export const DEFAULT_SUMMARY_FILTERS: StockSummaryFilters = {
 export function useStockSummary(): UseStockSummaryResult {
   const dispatch = useAppDispatch();
   const { can, hasModule } = usePermissions();
-  const canRead = hasModule('inventory') && can('inventory.stock.read');
+  const moduleOff = !hasModule('inventory');
+  const canRead = !moduleOff && can('inventory.stock.read');
   const [filters, setFilters] = useState<StockSummaryFilters>(DEFAULT_SUMMARY_FILTERS);
   const summary = useAppSelector(selectStockSummary);
   const status = useAppSelector(selectStockSummaryStatus);
@@ -84,8 +89,8 @@ export function useStockSummary(): UseStockSummaryResult {
   const refetch = useCallback(() => void dispatch(fetchStockSummary(filters)), [dispatch, filters]);
 
   return useMemo(
-    () => ({ filters, update, summary, status, error, canRead, refetch }),
-    [filters, update, summary, status, error, canRead, refetch]
+    () => ({ filters, update, summary, status, error, canRead, moduleOff, refetch }),
+    [filters, update, summary, status, error, canRead, moduleOff, refetch]
   );
 }
 
@@ -93,7 +98,8 @@ export function useStockSummary(): UseStockSummaryResult {
 export function useLowStock(): UseLowStockResult {
   const dispatch = useAppDispatch();
   const { can, hasModule } = usePermissions();
-  const canRead = hasModule('inventory') && can('inventory.stock.read');
+  const moduleOff = !hasModule('inventory');
+  const canRead = !moduleOff && can('inventory.stock.read');
   const [page, setPage] = useState(1);
   const low = useAppSelector(selectLowStock);
   const status = useAppSelector(selectLowStockStatus);
@@ -114,7 +120,7 @@ export function useLowStock(): UseLowStockResult {
 
   const refetch = useCallback(() => void dispatch(fetchLowStock(page)), [dispatch, page]);
   return useMemo(
-    () => ({ low, status, error, canRead, page, setPage, refetch }),
-    [low, status, error, canRead, page, refetch]
+    () => ({ low, status, error, canRead, moduleOff, page, setPage, refetch }),
+    [low, status, error, canRead, moduleOff, page, refetch]
   );
 }

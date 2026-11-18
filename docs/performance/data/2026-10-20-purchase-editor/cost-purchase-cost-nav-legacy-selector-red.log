@@ -1,0 +1,18 @@
+
+=== 390px — signing in as scale@digikhaato.test
+nav   390 unthrottled r1 shop.home→customers: first change 22 (childList body) · url 33 · content 222 · loading UI 22 · prefetched 2 · nav RSC 55→70 · js done 75 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.customers→bills: first change 26 (childList body) · url 37 · content 121 · loading UI 26 · prefetched 2 · nav RSC 55→74 · js done 99 · after: rsc 1 (+1 prefetch), api 1, js 9 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.bill row→detail: first change 2 (childList body +div .pointer-events-none.fixed.inset-x-0) · url 33 · content 421 · loading UI 2 · prefetched 0 · nav RSC 55→70 · js done 132 · after: rsc 1 (+9 prefetch), api 4, js 7 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.bills→more: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/more"]').filter({ visible: true }).first() to be visible[22m
+
+nav   390 unthrottled r1 shop.more→items: first change 19 (childList body) · url 32 · content 420 · loading UI 19 · prefetched 2 · nav RSC 143→163 · js done 475 · after: rsc 1 (+4 prefetch), api 3, js 9 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.home→suppliers: first change 25 (childList body) · url 37 · content 150 · loading UI 25 · prefetched 2 · nav RSC 54→72 · js done 79 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.supplier row→person: first change 2 (childList body +div .pointer-events-none.fixed.inset-x-0) · url 32 · content 147 · loading UI 2 · prefetched 0 · nav RSC 57→74 · js done 157 · after: rsc 1 (+17 prefetch), api 3, js 10 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.customer row→person: first change 2 (childList body +div .pointer-events-none.fixed.inset-x-0) · url 34 · content 447 · loading UI 2 · prefetched 0 · nav RSC 55→71 · js done 151 · after: rsc 1 (+17 prefetch), api 4, js 11 · long 0/0 · inp 32
+nav   390 unthrottled r1 switcher→Udhaar /khata: first change 5 (childList body +div .pointer-events-none.fixed.inset-x-0) · url 40 · content 75 · loading UI 5 · prefetched 0 · nav RSC 57→72 · js done 74 · after: rsc 1 (+4 prefetch), api 4, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 khata.people→aging: first change 24 (childList body) · url 39 · content 192 · loading UI 24 · prefetched 2 · nav RSC 54→72 · js done 77 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib

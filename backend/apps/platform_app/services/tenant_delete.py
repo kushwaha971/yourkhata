@@ -1,13 +1,12 @@
 """PLT-10 FR-3…FR-6 — deleting a business, with a 30-day change of mind.
 
-── Re-verification is the PASSWORD, not an OTP ──────────────────────────────
-The FRD asks for "a fresh OTP (`purpose='verify'`)". DEC-010 removed the OTP
-identity and CLAUDE.md is explicit that anything still naming OTP is stale; the
-credential this product actually has is the password, so the owner types it
-again. Checked with `passwords._verify`, which spends exactly one hash whatever
-the outcome (the same timing discipline as login). A wrong password is a 400
-on the `password` field and never a 401 — a 401 would make the client's
-refresh interceptor treat a typo as an expired session. CR-LOG carries it.
+── Re-verification is a CODE to the owner's mobile ─────────────────────────
+Everyone signs in with a mobile number and a code; nobody using the app has a
+password (owner, 15 Nov 2026 — the email + password door is kept only for our
+own testing). So the owner proves it is them again with a fresh code sent to
+their OWN mobile (`purpose='verify'`, as the FRD first asked). A wrong code is
+a 400 on the `code` field and never a 401 — a 401 would make the client's
+refresh interceptor treat a typo as an expired session.
 
 ── The export gate (FRD §10, EC-3) ─────────────────────────────────────────
 "A fresh export exists": a succeeded, unexpired export that finished AFTER the
@@ -112,16 +111,34 @@ def export_is_fresh(tenant: Any) -> bool:
 
 
 def request_deletion(
-    *, ctx: Ctx, password: str, confirm_name: str, reason: str | None = None
+    *,
+    ctx: Ctx,
+    confirm_name: str,
+    challenge_id: Any = None,
+    code: str | None = None,
+    reason: str | None = None,
 ) -> Any:
-    """FR-3. Owner only (the view checks the role), password re-verified here."""
+    """FR-3. Owner only (the view checks the role), re-verified here by a code
+    sent to the owner's OWN mobile. A code proves a number, so one sent to any
+    other number is refused."""
+    from apps.platform_app.constants import OtpPurpose
     from apps.platform_app.models import Membership, Session, Tenant
-    from apps.platform_app.services.passwords import _verify
+    from apps.platform_app.services import otp as otp_service
 
     user = ctx.actor
     errors: dict[str, list[str]] = {}
-    if not _verify(user=user, password=password or ""):
-        errors["password"] = ["Password is incorrect."]
+    if not challenge_id:
+        errors["code"] = ["Send a code to your mobile and type it."]
+    else:
+        try:
+            challenge = otp_service.consume_challenge(
+                challenge_id=challenge_id, code=code or "", purpose=OtpPurpose.VERIFY
+            )
+        except otp_service.OtpInvalid:
+            errors["code"] = ["That code is not right."]
+        else:
+            if not user.mobile or challenge.mobile != user.mobile:
+                errors["code"] = ["That code is not right."]
     tenant = Tenant.objects.get(pk=ctx.tenant.pk)
     if (confirm_name or "").strip().casefold() != (tenant.name or "").strip().casefold():
         errors["confirm_name"] = ["Name does not match."]
@@ -165,7 +182,7 @@ def request_deletion(
                 "reason": (reason or "")[:500],
                 "scheduled_for": (now + COOL_OFF).isoformat(),
                 "sessions_revoked": revoked,
-                "reverification": "password",
+                "reverification": "mobile_code",
             },
         )
         _notify(
@@ -382,3 +399,16 @@ def execute_deletion(*, job: Any) -> dict:
         )
     logger.info("tenant.deleted", extra={"tenant_id": str(tenant.id), "tables": len(progress)})
     return {"counts": progress, "final_export_id": payload.get("final_export_id")}
+
+
+def send_delete_code(*, user: Any, ip: str | None = None, request_id: str | None = None) -> Any:
+    """A code to the owner's own mobile, which re-verifies the delete."""
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.services import otp as otp_service
+
+    if not user.mobile:
+        raise BusinessRuleViolation("precondition_failed", "Add a mobile number to your profile first.")
+    return otp_service.request_otp(
+        mobile=user.mobile, purpose=OtpPurpose.VERIFY, ip=ip, locale=user.locale or "en", request_id=request_id
+    )

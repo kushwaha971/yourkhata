@@ -12,6 +12,7 @@ import type { ApiErrorShape, PageMeta, RequestStatus } from 'src/types/api.types
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 import { copyText } from 'src/utils/clipboard';
 
+import { TEAM_FLAGS } from '../constants/teamFlags';
 import {
   inviteDialogClosed,
   inviteDialogOpened,
@@ -136,20 +137,22 @@ export function useInvitations(): UseInvitationsResult {
 
   // One effect, one request. Aborted when the page changes mid-flight so a slow
   // page 1 can never overwrite a fast page 2.
+  // Off the screen while email invitations are off: nothing to ask for.
+  const wanted = canManage && TEAM_FLAGS.emailInvites;
   useEffect(() => {
-    if (!canManage) return undefined;
+    if (!wanted) return undefined;
     const promise = dispatch(fetchInvitations({ page, pageSize }));
     return () => promise.abort();
-  }, [dispatch, canManage, page, pageSize]);
+  }, [dispatch, wanted, page, pageSize]);
 
   // A mutation marked us stale — refetch once, silently (§19.3.6). Not while
   // the link is impaired: the rows are already painted and the merchant is
   // waiting on something else.
   useEffect(() => {
-    if (!stale || !canManage || isImpaired) return undefined;
+    if (!stale || !wanted || isImpaired) return undefined;
     const promise = dispatch(fetchInvitations({ page, pageSize }));
     return () => promise.abort();
-  }, [stale, canManage, isImpaired, dispatch, page, pageSize]);
+  }, [stale, wanted, isImpaired, dispatch, page, pageSize]);
 
   const openInvite = useCallback(() => {
     setInviteFormErrors([]);

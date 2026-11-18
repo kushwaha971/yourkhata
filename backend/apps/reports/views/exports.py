@@ -24,6 +24,7 @@ from apps.common.exceptions import BusinessRuleViolation, NoActiveTenant, NotFou
 from apps.common.exports import request_has
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
+from apps.reports.export_access import authorize_stored_export
 from apps.reports.models import Export, ExportStatus
 
 
@@ -39,6 +40,7 @@ def _export_for(request: Any, export_id: Any) -> Export:
     codename = (export.params or {}).get("codename") or "reports.export"
     if not request_has(request, codename):
         raise PermissionDenied("You do not have permission to download this export.")
+    authorize_stored_export(request, export)
     return export
 
 
@@ -103,7 +105,11 @@ class ExportDownloadView(APIView):
             default_storage.open(attachment.storage_key, "rb"),
             content_type="text/csv; charset=utf-8",
             as_attachment=True,
-            filename=f"digikhaato-{export.resource or 'export'}-{export.created_at:%Y%m%d-%H%M}.csv",
+            # RPT-08 FR-8 — a report's file keeps the name it would have had
+            # synchronously (`day-book_2026-04-01_2026-09-30.csv`); a list's
+            # keeps IMP-02's.
+            filename=(export.params or {}).get("filename")
+            or f"yourkhata-{export.resource or 'export'}-{export.created_at:%Y%m%d-%H%M}.csv",
         )
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"

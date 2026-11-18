@@ -2,13 +2,26 @@
 
 import { useCallback, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { Search } from 'lucide-react';
 
-import { UbButton, UbDrawer } from 'src/design-system';
+import { UbButton } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
+import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { PartyQuickSearch } from 'modules/DigiKhaato/features/parties/components/PartyQuickSearch';
 import { useCanSearchParties } from 'modules/DigiKhaato/features/parties/hooks/usePartySearch';
+import { ShopGlobalSearch } from 'modules/DigiKhaato/features/reports/components/ShopGlobalSearch';
+
+/**
+ * W4-P — the sheet (vaul, via `UbDrawer`) is fetched on the first tap rather
+ * than with every `(app)` route; vaul and its Radix dialog are not worth their bytes on every route for a sheet opened now and then.
+ */
+const UbDrawer = dynamic(
+  () => import('src/design-system/UbDrawer').then((module) => module.UbDrawer),
+  { ssr: false }
+);
 
 /**
  * UAT D2 (High/P1) — "find a khata" below 1024 px.
@@ -29,31 +42,40 @@ import { useCanSearchParties } from 'modules/DigiKhaato/features/parties/hooks/u
 export function MobileQuickSearch(): React.JSX.Element | null {
   const { t } = useTranslation();
   const canSearch = useCanSearchParties();
+  const { shell, book } = useNavigation();
   const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false);
   const close = useCallback(() => setOpen(false), []);
 
-  if (!canSearch) return null;
+  // The party search is the shop's question, not a library's (owner, 4 Oct 2026).
+  if (shell.commandSearch) return <ShopGlobalSearch presentation="mobile" />;
+  if (!canSearch || !shell.partySearch) return null;
 
   return (
     <>
       <UbButton
         variant="ghost"
         iconOnly
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpened(true);
+          setOpen(true);
+        }}
         className="h-11 w-11 shrink-0 text-text-secondary"
         icon={<Search aria-hidden className="h-5 w-5" />}
       >
         {t('parties.quickSearch.label')}
       </UbButton>
-      <UbDrawer
-        open={open}
-        onOpenChange={setOpen}
-        title={t('parties.quickSearch.label')}
-        closeLabel={t('common.action.close')}
-        className="min-h-[60dvh]"
-      >
-        <PartyQuickSearch autoFocus inline onNavigate={close} />
-      </UbDrawer>
+      {opened && (
+        <UbDrawer
+          open={open}
+          onOpenChange={setOpen}
+          title={t('parties.quickSearch.label')}
+          closeLabel={t('common.action.close')}
+          className="min-h-[60dvh]"
+        >
+          <PartyQuickSearch book={book} autoFocus inline onNavigate={close} />
+        </UbDrawer>
+      )}
     </>
   );
 }

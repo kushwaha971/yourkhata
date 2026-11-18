@@ -13,9 +13,9 @@ import {
   UbFileUpload,
   UbForm,
   UbGrid,
+  UbDisclosure,
   UbImagePreview,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbPanelSection,
   UbPhoneInput,
@@ -31,6 +31,8 @@ import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useBranding } from '../../branding/hooks/useBranding';
 import {
@@ -83,7 +85,7 @@ export function BusinessProfilePageContent(): React.JSX.Element {
 
   if (status === 'failed') {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="profile" header={header}>
         <UbEmptyState
           variant="error"
           title={t('settings.profile.error.title')}
@@ -96,14 +98,14 @@ export function BusinessProfilePageContent(): React.JSX.Element {
             </UbButton>
           }
         />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   if (!data) {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="profile" header={header}>
         <UbSkeleton variant="form" count={6} />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   return <BusinessProfileEditor data={data} profile={profile} header={header} />;
@@ -246,9 +248,12 @@ function BusinessProfileEditor({
   const mismatch = profile.warnings.find((warning) => warning.code === 'gstin_state_mismatch');
 
   return (
-    <UbPageShell header={header}>
-      <UbGrid columns={{ base: 1, lg: 2 }} gap={6}>
-        <UbForm form={form} onSubmit={submit} formErrors={formErrors}>
+    <SettingsFrame page="profile" header={header}>
+      {/* Design S3 (owner: "build to the design", 16 Nov 2026): Business, Address
+          and Tax as the design draws them. The GST status stays in Tax because
+          tax on every bill follows it. Everything else this form keeps is under
+          More details, closed. */}
+      <UbForm form={form} onSubmit={submit} formErrors={formErrors}>
           {mismatch?.gstinStateCode && (
             <UbStatusBanner
               tone="warning"
@@ -264,17 +269,37 @@ function BusinessProfileEditor({
             >
               <UbStack gap={4}>
                 {text('name', { max: 160 })}
-                {text('legalName', { max: 200 })}
                 <UbField
-                  name="businessType"
-                  label={t('onboarding.type.label')}
-                  placeholder={t('settings.profile.field.businessType.placeholder')}
-                  hint={t('onboarding.type.hint')}
+                  name="phone"
+                  label={t('settings.profile.field.phone')}
+                  placeholder={t('settings.profile.field.phone.placeholder')}
+                  hint={t('settings.profile.field.phone.hint')}
                 >
-                  {(field) => <UbSelect {...field} options={typeOptions} disabled={disabled} />}
+                  {(field) => <UbPhoneInput {...field} disabled={disabled} />}
+                </UbField>
+                {text('email', { type: 'email', max: 254 })}
+              </UbStack>
+            </UbPanelSection>
+          </UbPanel>
+          <UbPanel as="section">
+            <UbPanelSection title={t('settings.profile.section.address')}>
+              <UbStack gap={4}>
+                {text('addressLine1', { max: 120 })}
+                <UbGrid columns={{ base: 2 }} gap={4}>
+                  {text('city', { max: 120 })}
+                  {text('pincode', { max: 6 })}
+                </UbGrid>
+                <UbField
+                  name="stateCode"
+                  label={t('settings.profile.field.stateCode')}
+                  placeholder={t('settings.profile.field.stateCode.placeholder')}
+                >
+                  {(field) => <UbSelect {...field} options={stateOptions} disabled={disabled} />}
                 </UbField>
               </UbStack>
             </UbPanelSection>
+          </UbPanel>
+          <UbPanel as="section">
             <UbPanelSection title={t('settings.profile.section.gst')}>
               <UbStack gap={4}>
                 <UbText variant="label">{t('onboarding.gst.label')}</UbText>
@@ -290,57 +315,45 @@ function BusinessProfileEditor({
                   )}
                 </UbField>
                 {registered && text('gstin', { upper: true, max: 15, mono: true })}
-                {text('pan', { upper: true, max: 10, mono: true })}
+                {text('upiVpa', { max: 80 })}
+              </UbStack>
+            </UbPanelSection>
+          </UbPanel>
+          <UbDisclosure label={t('settings.profile.more.title')} hint={t('settings.profile.more.hint')}>
+            <UbStack gap={4}>
+              <UbPanel as="section">
+                <UbPanelSection title={t('settings.profile.more.title')}>
+                  <UbStack gap={4}>
+                    {text('legalName', { max: 200 })}
                 <UbField
-                  name="stateCode"
-                  label={t('settings.profile.field.stateCode')}
-                  placeholder={t('settings.profile.field.stateCode.placeholder')}
+                  name="businessType"
+                  label={t('onboarding.type.label')}
+                  placeholder={t('settings.profile.field.businessType.placeholder')}
+                  hint={t('onboarding.type.hint')}
                 >
-                  {(field) => <UbSelect {...field} options={stateOptions} disabled={disabled} />}
+                  {(field) => <UbSelect {...field} options={typeOptions} disabled={disabled} />}
                 </UbField>
-              </UbStack>
-            </UbPanelSection>
-            <UbPanelSection title={t('settings.profile.section.address')}>
-              <UbStack gap={4}>
-                {text('addressLine1', { max: 120 })}
-                {text('addressLine2', { max: 120 })}
-                <UbGrid columns={{ base: 1, sm: 2 }} gap={4}>
-                  {text('city', { max: 120 })}
-                  {text('pincode', { max: 6 })}
-                </UbGrid>
-              </UbStack>
-            </UbPanelSection>
-            <UbPanelSection title={t('settings.profile.section.contact')}>
-              <UbStack gap={4}>
-                <UbField
-                  name="phone"
-                  label={t('settings.profile.field.phone')}
-                  placeholder={t('settings.profile.field.phone.placeholder')}
-                  hint={t('settings.profile.field.phone.hint')}
-                >
-                  {(field) => <UbPhoneInput {...field} disabled={disabled} />}
-                </UbField>
-                {text('email', { type: 'email', max: 254 })}
-              </UbStack>
-            </UbPanelSection>
-            <UbPanelSection title={t('settings.profile.section.bank')}>
-              <UbStack gap={4}>
+                    {text('pan', { upper: true, max: 10, mono: true })}
+                    {text('addressLine2', { max: 120 })}
+                  </UbStack>
+                </UbPanelSection>
+                <UbPanelSection title={t('settings.profile.section.bank')}>
+                  <UbStack gap={4}>
                 {data.bankMasked && (
                   <UbText variant="caption" tone="tertiary">
                     {t('settings.profile.bank.masked')}
                   </UbText>
                 )}
-                {text('accountName', { max: 120 })}
-                {text('accountNumber', { max: 18, mono: true })}
-                <UbGrid columns={{ base: 1, sm: 2 }} gap={4}>
-                  {text('ifsc', { upper: true, max: 11, mono: true })}
-                  {text('bankName', { max: 80 })}
-                </UbGrid>
-                {text('branch', { max: 80 })}
-                {text('upiVpa', { max: 80 })}
-              </UbStack>
-            </UbPanelSection>
-            <UbPanelSection title={t('settings.profile.signature.label')}>
+                    {text('accountName', { max: 120 })}
+                    {text('accountNumber', { max: 18, mono: true })}
+                    <UbGrid columns={{ base: 1, sm: 2 }} gap={4}>
+                      {text('ifsc', { upper: true, max: 11, mono: true })}
+                      {text('bankName', { max: 80 })}
+                    </UbGrid>
+                    {text('branch', { max: 80 })}
+                  </UbStack>
+                </UbPanelSection>
+                <UbPanelSection title={t('settings.profile.signature.label')}>
               <UbStack direction="row" gap={3} align="center" wrap>
                 <UbImagePreview
                   src={branding.data?.signatureUrl ?? null}
@@ -365,23 +378,8 @@ function BusinessProfileEditor({
                   </UbText>
                 </UbStack>
               </UbStack>
-            </UbPanelSection>
-          </UbPanel>
-          {canEdit && (
-            <UbStack direction="row" justify="end">
-              <UbButton
-                type="submit"
-                busy={profile.isSaving}
-                busyLabel={t('settings.action.saving')}
-                disabled={!profile.canWrite || !formState.isDirty}
-              >
-                {t('settings.action.save')}
-              </UbButton>
-            </UbStack>
-          )}
-        </UbForm>
-
-        <UbStack gap={4} className="lg:sticky lg:top-4 lg:self-start">
+                </UbPanelSection>
+              </UbPanel>
           <DocumentHeaderPreview
             logoSrc={branding.data?.logoUrl ?? null}
             name={watched.name ?? ''}
@@ -397,8 +395,21 @@ function BusinessProfileEditor({
               logoAlt: t('branding.logo.alt'),
             }}
           />
-        </UbStack>
-      </UbGrid>
+            </UbStack>
+          </UbDisclosure>
+          {canEdit && (
+            <UbStack direction="row" justify="end">
+              <UbButton
+                type="submit"
+                busy={profile.isSaving}
+                busyLabel={t('settings.action.saving')}
+                disabled={!profile.canWrite || !formState.isDirty}
+              >
+                {t('settings.action.save')}
+              </UbButton>
+            </UbStack>
+          )}
+      </UbForm>
 
       <UbConfirmDialog
         open={pending !== null}
@@ -412,6 +423,6 @@ function BusinessProfileEditor({
         closeLabel={t('common.action.close')}
         onConfirm={confirmGst}
       />
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

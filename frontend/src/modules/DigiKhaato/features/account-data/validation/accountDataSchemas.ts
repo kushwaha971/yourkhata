@@ -13,7 +13,7 @@ import { nameMatches } from '../view-model/accountDataDisplay';
 export const DELETE_REASON_MAX = 500;
 
 export interface DeleteBusinessFormValues {
-  password: string;
+  code: string;
   confirmName: string;
   reason: string;
 }
@@ -31,7 +31,7 @@ export const useAccountDataSchemas = (
   return useMemo(
     () => ({
       deleteBusinessSchema: Yup.object({
-        password: v.requiredText(256, 'data.delete.password.required').defined(),
+        code: v.requiredText(12, 'data.delete.code.required').defined(),
         confirmName: v
           .requiredText(200, 'data.delete.confirm.required')
           .test('matches', t('data.delete.confirm.mismatch'), (value) =>

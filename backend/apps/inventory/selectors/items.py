@@ -8,6 +8,7 @@ single-location (INV-11 is Phase 2), so "the item's stock" is its `MAIN` row.
 from __future__ import annotations
 
 import datetime as dt
+import re
 from decimal import Decimal
 from typing import Any
 
@@ -18,14 +19,16 @@ from django.db.models import (
     DecimalField,
     ExpressionWrapper,
     F,
+    Max,
     OuterRef,
     Q,
     QuerySet,
     Subquery,
+    Sum,
     Value,
     When,
 )
-from django.db.models.functions import Coalesce, Round
+from django.db.models.functions import Coalesce, NullIf, Round
 
 from apps.inventory.constants import (
     MOVEMENTS_RECENT,
@@ -43,9 +46,34 @@ MONEY = DecimalField(max_digits=16, decimal_places=2)
 
 
 def _stock_subquery(field: str, location_id: Any) -> Subquery:
+    """One place's figure, or (D P1c, `location_id=None`) the whole business's:
+    stock summed over every place, and the average as total value ÷ total qty,
+    so a godown never hides stock from the Items list or the stock value."""
+    if location_id is not None:
+        return Subquery(
+            ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values(field)[
+                :1
+            ],
+            output_field=QTY if field == "on_hand" else COST,
+        )
+    rows = ItemStock.objects.filter(item=OuterRef("pk")).values("item")
+    if field == "on_hand":
+        return Subquery(rows.annotate(total=Sum("on_hand")).values("total")[:1], output_field=QTY)
     return Subquery(
-        ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values(field)[:1],
-        output_field=QTY if field == "on_hand" else COST,
+        rows.annotate(
+            avg=Coalesce(
+                Round(
+                    ExpressionWrapper(
+                        Sum("stock_value") / NullIf(Sum("on_hand"), Value(Decimal("0"))),
+                        output_field=COST,
+                    ),
+                    4,
+                ),
+                Max("avg_cost"),
+                output_field=COST,
+            )
+        ).values("avg")[:1],
+        output_field=COST,
     )
 
 
@@ -56,6 +84,8 @@ def with_stock(qs: QuerySet, *, location_id: Any) -> QuerySet:
     the list renders as "—" — a zero would claim a stock count nobody took.
     """
     tracked = Q(track_stock=True, item_type=ItemType.GOODS)
+    # D P1a — every item row carries its other units (one extra query a page).
+    qs = qs.prefetch_related("extra_units__unit", "codes", "addons").select_related("product")
     qs = qs.annotate(
         _on_hand=Coalesce(
             _stock_subquery("on_hand", location_id), Value(Decimal("0.000")), output_field=QTY
@@ -94,7 +124,16 @@ def search(qs: QuerySet, q: str) -> QuerySet:
     text = (q or "").strip()[:80]
     if not text:
         return qs.annotate(match_field=Value(None, output_field=CharField()))
-    qs = qs.filter(Q(name__icontains=text) | Q(sku__istartswith=text) | Q(barcode__startswith=text))
+    # D P1b — any of the item's other part numbers, as typed ("06430" finds it).
+    from apps.inventory.models import ItemCode
+
+    by_code = ItemCode.objects.filter(code__istartswith=text).values("item_id")
+    qs = qs.filter(
+        Q(name__icontains=text)
+        | Q(sku__istartswith=text)
+        | Q(barcode__startswith=text)
+        | Q(pk__in=by_code)
+    )
     return qs.annotate(
         match_field=Case(
             When(barcode=text, then=Value("barcode")),
@@ -102,10 +141,28 @@ def search(qs: QuerySet, q: str) -> QuerySet:
             When(name__icontains=text, then=Value("name")),
             When(sku__istartswith=text, then=Value("sku")),
             When(barcode__startswith=text, then=Value("barcode")),
+            When(pk__in=by_code, then=Value("part")),
             default=Value(None),
             output_field=CharField(),
         )
     )
+
+
+_YEARS = re.compile(r"\b((?:19|20)\d\d)(?:\s*[-–]\s*((?:19|20)\d\d))?\b")
+
+
+def _year(raw: Any) -> int | None:
+    try:
+        year = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return None
+    return year if 1950 <= year <= 2100 else None
+
+
+def fits_year_ok(text: str, year: int) -> bool:
+    """"Splendor+ 2019–2024" fits 2021; "Splendor+ 2015" fits 2015 only; "Splendor+" fits any year."""
+    spans = [(int(a), int(b or a)) for a, b in _YEARS.findall(text or "")]
+    return not spans or any(low <= year <= high for low, high in spans)
 
 
 def item_list(
@@ -116,6 +173,9 @@ def item_list(
     item_type: str | None = None,
     category_id: Any = None,
     status: str | None = ItemStatus.ACTIVE,
+    product_id: Any = None,
+    fits: str = "",
+    fits_year: Any = None,
 ) -> QuerySet:
     """Every filter except `stock` — which `counts` must ignore (FR-4 delta)."""
     qs = Item.objects.filter(tenant=tenant).select_related("unit", "category")
@@ -126,6 +186,21 @@ def item_list(
     if category_id:
         # A parent category includes its children (INV-04 AC-4).
         qs = qs.filter(Q(category_id=category_id) | Q(category__parent_id=category_id))
+    if product_id:
+        # D P2 — one garment's sizes and colours, for the bill line's picker.
+        try:
+            qs = qs.filter(product_id=product_id)
+        except (ValueError, TypeError):
+            qs = qs.none()
+    # G8 — "Parts that fit": every word typed must be in the item's fits.
+    for word in (fits or "").split()[:6]:
+        qs = qs.filter(fits_vehicle__icontains=word[:40])
+    # G8 design pVehicle "Year 2019–2024": a part fits a year when its fits name
+    # it, a range holds it, or the fits name no year at all (fits every year).
+    year = _year(fits_year)
+    if year is not None:
+        rows = qs.exclude(fits_vehicle="").values_list("id", "fits_vehicle")[:5000]
+        qs = qs.filter(id__in=[pk for pk, text in rows if fits_year_ok(text, year)])
     qs = search(qs, q)
     return with_stock(qs, location_id=location_id)
 
@@ -193,6 +268,25 @@ def lookup_by_barcode(
     found = base.filter(barcode=code).first()
     if found is None:
         found = base.filter(sku=code).annotate(match_field=Value("sku")).first()
+    if found is None:
+        # D P1b — another part number, typed or scanned.
+        from apps.inventory.models import ItemCode
+
+        code_row = ItemCode.objects.filter(tenant=tenant, code=code.upper()).first()
+        if code_row is not None:
+            found = base.filter(pk=code_row.item_id).annotate(match_field=Value("part")).first()
+    if found is None:
+        # D P1a — a box's own barcode: the item, with the unit it names, so a
+        # scan adds 1 box rather than 1 piece.
+        from apps.inventory.models import ItemUnit
+
+        extra = (
+            ItemUnit.objects.filter(tenant=tenant, barcode=code).select_related("unit").first()
+        )
+        if extra is not None:
+            found = base.filter(pk=extra.item_id).annotate(match_field=Value("unit_barcode")).first()
+            if found is not None:
+                found.scanned_unit = extra.unit.code
     return found
 
 
@@ -279,13 +373,51 @@ def resolve_sources(rows: list[StockMovement]) -> dict[Any, str]:
     return dict(StockAdjustment.objects.filter(pk__in=adjustment_ids).values_list("id", "number"))
 
 
-def category_tree(*, tenant: Any) -> list[dict]:
+def _category_figures(*, tenant: Any, valuation: bool) -> tuple[dict, dict]:
+    """The design's Stock value and GST usually columns (F-cat-d).
+
+    The value sums each place's ROUNDED on-hand × average cost, as the stock
+    summary does, so a category adds up to its rows. "Usually" is the tax code
+    most of its live items carry; a tie goes to the lower code so it is stable.
+    """
+    values: dict[Any, Decimal] = {}
+    if valuation:
+        for row in (
+            ItemStock.objects.filter(tenant=tenant, item__deleted_at__isnull=True)
+            .exclude(item__category_id=None)
+            .values("item__category_id")
+            .annotate(
+                total=Sum(Round(ExpressionWrapper(F("on_hand") * F("avg_cost"), output_field=MONEY), 2))
+            )
+        ):
+            values[row["item__category_id"]] = row["total"] or Decimal("0.00")
+    taxes: dict[Any, str] = {}
+    for row in (
+        Item.objects.filter(tenant=tenant, deleted_at__isnull=True)
+        .exclude(category_id=None)
+        .values("category_id", "tax_code")
+        .annotate(n=Count("id"))
+        .order_by("category_id", "-n", "tax_code")
+    ):
+        taxes.setdefault(row["category_id"], row["tax_code"])
+    return values, taxes
+
+
+def category_tree(*, tenant: Any, valuation: bool = False) -> list[dict]:
     """FR-4 — top-level categories with their children and live item counts."""
     rows = list(
         Category.objects.filter(tenant=tenant)
         .annotate(item_count=Count("items", filter=Q(items__deleted_at__isnull=True)))
         .order_by("sort_order", "name")
     )
+    values, taxes = _category_figures(tenant=tenant, valuation=valuation)
+
+    def figures(row: Category) -> dict:
+        # The value is withheld, not zeroed, when the viewer may not see cost.
+        out: dict = {"tax_code": taxes.get(row.id)}
+        if valuation:
+            out["stock_value"] = str(values.get(row.id, Decimal("0.00")))
+        return out
     children: dict[Any, list[dict]] = {}
     for row in rows:
         if row.parent_id:
@@ -295,6 +427,7 @@ def category_tree(*, tenant: Any) -> list[dict]:
                     "name": row.name,
                     "parent_id": str(row.parent_id),
                     "item_count": row.item_count,
+                    **figures(row),
                 }
             )
     return [
@@ -303,6 +436,7 @@ def category_tree(*, tenant: Any) -> list[dict]:
             "name": row.name,
             "parent_id": None,
             "item_count": row.item_count,
+            **figures(row),
             "children": children.get(row.id, []),
         }
         for row in rows

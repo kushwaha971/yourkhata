@@ -6,7 +6,16 @@
 export const LOCALES = ['en', 'hi'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-/** Canon §0.3 module map. A module the tenant has not enabled does not exist. */
+/**
+ * The server's module codes, exactly: `ModuleCode` in
+ * `backend/apps/common/constants.py`, in the same order. `moduleCodes.test.ts`
+ * reads that file and fails when the two lists differ (A1, PLT-X11 §7).
+ *
+ * `lending`, `library`, `gym` and `hospitality` are listed although no
+ * merchant can have them yet: the server hides every unreleased module from
+ * every response (`UNRELEASED_MODULES`), so the client needs no gate of its
+ * own, and a type that lacked them would need editing on each release day.
+ */
 export const MODULE_CODES = [
   'platform',
   'parties',
@@ -20,10 +29,24 @@ export const MODULE_CODES = [
   'notifications',
   'import_export',
   'help',
-  'loans',
-  'accounting',
+  'team',
+  // DEC-019 — the Udhaar book, an app of its own (anchor of the `khata` app).
+  'khata',
+  // ── A1 ── platform verticals, unreleased until each module's release CR
+  'lending',
+  'library',
+  'gym',
+  'hospitality',
 ] as const;
 export type ModuleCode = (typeof MODULE_CODES)[number];
+
+/**
+ * DEC-019 — the two ledger books a person's khata-shaped page and list can read
+ * (`?book=` on the server): `main` is the Udhaar book (You gave / You got,
+ * `party.balance`), `shop` is the Shop's bills and the payments against them
+ * (`party.shop_balance`). Each app shows only its own money.
+ */
+export type LedgerBook = 'main' | 'shop';
 
 /**
  * Canon §0.9 permission codenames. Sprint 0 carries the subset the walking
@@ -82,8 +105,21 @@ export const PERMISSION_CODES = [
   'sales.invoice.read',
   /** SAL-02 §12 — create, edit and issue a bill; the accountant never holds it. */
   'sales.invoice.write',
+  /** SAL-05 §12 — void a bill or a credit note: owner and admin only. */
+  'sales.invoice.void',
+  /** SAL-01 §12 — estimates: the accountant reads them and writes none. */
+  'sales.estimate.read',
+  'sales.estimate.write',
+  /** SAL-04 §12 — returns; staff hold it (they start returns at the counter). */
+  'sales.credit_note.write',
   'purchases.bill.read',
+  /** PUR-01 §12 / PUR-04 §12 — record a bill (not the accountant); void one (owner, admin). */
+  'purchases.bill.write',
+  'purchases.bill.void',
   'payments.payment.read',
+  /** PAY-01 / PAY-05 §12 — record (owner, admin, staff) and void (owner, admin only). */
+  'payments.payment.write',
+  'payments.payment.void',
   'expenses.expense.read',
   /** EXP-01 §12 — record (owner, admin, staff) and void (owner, admin only). */
   'expenses.expense.write',
@@ -114,6 +150,20 @@ export const PERMISSION_CODES = [
   'platform.audit.read',
   /** LED-07 FR-1 / LED-08 FR-1 — the two SMS switches; owner and admin. */
   'notifications.settings.manage',
+  // ── A9b ── R26, owner Q2: tenant-wide closed days and weekdays; owner, admin.
+  'platform.calendar.manage',
+  // ── library ── Members & Fees, rebuilt 12 Nov 2026 (the server's registry is the authority).
+  'library.member.read',
+  'library.member.write',
+  'library.fee.create',
+  'library.settings.manage',
+  // ── lending ── Loans & Collections, rebuilt 12 Nov 2026.
+  'lending.loan.read',
+  'lending.loan.create',
+  'lending.collection.create',
+  'lending.settings.manage',
+  // The Money Book's own way in (rebuilt 11 Nov 2026).
+  'khata.book.read',
 ] as const;
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
 

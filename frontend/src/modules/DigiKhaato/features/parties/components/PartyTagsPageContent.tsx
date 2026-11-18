@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbPageHeader,
   UbPageShell,
   UbStack,
@@ -46,11 +47,13 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
  */
 const PartyTagFormDialogLazy = dynamic(
   () => import('./PartyTagFormDialog').then((m) => m.PartyTagFormDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 const PartyTagMergeDialogLazy = dynamic(
   () => import('./PartyTagMergeDialog').then((m) => m.PartyTagMergeDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

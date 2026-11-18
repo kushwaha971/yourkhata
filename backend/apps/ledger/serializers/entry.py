@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.common.constants import Direction, PaymentMode, UpiApp
+from apps.common.constants import MONEY_PAYMENT_MODE_CHOICES, Direction, UpiApp
 from apps.common.serializers import MoneySerializerField
 from apps.ledger.constants import NOTE_MAX_LENGTH, REFERENCE_MAX_LENGTH, EntryType, SourceType
 from apps.ledger.models import LedgerEntry
@@ -61,6 +61,8 @@ class LedgerEntrySerializer(serializers.ModelSerializer):
             "reason",
             "created_by",
             "created_at",
+            # A2 — which kind of money the line is (`main`, `loan`, `deposit`).
+            "bucket",
         )
         read_only_fields = fields
 
@@ -77,18 +79,31 @@ class LedgerEntrySerializer(serializers.ModelSerializer):
         }
 
 
-def entry_source(entry: LedgerEntry) -> dict | None:
+def entry_source(entry: LedgerEntry, sources: dict | None = None) -> dict | None:
     """FR-4's document link — one function, so the statement and the timeline agree.
 
     `null` for a manual row, which is every row a merchant types. A reversal's
     source is the entry it undoes (`type='ledger_entry'`, the same id as
-    `reverses_id`) — unchanged from what the statement has always sent, so the
-    two screens describe one row one way. See `StatementRowSerializer.get_source`
-    for why the key exists before the documents do.
+    `reverses_id`); a DOCUMENT void's reversal names the document itself
+    (LED-10 BR-5), so it links to the same invoice or receipt as the row it
+    undid. `number`, `status` and `kind` come from `resolve_sources`, which the
+    view runs once per page and hands in as `sources` (LED-10 FR-5); they stay
+    `null` for a document the resolver could not find (§9 "Document not
+    found") and for a manual reversal, which has no document.
     """
     if entry.source_type == SourceType.MANUAL or entry.source_id is None:
         return None
-    return {"type": entry.source_type, "id": str(entry.source_id), "number": None, "url": None}
+    found = (sources or {}).get(str(entry.source_id)) or {}
+    return {
+        "type": entry.source_type,
+        "id": str(entry.source_id),
+        "number": found.get("number"),
+        "status": found.get("status"),
+        "kind": found.get("kind"),
+        "url": None,
+        # A4b (Wave A gate): an adjustment is not a return; see `resolve_payments`.
+        **({"adjustment": True} if found.get("adjustment") else {}),
+    }
 
 
 class TimelineEntrySerializer(LedgerEntrySerializer):
@@ -129,7 +144,7 @@ class TimelineEntrySerializer(LedgerEntrySerializer):
         return str(carried - delta + own)
 
     def get_source(self, entry: LedgerEntry) -> dict | None:
-        return entry_source(entry)
+        return entry_source(entry, self.context.get("sources"))
 
 
 class LedgerEntryWriteSerializer(serializers.Serializer):
@@ -174,11 +189,12 @@ class LedgerEntryWriteSerializer(serializers.Serializer):
     # ever sees it, which EC-4 says must be refused rather than rounded.
     amount = serializers.CharField(max_length=20)
     entry_date = serializers.DateField()
+    simple = serializers.BooleanField(required=False, default=False, write_only=True)
     note = serializers.CharField(
         max_length=NOTE_MAX_LENGTH, required=False, allow_blank=True, default=""
     )
     payment_mode = serializers.ChoiceField(
-        choices=PaymentMode.choices, required=False, allow_null=True, default=None
+        choices=MONEY_PAYMENT_MODE_CHOICES, required=False, allow_null=True, default=None
     )
     # Which UPI app. Optional, and meaningful only with `payment_mode='upi'` —
     # the service drops it silently otherwise, so a client may leave the pick in
@@ -305,7 +321,7 @@ class EntryCorrectSerializer(EntryReverseSerializer):
     entry_date = serializers.DateField(required=False)
     note = serializers.CharField(max_length=NOTE_MAX_LENGTH, required=False, allow_blank=True)
     payment_mode = serializers.ChoiceField(
-        choices=PaymentMode.choices, required=False, allow_null=True
+        choices=MONEY_PAYMENT_MODE_CHOICES, required=False, allow_null=True
     )
     upi_app = serializers.ChoiceField(
         choices=UpiApp.choices,
@@ -348,6 +364,8 @@ class StatementRowSerializer(serializers.ModelSerializer):
             "reverses_id",
             "supersedes_id",
             "reason",
+            # A2 — a row's bucket; the running balance is over `main` and `loan`.
+            "bucket",
         )
         read_only_fields = fields
 
@@ -376,7 +394,41 @@ class StatementRowSerializer(serializers.ModelSerializer):
         omits its unbuilt summary figures: a key that is always empty is a claim
         this code cannot verify, and the client cannot tell it from a real one.
         """
-        return entry_source(entry)
+        return entry_source(entry, self.context.get("sources"))
+
+
+class StatementDepositRowSerializer(serializers.ModelSerializer):
+    """One line of the statement's "Deposit held" block (A2, PLT-X01 §6).
+
+    The statement row's shape without `running_balance`: a deposit line is outside the
+    running balance by definition (ADR-044), so a figure there would be a balance it did not
+    move. The same customer-facing restraint as `StatementRowSerializer` — no mode, no
+    reference, no author.
+    """
+
+    amount = MoneySerializerField(read_only=True)
+    source = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LedgerEntry
+        fields = (
+            "id",
+            "entry_date",
+            "entry_type",
+            "direction",
+            "amount",
+            "note",
+            "status",
+            "source",
+            "reverses_id",
+            "supersedes_id",
+            "reason",
+            "bucket",
+        )
+        read_only_fields = fields
+
+    def get_source(self, entry: LedgerEntry) -> dict | None:
+        return entry_source(entry, self.context.get("sources"))
 
 
 class StatementPartySerializer(serializers.Serializer):

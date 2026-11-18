@@ -6,8 +6,19 @@ import * as Yup from 'yup';
 
 import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
+import { hasReason } from 'src/utils/reason';
 
-import type { AdjustmentFormValues, ItemFormValues, Unit } from '../types/item.types';
+import { ITEM_SCHEDULES, type ItemSchedule } from '../types/item.types';
+import { categoryExists, unitCodeExists } from '../view-model/mastersView';
+
+import type { TagFormValues } from '../api/tagService';
+import type {
+  AdjustmentFormValues,
+  AdjustmentMode,
+  Category,
+  ItemFormValues,
+  Unit,
+} from '../types/item.types';
 
 export interface CategoryFormValues {
   name: string;
@@ -34,6 +45,11 @@ const SKU = /^[A-Za-z0-9._/-]+$/;
 const BARCODE = /^[A-Za-z0-9-]+$/;
 const QTY = (decimals: boolean) => (decimals ? /^\d+(\.\d{1,3})?$/ : /^\d+$/);
 const COST = /^\d+(\.\d{1,4})?$/;
+/**
+ * WP-07 — a margin to one decimal. No lower bound: a margin read from two
+ * prices can be any loss, and a figure the form computed must never block a save.
+ */
+const MARGIN = /^-?\d+(\.\d)?$/;
 
 export interface InventorySchemas {
   readonly itemSchema: Yup.ObjectSchema<ItemFormValues>;
@@ -42,7 +58,11 @@ export interface InventorySchemas {
   readonly unitSchema: Yup.ObjectSchema<UnitFormValues>;
 }
 
-export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas => {
+export const useInventorySchemas = (
+  units: readonly Unit[],
+  /** 09 §8.5 — only the add-category dialog passes these, for "Already exists". */
+  categories: readonly Category[] = []
+): InventorySchemas => {
   const v = useValidationSchemas();
   const { t } = useTranslation();
 
@@ -83,6 +103,17 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
       taxInclusiveSelling: Yup.boolean().defined(),
       sellingPrice: v.optionalAmountValidation().defined().default(''),
       purchasePrice: v.optionalAmountValidation().defined().default(''),
+      margin: Yup.string()
+        .defined()
+        .default('')
+        .test('margin', function check(value) {
+          if (!value) return true;
+          if (!MARGIN.test(value))
+            return this.createError({ message: t('items.form.margin.format') });
+          return (
+            Number(value) < 100 || this.createError({ message: t('items.form.margin.tooHigh') })
+          );
+        }),
       mrp: v
         .optionalAmountValidation()
         .defined()
@@ -130,6 +161,76 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
           (value) => !value || COST.test(value)
         ),
       openingAsOf: Yup.string().defined().default(''),
+      // D P1a — "Also sold as": a picked unit needs a count above 1; the
+      // server checks the rest (own unit, twice, barcode taken).
+      extraUnits: Yup.array()
+        .of(
+          Yup.object({
+            unitId: Yup.string().defined().default(''),
+            factor: Yup.string()
+              .defined()
+              .default('')
+              .test('factor', t('items.form.units.factor'), function check(value) {
+                const unitId = (this.parent as { unitId: string }).unitId;
+                if (!unitId) return true;
+                return Boolean(value) && Number(value) > 1;
+              }),
+            price: Yup.string().nullable().defined().default(null),
+            barcode: Yup.string().defined().default(''),
+          })
+        )
+        .defined()
+        .default([]),
+      partNumbers: Yup.array().of(Yup.string().defined()).defined().default([]),
+      hasVariants: Yup.boolean().defined().default(false),
+      addons: Yup.array()
+        .of(
+          Yup.object({
+            name: Yup.string().defined().default('').max(60),
+            price: Yup.string().defined().default(''),
+          })
+        )
+        .defined()
+        .default([]),
+      tracking: Yup.mixed<'none' | 'serial' | 'batch'>()
+        .oneOf(['none', 'serial', 'batch'])
+        .defined()
+        .default('none'),
+      warrantyMonths: Yup.number().defined().default(0),
+      // G2a — the server checks the weights (net = gross − stone, HUID, unique
+      // tag no.) and names the box; here a typed tag needs its gross weight.
+      tag: Yup.object({
+        tagNo: Yup.string().defined().default(''),
+        purity: Yup.mixed<TagFormValues['purity']>().defined().default('gold_22k'),
+        grossG: Yup.string()
+          .defined()
+          .default('')
+          .when('tagNo', {
+            is: (tagNo: string) => Boolean(tagNo?.trim()),
+            then: (schema) => schema.trim().required(t('items.form.tag.grossRequired')),
+          }),
+        stoneG: Yup.string().defined().default(''),
+        netG: Yup.string().defined().default(''),
+        makingType: Yup.mixed<'pct' | 'per_g'>().oneOf(['pct', 'per_g']).defined().default('pct'),
+        makingValue: Yup.string().defined().default(''),
+        wastagePct: Yup.string().defined().default(''),
+        huid: Yup.string().defined().default(''),
+      }).defined(),
+      sizes: Yup.array().of(Yup.string().defined()).defined().default([]),
+      colours: Yup.array().of(Yup.string().defined()).defined().default([]),
+      rack: Yup.string()
+        .defined()
+        .default('')
+        .max(16, t('validation.maxChars', { value: 16 })),
+      fitsVehicle: Yup.string()
+        .defined()
+        .default('')
+        .max(120, t('validation.maxChars', { value: 120 })),
+      salt: Yup.string()
+        .defined()
+        .default('')
+        .max(160, t('validation.maxChars', { value: 160 })),
+      schedule: Yup.mixed<ItemSchedule>().oneOf([...ITEM_SCHEDULES]).defined().default(''),
     });
 
     const adjustmentSchema: Yup.ObjectSchema<AdjustmentFormValues> = Yup.object({
@@ -144,7 +245,7 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
         .defined()
         .max(255, t('validation.maxChars', { value: 255 }))
         .test('note-other', t('stock.adjust.note.required'), function check(value) {
-          return this.parent.reason !== 'other' || (value ?? '').trim().length >= 3;
+          return this.parent.reason !== 'other' || hasReason(value);
         }),
       lines: Yup.array()
         .of(
@@ -161,7 +262,7 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
             allowDecimal: Yup.boolean().defined(),
             onHand: Yup.string().defined(),
             avgCost: Yup.string().defined(),
-            mode: Yup.mixed<'by' | 'to'>().oneOf(['by', 'to']).defined(),
+            mode: Yup.mixed<AdjustmentMode>().oneOf(['add', 'remove', 'to']).defined(),
             qty: Yup.string()
               .defined()
               .test('qty', function check(value) {
@@ -169,9 +270,8 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
                 if (!this.parent.itemId) return true;
                 if (!text)
                   return this.createError({ message: t('stock.adjust.line.qty.required') });
-                const signed = this.parent.mode === 'by';
-                const body = signed && text.startsWith('-') ? text.slice(1) : text;
-                if (!QTY(this.parent.allowDecimal).test(body)) {
+                // 09 §8.4 — every mode takes an unsigned number; the mode is the sign.
+                if (!QTY(this.parent.allowDecimal).test(text)) {
                   return this.createError({
                     message: t(
                       this.parent.allowDecimal
@@ -193,10 +293,13 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
               .test('cost', function check(value) {
                 const text = (this.parent.qty ?? '').trim();
                 if (!this.parent.itemId) return true;
+                // Stock coming IN needs its cost; "Remove" never does (BR-3).
                 const delta =
                   this.parent.mode === 'to'
                     ? Number(text) - Number(this.parent.onHand || 0)
-                    : Number(text);
+                    : this.parent.mode === 'remove'
+                      ? -Number(text)
+                      : Number(text);
                 if (!(delta > 0)) return true;
                 if (!value)
                   return this.createError({ message: t('stock.adjust.line.cost.required') });
@@ -215,7 +318,12 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
     });
 
     const categorySchema: Yup.ObjectSchema<CategoryFormValues> = Yup.object({
-      name: v.requiredText(60, 'inventory.masters.category.name.required').defined(),
+      name: v
+        .requiredText(60, 'inventory.masters.category.name.required')
+        .test('exists', t('inventory.masters.exists'), function exists(value) {
+          return !categoryExists(categories, value ?? '', this.parent.parentId || null);
+        })
+        .defined(),
       parentId: Yup.string().defined().default(''),
     });
 
@@ -223,11 +331,16 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
       code: Yup.string()
         .required(t('inventory.masters.unit.code.required'))
         .matches(/^[A-Za-z0-9]{1,8}$/, t('inventory.masters.unit.code.format'))
+        .test(
+          'exists',
+          t('inventory.masters.exists'),
+          (value) => !unitCodeExists(units, value ?? '')
+        )
         .defined(),
       name: v.requiredText(40, 'inventory.masters.unit.name.required').defined(),
       allowDecimal: Yup.boolean().defined(),
     });
 
     return { itemSchema, adjustmentSchema, categorySchema, unitSchema };
-  }, [v, t, units]);
+  }, [v, t, units, categories]);
 };

@@ -1,0 +1,46 @@
+
+=== 390px — signing in as scale@digikhaato.test
+nav   390 unthrottled r1 shop.home→purchases: first change 6 (childList body) · url 34 · content 79 · loading UI 22 · prefetched 2 · nav RSC 60→72 · js done 91 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 unthrottled r1 shop.home→customers: first change 26 (childList body) · url 35 · content 244 · loading UI 26 · prefetched 2 · nav RSC 54→74 · js done 85 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.home→suppliers: first change 28 (childList body) · url 38 · content 141 · loading UI 28 · prefetched 2 · nav RSC 56→76 · js done 80 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r2 shop.home→purchases: first change 4 (childList body) · url 33 · content 69 · loading UI 25 · prefetched 2 · nav RSC 56→71 · js done 81 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 unthrottled r2 shop.home→customers: first change 29 (childList body) · url 36 · content 206 · loading UI 29 · prefetched 2 · nav RSC 56→74 · js done 73 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r2 shop.home→suppliers: first change 32 (childList body) · url 37 · content 143 · loading UI 32 · prefetched 2 · nav RSC 55→75 · js done 74 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r3 shop.home→purchases: first change 3 (childList body) · url 33 · content 62 · loading UI 26 · prefetched 2 · nav RSC 55→71 · js done 82 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 unthrottled r3 shop.home→customers: first change 28 (childList body) · url 33 · content 225 · loading UI 28 · prefetched 2 · nav RSC 56→72 · js done 71 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r3 shop.home→suppliers: first change 28 (childList body) · url 34 · content 129 · loading UI 28 · prefetched 2 · nav RSC 53→73 · js done 72 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r1 shop.home→purchases: first change 11 (childList body) · url 34 · content 928 · loading UI 32 · prefetched 2 · nav RSC 61→239 · js done 783 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 throttled r1 shop.home→customers: first change 32 (childList body) · url 34 · content 756 · loading UI 32 · prefetched 2 · nav RSC 57→234 · js done 568 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r1 shop.home→suppliers: first change 32 (childList body) · url 34 · content 550 · loading UI 32 · prefetched 2 · nav RSC 56→227 · js done 391 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r2 shop.home→purchases: first change 6 (childList body) · url 39 · content 528 · loading UI 30 · prefetched 2 · nav RSC 58→235 · js done 388 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 throttled r2 shop.home→customers: first change 31 (childList body) · url 32 · content 518 · loading UI 31 · prefetched 2 · nav RSC 57→229 · js done 229 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r2 shop.home→suppliers: first change 30 (childList body) · url 42 · content 522 · loading UI 30 · prefetched 2 · nav RSC 57→234 · js done 233 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r3 shop.home→purchases: first change 7 (childList body) · url 40 · content 531 · loading UI 31 · prefetched 2 · nav RSC 59→236 · js done 388 · after: rsc 1 (+1 prefetch), api 1, js 5 · long 0/0 · inp 48
+nav   390 throttled r3 shop.home→customers: first change 32 (childList body) · url 34 · content 522 · loading UI 32 · prefetched 2 · nav RSC 57→235 · js done 235 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 throttled r3 shop.home→suppliers: first change 29 (childList body) · url 41 · content 524 · loading UI 29 · prefetched 2 · nav RSC 57→235 · js done 235 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+
+=== 1280px — signing in as scale@digikhaato.test
+nav   1280 unthrottled r1 shop.home→purchases: first change 20 (childList body) · url 59 · content 398 · loading UI 20 · prefetched 3 · nav RSC 41→54 · js done 134 · after: rsc 1 (+2 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 unthrottled r1 shop.home→customers: first change 20 (childList body) · url 33 · content 529 · loading UI 20 · prefetched 2 · nav RSC 40→54 · js done 260 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 unthrottled r1 shop.home→suppliers: first change 22 (childList body) · url 34 · content 446 · loading UI 22 · prefetched 2 · nav RSC 40→56 · js done 175 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 unthrottled r2 shop.home→purchases: first change 26 (childList body) · url 32 · content 368 · loading UI 26 · prefetched 3 · nav RSC 37→54 · js done 103 · after: rsc 1 (+2 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 unthrottled r2 shop.home→customers: first change 29 (childList body) · url 31 · content 541 · loading UI 29 · prefetched 2 · nav RSC 40→56 · js done 272 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 unthrottled r2 shop.home→suppliers: first change 28 (childList body) · url 37 · content 445 · loading UI 28 · prefetched 2 · nav RSC 38→55 · js done 173 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 unthrottled r3 shop.home→purchases: first change 26 (childList body) · url 27 · content 370 · loading UI 26 · prefetched 3 · nav RSC 42→57 · js done 106 · after: rsc 1 (+2 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 unthrottled r3 shop.home→customers: first change 29 (childList body) · url 30 · content 543 · loading UI 29 · prefetched 2 · nav RSC 40→58 · js done 276 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 unthrottled r3 shop.home→suppliers: first change 28 (childList body) · url 29 · content 439 · loading UI 28 · prefetched 2 · nav RSC 42→58 · js done 173 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r1 shop.home→purchases: first change 29 (childList body) · url 75 · content 1243 · loading UI 29 · prefetched 2 · nav RSC 48→223 · js done 1175 · after: rsc 1 (+1 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 throttled r1 shop.home→customers: first change 28 (childList body) · url 42 · content 1071 · loading UI 28 · prefetched 3 · nav RSC 40→216 · js done 999 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r1 shop.home→suppliers: first change 27 (childList body) · url 39 · content 871 · loading UI 27 · prefetched 2 · nav RSC 40→215 · js done 603 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r2 shop.home→purchases: first change 26 (childList body) · url 39 · content 826 · loading UI 26 · prefetched 2 · nav RSC 41→219 · js done 563 · after: rsc 1 (+1 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 throttled r2 shop.home→customers: first change 28 (childList body) · url 30 · content 843 · loading UI 28 · prefetched 3 · nav RSC 41→218 · js done 576 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r2 shop.home→suppliers: first change 26 (childList body) · url 36 · content 838 · loading UI 26 · prefetched 2 · nav RSC 41→215 · js done 572 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r3 shop.home→purchases: first change 25 (childList body) · url 38 · content 824 · loading UI 25 · prefetched 2 · nav RSC 42→222 · js done 563 · after: rsc 1 (+1 prefetch), api 1, js 8 · long 0/0 · inp 16
+nav   1280 throttled r3 shop.home→customers: first change 27 (childList body) · url 37 · content 838 · loading UI 27 · prefetched 3 · nav RSC 41→221 · js done 572 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+nav   1280 throttled r3 shop.home→suppliers: first change 27 (childList body) · url 39 · content 843 · loading UI 27 · prefetched 2 · nav RSC 41→215 · js done 576 · after: rsc 1 (+6 prefetch), api 2, js 7 · long 0/0 · inp 16
+summary {"vp":390,"profile":"unthrottled","n":9,"firstChange_p50":28,"firstChange_p95":32,"content_p50":141,"content_p95":244,"inp_max":48,"inp_p75":48,"loadingUiSeen":9,"prefetched":9}
+summary {"vp":390,"profile":"throttled","n":9,"firstChange_p50":30,"firstChange_p95":32,"content_p50":528,"content_p95":928,"inp_max":48,"inp_p75":48,"loadingUiSeen":9,"prefetched":9}
+summary {"vp":1280,"profile":"unthrottled","n":9,"firstChange_p50":26,"firstChange_p95":29,"content_p50":445,"content_p95":543,"inp_max":16,"inp_p75":16,"loadingUiSeen":9,"prefetched":9}
+summary {"vp":1280,"profile":"throttled","n":9,"firstChange_p50":27,"firstChange_p95":29,"content_p50":843,"content_p95":1243,"inp_max":16,"inp_p75":16,"loadingUiSeen":9,"prefetched":9}
+
+wrote /tmp/purchase-register-ab-old2.json

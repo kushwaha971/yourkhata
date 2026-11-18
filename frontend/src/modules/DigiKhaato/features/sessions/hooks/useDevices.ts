@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
 import { endSessionLocally } from 'src/redux/slice/sessionSlice';
@@ -67,7 +66,7 @@ export interface UseDevicesResult {
 
 export function useDevices(): UseDevicesResult {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const items = useAppSelector(selectDevices);
   const status = useAppSelector(selectDevicesStatus);
   const error = useAppSelector(selectDevicesError);

@@ -5,7 +5,7 @@
  *
  *   node e2e/run-regression.mjs                  # everything (≈10 min on a 2-core box)
  *   node e2e/run-regression.mjs --quick          # smoke subset (≤3 min)
- *   node e2e/run-regression.mjs --only s3-B,ledger   # by id, group (s3, d2, d3, core) or prefix*
+ *   node e2e/run-regression.mjs --only s3-B,ledger   # by id, group (s3, d2, d3, core, a11y) or prefix*
  *   node e2e/run-regression.mjs --skip journey   # everything but
  *   node e2e/run-regression.mjs --list           # what would run, and the fixtures each gets
  *   node e2e/run-regression.mjs -j 4             # concurrency (default 6)
@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 import * as fx from './lib/fixtures.mjs';
 
 const E2E_DIR = dirname(fileURLToPath(import.meta.url));
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOTS_ROOT = process.env.E2E_SHOTS_ROOT ?? '/tmp/e2e-shots';
 const DURATIONS_FILE = `${SHOTS_ROOT}/.regress-durations.json`;
@@ -105,16 +105,35 @@ const d3 = (phase, est, make, { quick = false } = {}) => ({
   setup: async () => ({ args: [`--only=${phase}`, ...(await make())] }),
 });
 
+// Sprint 12 accessibility sweep (TSK-CHS-CI-21): axe-core + names, landmarks,
+// 44 px hit areas, Devanagari clipping and three keyboard flows. Split by width
+// so neither half nears the job timeout; the Hindi 360 pass rides with phone.
+const a11y = (id, est, args, { quick = false } = {}) => ({
+  id, group: 'a11y', script: 'a11y-sweep.mjs', est, quick,
+  note: `a11y-sweep ${args.join(' ')}: seeds its own GST shop + an un-onboarded user`,
+  setup: async () => ({ args }),
+});
+
 const JOBS = [
+  a11y('a11y-phone', 480, ['--viewport=phone']),
+  a11y('a11y-desktop', 360, ['--viewport=desktop', '--no-hi']),
+
   // Harnesses that always seeded themselves.
   plain('journey', 90, { quick: true, quickArgs: ['--viewport', 'laptop'] }),
   plain('parties', 60, { quick: true }),
-  plain('credit', 120, { quick: true }),
+  // The app under nginx's production CSP (nginx/conf.d/security-headers.inc).
+  plain('csp', 60, { quick: true }),
+  plain('phonecountry', 60, { quick: true }),
+  plain('otpsignin', 60, { quick: true }),
   plain('tags', 120),
   plain('aging', 120, { quick: true }),
-  plain('ledger', 240),
-  plain('statement', 150, { quick: true }),
-  plain('writeoff', 60, { quick: true }),
+  // Owner, 13 Nov 2026: the old Udhaar person page and statement are removed
+  // (they open only for the Shop's book now). `credit`, `ledger`, `statement`,
+  // `writeoff` and sprint3-qa's N2 tested only that view and went with it; this
+  // job proves the door is shut and the Shop's own person page still opens.
+  plain('old-udhaar-gone', 40, { quick: true }),
+  // SAL-03 FR-5 — a shared bill opened the way a customer opens it (launch blocker).
+  plain('share-page', 60, { quick: true }),
   plain('credentials', 60, { quick: true }),
   plain('security', 30, { quick: true }),
 
@@ -125,7 +144,6 @@ const JOBS = [
   s3('R', 240, { rt: true, joined: true }),
   s3('N3', 90),
   s3('N1', 120, { rt: true, joined: true }),
-  s3('N2', 150, { quick: true }),
   s3('F1', 180),
   s3('F2', 150),
   s3('F3', 200, { rt: true }),

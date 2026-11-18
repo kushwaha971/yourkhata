@@ -107,7 +107,7 @@ describe('RequireSession — a session with no active tenant', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('still sends an account with no membership at all to the wizard', async () => {
+  it('still sends an account with no membership at all from the chooser to the wizard', async () => {
     loadSession([]);
 
     renderWithProviders(
@@ -118,8 +118,42 @@ describe('RequireSession — a session with no active tenant', () => {
       </RequireSession>
     );
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding/step/1'));
     expect(screen.queryByText('the app')).not.toBeInTheDocument();
+  });
+
+  /** Owner, 18 Nov 2026: with no business, a business page leads home to Money Book, not into setup. */
+  it('sends an account with no membership from a business page to Money Book', async () => {
+    pathname = '/parties';
+    loadSession([]);
+
+    renderWithProviders(
+      <RequireSession>
+        <UbText as="span" variant="body">
+          the app
+        </UbText>
+      </RequireSession>
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/money-book'));
+    expect(screen.queryByText('the app')).not.toBeInTheDocument();
+  });
+
+  /** Money Book belongs to the person: with no business it opens, not redirects. */
+  it('lets an account with no membership open Money Book', async () => {
+    pathname = '/money-book';
+    loadSession([]);
+
+    renderWithProviders(
+      <RequireSession>
+        <UbText as="span" variant="body">
+          the book
+        </UbText>
+      </RequireSession>
+    );
+
+    expect(await screen.findByText('the book')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('sends an operator with no business to the console, not the wizard (PLT-14)', async () => {
@@ -136,7 +170,7 @@ describe('RequireSession — a session with no active tenant', () => {
     );
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/admin/tenants'));
-    expect(replace).not.toHaveBeenCalledWith('/onboarding');
+    expect(replace).not.toHaveBeenCalledWith('/onboarding/step/1');
   });
 
   it('sends an invited-only user who lands on another (app) route TO the chooser', async () => {
@@ -224,7 +258,7 @@ describe('RequireSession — the forced password change (DEC-012)', () => {
     );
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/set-password'));
-    expect(replace).not.toHaveBeenCalledWith('/onboarding');
+    expect(replace).not.toHaveBeenCalledWith('/onboarding/step/1');
   });
 
   it('lets an ordinary session through untouched', async () => {

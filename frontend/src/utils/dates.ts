@@ -49,6 +49,24 @@ export const formatTimestamp = (value: string | null | undefined): string => {
   return parsed.isValid() ? parsed.format(`${DISPLAY_DATE_FORMAT}, HH:mm`) : '—';
 };
 
+/** RFC 3339 instant → `HH:mm`, for a check-in or check-out time on a day's list. */
+export const formatClock = (value: string | null | undefined): string => {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('HH:mm') : '';
+};
+
+/** RFC 3339 instant → `4:10 pm`, the shop's own way of saying a time (C3 "Started 4:10 pm"). */
+export const formatShopTime = (value: string | null | undefined): string => {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('h:mm a') : '';
+};
+
+/** `formatShopTime` without a bare ":00" — "By 6 pm", "Ready 11 am" (designs G10, G11). */
+export const formatShopHour = (value: string | null | undefined): string =>
+  formatShopTime(value).replace(':00 ', ' ');
+
 /**
  * Milliseconds from now until an RFC 3339 instant, never negative — the cool-off
  * countdown (PLT-10) and a support session's end (PLT-14) both read it. Lives
@@ -71,4 +89,18 @@ export const fyLabelFor = (value: string): string => {
   const date = dayjs(value);
   const startYear = date.month() >= 3 ? date.year() : date.year() - 1;
   return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+};
+
+export { DAY_MS, addDaysIso, daysBetweenIso } from './calendarDays';
+
+/**
+ * `"2026-01-31"` + 1 month → `"2026-02-28"`: the same day next month, or that month's last
+ * day when it is shorter — a monthly instalment never skips a month.
+ */
+export const addMonthsIso = (iso: string, months: number): string => {
+  const [year, month, day] = iso.split('-').map(Number) as [number, number, number];
+  const target = new Date(Date.UTC(year, month - 1 + months, 1));
+  const last = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0));
+  target.setUTCDate(Math.min(day, last.getUTCDate()));
+  return target.toISOString().slice(0, 10);
 };

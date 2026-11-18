@@ -56,7 +56,8 @@ def test_whatsapp_send_marks_sent_snapshots_and_logs_wa_me(
     body = sent.json()["data"]
     decoded = unquote(body["wa_url"])
     assert body["wa_url"].startswith("https://wa.me/919812345678?text=")
-    assert "Rs 2,800" in decoded and tenant.name in decoded and "am=2800.00" in decoded
+    # Shop P0 — the UPI line is the pay page's https link (QR + "Pay by UPI").
+    assert "Rs 2,800" in decoded and tenant.name in decoded and "/pay/" in decoded
 
     reminder = Reminder.objects.get()
     assert (reminder.status, reminder.snapshot_balance) == ("sent", Decimal("2800.00"))
@@ -104,12 +105,12 @@ def test_nothing_due_is_refused(tenant: Any, api_as: Any, balance: str) -> None:
 
 
 def test_no_mobile_is_a_field_error(tenant: Any, api_as: Any) -> None:
-    """§10 — `details.party_id: ["Party has no mobile"]`."""
+    """§10 — `details.party_id: ["Contact has no mobile number"]`."""
     client, _ = api_as(tenant)
     party = PartyFactory(tenant=tenant, mobile=None, balance=Decimal("10"))
     response = _create(client, party)
     assert response.status_code == 400
-    assert response.json()["error"]["details"]["party_id"] == ["Party has no mobile"]
+    assert response.json()["error"]["details"]["party_id"] == ["Contact has no mobile number"]
 
 
 def test_a_note_must_be_one_line(tenant: Any, api_as: Any, owes: Any) -> None:
@@ -269,3 +270,19 @@ def test_another_tenants_reminder_is_not_found(tenant: Any, other_tenant: Any, a
         == 404
     )
     assert _create(mine, theirs).status_code == 404
+
+
+def test_a_business_book_reminder_says_what_the_money_is_for(tenant: Any, owes: Any) -> None:
+    """Design D15 (owner's choice, 31 Oct): a medical store's Business-book
+    reminder says the money is for medicines; the Money book's never does,
+    because a personal loan is not for medicines."""
+    from apps.notifications.services.whatsapp_text import compose_reminder
+
+    tenant.business_type = "medical"
+    shop = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"), business_book=True)
+    personal = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"))
+    assert "baaki hai, dawaiyon ka" in shop.text
+    assert "dawaiyon" not in personal.text
+    tenant.business_type = "kirana"
+    plain = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"), business_book=True)
+    assert plain.text == personal.text

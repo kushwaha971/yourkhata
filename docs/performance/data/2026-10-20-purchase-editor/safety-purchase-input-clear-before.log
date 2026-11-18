@@ -1,0 +1,39 @@
+FAIL src/design-system/UbMoneyInput/UbMoneyInput.test.tsx
+  the value never becomes a number
+    ○ skipped groups the Indian way, which is 2,2,3 and not 3,3,3
+    ○ skipped pads and truncates by string surgery rather than through a double
+    ○ skipped keeps a typed minus so the form can refuse it in words (QA B14)
+  what the merchant sees while typing
+    ✕ keeps stored trailing-zero precision from stranding digits during select-all clear (36 ms)
+    ○ skipped keeps a selection over the same digits when focus removes grouping
+    ○ skipped shows what was typed while focused and groups it on the way out
+    ○ skipped QA S-D2: focus-and-select-all then typing REPLACES a prefilled amount
+    ○ skipped shows a value that arrives while the field is focused, raw (Record payment prefill)
+    ○ skipped QA S-D2: pasting over a selected amount replaces it and parses a grouped paste
+    ○ skipped QA S-D2: never holds more than two decimals, so the label and the record agree
+    ○ skipped asks a phone for the decimal keypad without asking for spinners
+
+  ● what the merchant sees while typing › keeps stored trailing-zero precision from stranding digits during select-all clear
+
+    expect(element).toHaveValue(42.00)
+
+    Expected the element to have value:
+      42.00
+    Received:
+      42.0000
+
+      125 |     const field = screen.getByLabelText<HTMLInputElement>('Amount');
+      126 |     await userEvent.click(field);
+    > 127 |     expect(field).toHaveValue('42.00');
+          |                   ^
+      128 |     expect(onValue).not.toHaveBeenCalled();
+      129 |     act(() => field.select());
+      130 |     await userEvent.keyboard('{Backspace}');
+
+      at Object.<anonymous> (src/design-system/UbMoneyInput/UbMoneyInput.test.tsx:127:19)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 10 skipped, 11 total
+Snapshots:   0 total
+Time:        1.005 s
+Ran all test suites matching /src\/design-system\/UbMoneyInput\/UbMoneyInput.test.tsx/i with tests matching "stored trailing-zero precision".

@@ -2,18 +2,18 @@
 
 import { useCallback } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { UbButton, UbField, UbForm, UbStack, UbStatusBanner, UbTextInput } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 
+import { useGoToLanding } from '../hooks/useGoToLanding';
 import { usePasswordFlow } from '../hooks/usePasswordFlow';
 import { useAuthSchemas } from '../validation/authSchemas';
 
@@ -44,7 +44,8 @@ import type { ForcePasswordChangeFormValues } from '../validation/authSchemas';
  */
 export function ForcePasswordChangePageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
+  const goToLanding = useGoToLanding();
   const schemas = useAuthSchemas();
   const password = usePasswordFlow();
   const user = useAppSelector(selectSessionUser);
@@ -66,9 +67,9 @@ export function ForcePasswordChangePageContent(): React.JSX.Element {
       // Only on a confirmed success, and only after the hook has re-read the
       // session — otherwise `RequireSession` reads the stale flag and returns
       // them here, which looks to the merchant like the save did nothing.
-      if (ok) router.replace(ROUTES.DASHBOARD);
+      if (ok) goToLanding();
     },
-    [password, form, router]
+    [password, form, goToLanding]
   );
 
   /**

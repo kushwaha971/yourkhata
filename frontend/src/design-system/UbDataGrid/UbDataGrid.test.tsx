@@ -334,6 +334,18 @@ describe('no horizontal scroll on a primary list, at any width', () => {
       'div[data-testid="ub-grid-table-scroller"] → data-ub-scroll-x="on"'
     );
   });
+
+  it('really scrolls when it opts in, even inside the grid’s clipped frame', async () => {
+    // The grid hands the table `overflow-hidden` for its rounded frame, and
+    // tailwind-merge let that remove `overflow-x-auto`: the sales register's
+    // Total and Due columns sat clipped past the edge at 1024 px, unreachable.
+    const { container } = await renderGridWithTable('full', { allowHorizontalScroll: true });
+    const scroller = container.querySelector('[data-testid="ub-grid-table-scroller"]');
+    expect(scroller).toHaveClass('overflow-x-auto');
+    // …and holds its cells' screen-reader words, which are absolutely placed:
+    // from a static scroller they escaped and made the PAGE 250 px too wide.
+    expect(scroller).toHaveClass('relative');
+  });
 });
 
 describe('the states a list has', () => {
@@ -374,7 +386,7 @@ describe('the states a list has', () => {
   it('carries the request id on the error state and nowhere else', () => {
     const { rerender } = renderGrid('cards', { state: 'error' });
     // Labelled, never a bare id (QA B5).
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_7f3a91');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
 
     rerender(
       <UbDataGrid<Row>
@@ -768,14 +780,14 @@ describe('the paging bar', () => {
 });
 
 describe("BrandHub's height logic", () => {
-  it('gives every row the same 52px, set as a height rather than a class', async () => {
+  it('gives every row the same 42px, set as a height rather than a class', async () => {
     await renderGridWithTable('full');
 
     // BrandHub sets `style={{ height: rowHeight }}` on the `<tr>` so a screen
     // can override it; ours was `h-14` baked into the class, which no caller
-    // could reach. 52 is BrandHub's default and this grid's.
+    // could reach. 42 is the design's row and this grid's.
     for (const row of screen.getAllByTestId('ub-grid-row')) {
-      expect(row).toHaveStyle({ height: '52px' });
+      expect(row).toHaveStyle({ height: '42px' });
     }
   });
 
@@ -894,4 +906,113 @@ describe('the loading skeleton cannot be wider than its container (N1)', () => {
       });
     }
   });
+});
+
+it('keeps pagination outside the bounded phone rows and gives keyboard users a scroll region', () => {
+  /** Defect: maxHeight only applied to tables; phone cards grew the page and hid its pager. */
+  render(
+    <UbDataGrid
+      rows={ROWS}
+      columns={COLUMNS}
+      rowId={(row) => row.id}
+      rowName={(row) => row.name}
+      state="rows"
+      labels={LABELS}
+      emptyStates={EMPTY}
+      caption="Counter register"
+      page={{ ...PAGE, total: 50, totalPages: 2 }}
+      onPageChange={jest.fn()}
+      tier="cards"
+      fillHeight
+    />
+  );
+  const region = screen.getByRole('region', { name: 'Counter register' });
+  expect(region).toHaveAttribute('tabindex', '0');
+  expect(region).toContainElement(screen.getByTestId('ub-grid-cards'));
+  expect(region).not.toContainElement(screen.getByTestId('ub-grid-pagination'));
+});
+
+it('starts a new page at the first row without scrolling the document', () => {
+  /** Defect: a bounded list retained the previous page's row scroll offset after paging. */
+  const props = {
+    rows: ROWS,
+    columns: COLUMNS,
+    rowId: (row: Row) => row.id,
+    rowName: (row: Row) => row.name,
+    state: 'rows' as const,
+    labels: LABELS,
+    emptyStates: EMPTY,
+    caption: 'Counter register',
+    onPageChange: jest.fn(),
+    tier: 'cards' as const,
+    fillHeight: true,
+  };
+  const { rerender } = render(
+    <UbDataGrid {...props} page={{ ...PAGE, total: 50, totalPages: 2 }} />
+  );
+  const region = screen.getByRole('region', { name: 'Counter register' });
+  region.scrollTop = 200;
+  rerender(<UbDataGrid {...props} page={{ ...PAGE, page: 2, total: 50, totalPages: 2 }} />);
+  expect(region.scrollTop).toBe(0);
+});
+
+it('preserves the row offset when a mobile register appends another page', () => {
+  /** R-DEC-31 defect: resetting on API page changes jumps appended Customer/Supplier lists back to the top. */
+  const props = {
+    rows: ROWS,
+    columns: COLUMNS,
+    rowId: (row: Row) => row.id,
+    rowName: (row: Row) => row.name,
+    state: 'rows' as const,
+    labels: LABELS,
+    emptyStates: EMPTY,
+    caption: 'Append register',
+    onPageChange: jest.fn(),
+    tier: 'cards' as const,
+    fillHeight: true,
+    resetScrollOnPageChange: false,
+    scrollResetKey: 'all',
+  };
+  const { rerender } = render(
+    <UbDataGrid {...props} page={{ ...PAGE, total: 50, totalPages: 2 }} />
+  );
+  const region = screen.getByRole('region', { name: 'Append register' });
+  region.scrollTop = 180;
+  rerender(<UbDataGrid {...props} page={{ ...PAGE, page: 2, total: 50, totalPages: 2 }} />);
+  expect(region.scrollTop).toBe(180);
+  // A new search/filter starts a different result set, even in append mode.
+  rerender(
+    <UbDataGrid
+      {...props}
+      scrollResetKey="new-search"
+      page={{ ...PAGE, total: 50, totalPages: 2 }}
+    />
+  );
+  expect(region.scrollTop).toBe(0);
+});
+
+it('keeps the mobile load-next sentinel inside the row scroll region', () => {
+  /** R-DEC-33: a pinned sentinel stays visible and can fetch every page without scrolling. */
+  render(
+    <UbDataGrid
+      rows={ROWS}
+      columns={COLUMNS}
+      rowId={(r) => r.id}
+      rowName={(r) => r.name}
+      state="rows"
+      labels={LABELS}
+      emptyStates={EMPTY}
+      caption="Cards"
+      page={PAGE}
+      onPageChange={jest.fn()}
+      tier="cards"
+      fillHeight
+      footer={null}
+      afterRows={<button type="button">Load next cards</button>}
+    />
+  );
+  expect(screen.getByRole('region', { name: 'Cards' })).toContainElement(
+    screen.getByRole('button', { name: 'Load next cards' })
+  );
+  expect(screen.queryByTestId('ub-grid-pagination')).not.toBeInTheDocument();
 });

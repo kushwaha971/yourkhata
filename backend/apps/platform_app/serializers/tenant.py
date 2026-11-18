@@ -101,10 +101,40 @@ class TenantCreateSerializer(serializers.Serializer):
     """Step 1 — `POST /tenants` (FR-2, §10)."""
 
     name = serializers.CharField(min_length=2, max_length=160, trim_whitespace=True)
-    business_type = serializers.ChoiceField(choices=BusinessType.choices)
+    # The kind of shop. It configures Shop & billing only, so it is asked for
+    # only when the business runs that app (`apps` absent means it does).
+    business_type = serializers.ChoiceField(choices=BusinessType.choices, required=False)
     state_code = StateCodeField(max_length=2)
+    # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
+    # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
+    sells_wholesale = serializers.BooleanField(required=False)
+    # R-DEC-66 / G12 "Anything your shop needs?": `{key: on}` for the sign-up
+    # switches, stored as `shop.features.<key>`.
+    features = serializers.DictField(child=serializers.BooleanField(), required=False)
+
+    def validate_features(self, value: dict) -> dict:
+        from apps.platform_app.services.presets import SIGNUP_FEATURES
+
+        unknown = sorted(set(value) - set(SIGNUP_FEATURES))
+        if unknown:
+            raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
+        return value
     locale = serializers.ChoiceField(choices=["en", "hi"], required=False, default="en")
     owner_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    # What the business will run: app codes from `GET /onboarding/apps`. Absent
+    # is the Shop, which is what every client before 11 Oct 2026 means by it.
+    apps = serializers.ListField(
+        child=serializers.CharField(max_length=32), required=False, allow_empty=False, max_length=16
+    )
+
+    def validate(self, attrs: dict) -> dict:
+        runs_shop = "apps" not in attrs or "shop" in attrs["apps"]
+        if runs_shop and not attrs.get("business_type"):
+            raise serializers.ValidationError(
+                {"business_type": ["Choose what kind of business it is."]}
+            )
+        attrs.setdefault("business_type", BusinessType.OTHER.value)
+        return attrs
 
 
 class TenantUpdateSerializer(serializers.Serializer):
@@ -117,10 +147,30 @@ class TenantUpdateSerializer(serializers.Serializer):
     """
 
     name = serializers.CharField(min_length=2, max_length=160, required=False)
+    # Step 1 edited before the wizard is finished: what the business will run.
+    # Refused once setup is complete — from then on an app is added or turned
+    # off in the switcher, where the open-work checks and the copy for it live.
+    apps = serializers.ListField(
+        child=serializers.CharField(max_length=32), required=False, allow_empty=False, max_length=16
+    )
     legal_name = serializers.CharField(
         max_length=200, required=False, allow_blank=True, allow_null=True
     )
     business_type = serializers.ChoiceField(choices=BusinessType.choices, required=False)
+    # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
+    # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
+    sells_wholesale = serializers.BooleanField(required=False)
+    # R-DEC-66 / G12 "Anything your shop needs?": `{key: on}` for the sign-up
+    # switches, stored as `shop.features.<key>`.
+    features = serializers.DictField(child=serializers.BooleanField(), required=False)
+
+    def validate_features(self, value: dict) -> dict:
+        from apps.platform_app.services.presets import SIGNUP_FEATURES
+
+        unknown = sorted(set(value) - set(SIGNUP_FEATURES))
+        if unknown:
+            raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
+        return value
     gst_type = serializers.ChoiceField(choices=GstType.choices, required=False)
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
     pan = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)
@@ -218,6 +268,28 @@ class TenantReadSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+    def to_representation(self, instance: Any) -> dict:
+        """A1 (PLT-X11 BR-1): the stored switches are kept (EC-1), but an
+        unreleased module is named in no response — this serializer is what
+        `GET`/`PATCH /tenants/current`, tenant creation and the onboarding
+        resume all return."""
+        from apps.platform_app.services.entitlements import hidden_modules
+
+        data = super().to_representation(instance)
+        hidden = hidden_modules()
+        data["enabled_modules"] = [m for m in data.get("enabled_modules") or [] if m not in hidden]
+        # What the business RUNS, as app codes (11 Oct 2026): the setup wizard
+        # reads its step-1 choice back from here after a reload, instead of
+        # guessing it from capability names.
+        from apps.platform_app import apps_registry
+
+        # Read off the switches already in hand: `apps_of_business` resolves the
+        # effective set and costs a query on the cheapest endpoint in the
+        # product (`tests/performance/test_query_budgets.py`, tenants-current).
+        on = set(data["enabled_modules"])
+        data["apps"] = [a.code for a in apps_registry.registered_apps() if a.anchor in on]
+        return data
+
 
 def mask_account_number(number: str | None) -> str | None:
     """`••••1234` — PLT-07 §5 and §16: the last four digits and nothing else."""
@@ -233,6 +305,17 @@ def masked_bank_details(bank: dict | None) -> dict:
     return bank
 
 
+def sells_wholesale(tenant: Any) -> bool:
+    """`shop.wholesale`, or the type's default before setup seeds the row."""
+    from apps.platform_app.models import TenantSetting
+    from apps.platform_app.services.presets import WHOLESALE_TYPES
+
+    row = TenantSetting.objects.filter(tenant=tenant, key="shop.wholesale").first()
+    if row is not None:
+        return bool((row.value or {}).get("value"))
+    return tenant.business_type in WHOLESALE_TYPES
+
+
 def tenant_read_payload(tenant: Any, *, unmasked: bool) -> dict:
     """`GET /tenants/current` with PLT-07 §12's masking applied.
 
@@ -246,6 +329,8 @@ def tenant_read_payload(tenant: Any, *, unmasked: bool) -> dict:
     data = dict(TenantReadSerializer(tenant).data)
     data["branding"] = branding_rules.resolve(tenant)
     data["bank_details_masked"] = not unmasked
+    # R-DEC-64: the wizard re-lights the Wholesale tile after a reload from this.
+    data["sells_wholesale"] = sells_wholesale(tenant)
     if not unmasked:
         data["bank_details"] = masked_bank_details(tenant.bank_details)
         if data.get("pan"):
@@ -261,6 +346,7 @@ class MembershipReadSerializer(serializers.Serializer):
     role = serializers.CharField(source="role.code", read_only=True)
     status = serializers.CharField(read_only=True)
     is_default = serializers.BooleanField(read_only=True)
+    primary_app = serializers.CharField(read_only=True)
     joined_at = serializers.DateTimeField(read_only=True)
 
 
@@ -309,10 +395,32 @@ class MemberReadSerializer(serializers.Serializer):
     }
 
     def to_representation(self, instance: Any) -> dict:
+        from apps.platform_app.services.memberships import role_label_id, role_module
+
         data = super().to_representation(instance)
         if data.get("status") == MembershipStatus.INVITED:
             data.update(self.INVITED_REDACTED)
+        # A13 (PLT-X12 BR-6): a module role's module, and whether it is on —
+        # so the team screen can say "Role inactive while Gym is off" instead
+        # of listing a member who silently can do nothing. `effective_modules`
+        # arrives in the context from the list view (one computation per page).
+        module = role_module(instance.role)
+        data["role_module"] = module
+        data["role_label_id"] = role_label_id(instance.role)
+        if module is None:
+            data["role_active"] = True
+        else:
+            effective = self.context.get("effective_modules")
+            if effective is None:
+                effective = entitlements_effective(instance.tenant)
+            data["role_active"] = module in effective
         return data
+
+
+def entitlements_effective(tenant: Any) -> frozenset[str]:
+    from apps.platform_app.services.entitlements import effective_modules
+
+    return effective_modules(tenant)
 
 
 class MemberCreateSerializer(serializers.Serializer):
@@ -327,7 +435,9 @@ class MemberCreateSerializer(serializers.Serializer):
     WhatsApp the password to.
     """
 
-    email = serializers.EmailField(max_length=254)
+    # Owner, 9 Oct 2026: staff are added by mobile and sign in with an OTP, so
+    # the email is optional now; without one the mobile is required.
+    email = serializers.EmailField(max_length=254, required=False, allow_blank=True)
     full_name = serializers.CharField(max_length=120, trim_whitespace=True)
     role = serializers.CharField(max_length=32)
     mobile = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
@@ -370,11 +480,36 @@ class MembershipPatchSerializer(serializers.Serializer):
     """
 
     is_default = serializers.BooleanField()
+    #: The app the ★ was set in; the service checks this person can open it here.
+    primary_app = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
     def validate_is_default(self, value: bool) -> bool:
         if value is not True:
             raise serializers.ValidationError("Choose another business as your default instead.")
         return value
+
+
+class MemberUpdateSerializer(serializers.Serializer):
+    """`PATCH /members/{id}` — what a manager may change about a member.
+
+    Both optional; an empty body is a no-op rather than an error, so a form
+    that submits unchanged values does not fail. Whether the role may be given,
+    and whether the name is this business's to edit, are the SERVICE's rules
+    (`member_admin.update_member`): they depend on who is asking and on rows a
+    serializer cannot see.
+    """
+
+    full_name = serializers.CharField(max_length=120, required=False, trim_whitespace=True)
+    role = serializers.CharField(max_length=32, required=False)
+
+
+#: `?status=` on `GET /members`. `removed` is deliberately absent: removed rows
+#: are kept for the record and never listed (`members_of`).
+MEMBER_LIST_STATUSES = (
+    MembershipStatus.ACTIVE,
+    MembershipStatus.INVITED,
+    MembershipStatus.SUSPENDED,
+)
 
 
 # `?status=all` on the invitation list. Not an `InvitationStatus`: it is the
@@ -459,6 +594,8 @@ class InvitationReadSerializer(serializers.ModelSerializer):
     """
 
     role = serializers.CharField(source="role.code", read_only=True)
+    # A13: the catalogue key the client names the role with (a module role's own).
+    role_label_id = serializers.SerializerMethodField()
     invited_by = serializers.SerializerMethodField()
 
     class Meta:
@@ -467,12 +604,18 @@ class InvitationReadSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "role",
+            "role_label_id",
             "status",
             "expires_at",
             "created_at",
             "invited_by",
         )
         read_only_fields = fields
+
+    def get_role_label_id(self, obj: Invitation) -> str:
+        from apps.platform_app.services.memberships import role_label_id
+
+        return role_label_id(obj.role)
 
     def get_invited_by(self, obj: Invitation) -> str | None:
         """The inviter's name, or `null` — never their id or address.

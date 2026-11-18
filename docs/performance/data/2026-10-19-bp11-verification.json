@@ -1,0 +1,29 @@
+{
+  "scope": "BP-11 shared-engine authorization",
+  "before_fix": {
+    "failed_security_regressions": 16,
+    "positive_compatibility_cases": 2
+  },
+  "focused_security": {
+    "passed": 22
+  },
+  "compatibility_query_budgets": {
+    "passed": 149,
+    "budgets_raised": false
+  },
+  "full_backend": {
+    "passed": 4621,
+    "skipped": 16,
+    "failed": 1,
+    "seconds": 470.79,
+    "failure": "Library 20,000-copy close wall-clock 5.4304 s > 5 s"
+  },
+  "isolated_failed_test_rerun": {
+    "passed": 1,
+    "total_seconds": 3.03
+  },
+  "migration_check": "No changes detected",
+  "django_check": "No issues",
+  "production_mutations": false,
+  "local_migration": "revamp_20261018 only"
+}

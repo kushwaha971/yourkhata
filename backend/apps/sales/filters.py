@@ -14,6 +14,7 @@ from typing import Any
 import django_filters
 from django.db.models import Q, QuerySet
 
+from apps.common.document_scope import shop_origin_q
 from apps.common.filters import BaseTenantFilterSet
 from apps.sales.models import SalesDocument
 
@@ -27,8 +28,22 @@ class InvoiceFilterSet(BaseTenantFilterSet):
     amount_min = django_filters.NumberFilter(field_name="grand_total", lookup_expr="gte")
     amount_max = django_filters.NumberFilter(field_name="grand_total", lookup_expr="lte")
     kind = django_filters.CharFilter(field_name="kind")
+    # SAL-04 §14 — "credit notes of this invoice".
+    against_id = django_filters.UUIDFilter(field_name="against_id")
     created_by = django_filters.UUIDFilter(field_name="created_by_id")
     q = django_filters.CharFilter(method="filter_search")
+    # ── A5 ── PLT-X05 §6/§7: the list's origin chip, and a module reading its own invoices back.
+    book = django_filters.CharFilter(method="filter_book")
+
+    def filter_book(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """BP-09: the Shop person must not list a vertical's invoice as Shop dues."""
+        if value == "shop":
+            return queryset.filter(shop_origin_q())
+        return queryset
+
+    origin_module = django_filters.CharFilter(field_name="origin_module")
+    origin_type = django_filters.CharFilter(field_name="origin_type")
+    origin_id = django_filters.UUIDFilter(field_name="origin_id")
 
     class Meta:
         model = SalesDocument

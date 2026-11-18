@@ -1,9 +1,10 @@
 import type { UbStatusBadgeTone } from 'src/design-system';
+import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatQuantity } from 'src/utils/quantity';
 
 import { MOVEMENT_TYPE_LABEL_ID } from '../constants/inventoryConstants';
 
-import type { ItemListRow, MovementType, StockStatus } from '../types/item.types';
+import type { ItemListRow, LowStockRow, MovementType, StockStatus } from '../types/item.types';
 
 /**
  * §17.6.0 "Stock badge tones" — out (danger), low (warning), in stock
@@ -35,6 +36,40 @@ export const stockBadge = (
   }
   if (status === 'low') return { tone: 'warning', labelId: 'items.stock.low', params: {} };
   return { tone: 'success', labelId: 'items.stock.in', params: {} };
+};
+
+/**
+ * 09 §8.1 — a phone card says the stock in words: "318 NOS in stock", "Low: 3 NOS
+ * left", "Out of stock" (with how far below zero), "Service" for an untracked
+ * service. A low or out item is in warning/error tone AND in words, never colour
+ * alone. `null` for goods whose stock is not tracked.
+ */
+export const stockWords = (
+  row: Pick<ItemListRow, 'stockStatus' | 'onHand' | 'unit' | 'itemType'>
+): {
+  labelId: string;
+  params: Record<string, string>;
+  tone: 'secondary' | 'warning' | 'error';
+} | null => {
+  if (row.stockStatus === null || row.onHand === null) {
+    return row.itemType === 'service'
+      ? { labelId: 'items.list.card.service', params: {}, tone: 'secondary' }
+      : null;
+  }
+  const qty = formatQuantity(row.onHand, row.unit.code);
+  if (row.stockStatus === 'out') {
+    return row.onHand.trim().startsWith('-')
+      ? {
+          labelId: 'items.stock.outNegative',
+          params: { qty: formatSignedQuantity(row.onHand, row.unit.code) },
+          tone: 'error',
+        }
+      : { labelId: 'items.stock.out', params: {}, tone: 'error' };
+  }
+  if (row.stockStatus === 'low') {
+    return { labelId: 'items.list.card.low', params: { qty }, tone: 'warning' };
+  }
+  return { labelId: 'items.list.card.inStock', params: { qty }, tone: 'secondary' };
 };
 
 /** "−3 NOS" / "+12 NOS" — a true minus sign, never a hyphen. */
@@ -70,3 +105,39 @@ export const skuPrefix = (name: string): string => {
 
 /** INV-01 EC-3 — digits only and barcode-length: probably scanned into the wrong field. */
 export const looksLikeBarcode = (text: string): boolean => /^\d{8,14}$/.test(text.trim());
+
+/**
+ * UAT D7 — a purchase price nobody entered is "—", not "₹0.00". INV-01 §7
+ * keeps it optional (default 0) and makes the OPENING cost default FROM it,
+ * not the other way round, so the list must not imply a cost of nothing.
+ */
+export const hasPurchasePrice = (value: string | null): value is string =>
+  value !== null && Number(value) !== 0;
+
+/**
+ * 09 §8.7 — a low-stock row in words, for a phone card: "3 NOS left · reorder
+ * at 5 NOS", or "Out of stock" when nothing is left. An item with no reorder
+ * point is here only because it ran out, so it says just that.
+ */
+export const lowStockWords = (row: LowStockRow, t: TranslateFn): string => {
+  const left =
+    row.stockStatus === 'out'
+      ? t('stock.low.words.out')
+      : t('stock.low.words.left', { qty: formatQuantity(row.onHand, row.item.unitCode) });
+  return row.reorderPoint === null
+    ? left
+    : t('stock.low.words.withReorder', {
+        left,
+        qty: formatQuantity(row.reorderPoint, row.item.unitCode),
+      });
+};
+
+/**
+ * What "Order" puts on the purchase order: the suggested quantity, or one when
+ * there is no suggestion (an item with no reorder point that ran out) — an
+ * order line of nothing is not an order.
+ */
+export const lowStockOrderLine = (row: LowStockRow): { itemId: string; qty: string } => ({
+  itemId: row.item.id,
+  qty: Number(row.suggestedQty) > 0 ? row.suggestedQty : '1',
+});

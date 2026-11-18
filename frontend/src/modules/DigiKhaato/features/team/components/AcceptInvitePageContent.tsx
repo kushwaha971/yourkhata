@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { UbButton, UbCard, UbStack, UbStatusBanner, UbText } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { toApiError } from 'src/utils/apiError';
 
+import { useGoToLanding } from 'modules/DigiKhaato/features/auth/hooks/useGoToLanding';
 import { fetchSession } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
 
 import { acceptInvitation } from '../api/invitationService';
@@ -42,7 +42,7 @@ type Phase = 'working' | 'joined' | 'failed';
 export function AcceptInvitePageContent({ token }: Readonly<{ token: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const [phase, setPhase] = useState<Phase>('working');
   const [message, setMessage] = useState<string>('');
 
@@ -104,7 +104,8 @@ export function AcceptInvitePageContent({ token }: Readonly<{ token: string }>):
     return undefined;
   }, [dispatch, token]);
 
-  const goToDashboard = useCallback(() => router.replace(ROUTES.DASHBOARD), [router]);
+  // The business just joined decides where this person starts (§4.1).
+  const goToDashboard = useGoToLanding();
   const goToSwitch = useCallback(() => router.replace(ROUTES.SWITCH_TENANT), [router]);
 
   return (

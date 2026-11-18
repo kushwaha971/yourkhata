@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import AuditAction
+from apps.common.book_access import BookAccessMixin, require_book
 from apps.common.constants import ModuleCode
 from apps.common.dates import tenant_today
 from apps.common.exceptions import ValidationFailed
@@ -25,6 +26,8 @@ from apps.common.renderers import EnvelopeJSONRenderer, PassthroughCsvRenderer
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
+from apps.ledger.selectors.entry import BOOK_BALANCE_FIELD, BOOK_BUCKETS, book_of
+from apps.ledger.selectors.sources import resolve_sources
 from apps.ledger.selectors.statement import (
     STATEMENT_ORDERING,
     carried_forward,
@@ -64,7 +67,7 @@ def mask_mobile(mobile: str | None) -> str | None:
     return f"{digits[:2]}••• ••{digits[-3:]}"
 
 
-class PartyStatementView(TenantScopeMixin, APIView):
+class PartyStatementView(BookAccessMixin, TenantScopeMixin, APIView):
     """The statement, paged, or the whole thing as a CSV.
 
     `APIView` rather than a viewset: this is one read with its own response
@@ -149,10 +152,16 @@ class PartyStatementView(TenantScopeMixin, APIView):
         # — is a bigger one. The SELECTOR has a single parameter, so they cannot
         # mean different things.
         include_corrections = request.query_params.get("include_corrections", "").lower() == "true"
+        # DEC-019 — `?book=shop` is the Shop's statement (bills and the payments against
+        # them); anything else is the Udhaar book's.
+        self._book = book_of(request.query_params.get("book"))
+        if request.query_params.get("format") == "csv":
+            require_book(request, self._book, "ledger.statement.export")
         scope = {
             "tenant": self.get_tenant(),
             "party_id": party.id,
             "include_corrections": include_corrections,
+            "buckets": BOOK_BUCKETS[self._book],
         }
 
         if request.query_params.get("format") == "csv":
@@ -166,10 +175,15 @@ class PartyStatementView(TenantScopeMixin, APIView):
             date_from=date_from,
             position=decode_cursor(request.query_params.get(paginator.cursor_query_param)),
         )
-        serializer = StatementRowSerializer(page, many=True, context={"carried": carried})
+        serializer = StatementRowSerializer(
+            page, many=True, context={"carried": carried, "sources": resolve_sources(page or [])}
+        )
 
         opening = opening_balance(**scope, date_from=date_from)
         closing = self._closing(scope, date_from, date_to, opening)
+        meta = paginator.get_meta()
+        # DEC-019 — the udhaar book's statement carries no "Deposit held" block: a security
+        # deposit is the library's, kept and returned on the student's own page.
         return StandardResponse.ok(
             {
                 "party": {
@@ -188,10 +202,10 @@ class PartyStatementView(TenantScopeMixin, APIView):
                     statement_totals(**scope, date_from=date_from, date_to=date_to)
                 ).data,
                 "has_entries_before_opening": has_entries_before_opening(
-                    tenant=scope["tenant"], party_id=party.id
+                    tenant=scope["tenant"], party_id=party.id, buckets=scope["buckets"]
                 ),
             },
-            meta=paginator.get_meta(),
+            meta=meta,
         )
 
     def _closing(
@@ -210,24 +224,26 @@ class PartyStatementView(TenantScopeMixin, APIView):
         papered over. It is NOT corrected here: a read that repairs data is a
         read that hides how often the repair was needed.
         """
-        from apps.ledger.selectors.statement import _scoped, _signed_total
+        from apps.ledger.selectors.statement import scoped_rows, signed_total
 
-        scoped = _scoped(**scope)
+        scoped = scoped_rows(**scope)
         if date_from is not None:
             scoped = scoped.filter(entry_date__gte=date_from)
         if date_to is not None:
             scoped = scoped.filter(entry_date__lte=date_to)
-        closing = opening + _signed_total(scoped)
+        closing = opening + signed_total(scoped)
 
         if date_from is None and date_to is None:
             party = self._party()
-            if (party.balance or Decimal("0.00")) != closing:
+            cached = getattr(party, BOOK_BALANCE_FIELD[self._book]) or Decimal("0.00")
+            if cached != closing:
                 import logging
 
                 logging.getLogger("apps.ledger").warning(
-                    "ledger.balance_drift party=%s cached=%s ledger=%s",
+                    "ledger.balance_drift party=%s book=%s cached=%s ledger=%s",
                     party.id,
-                    party.balance,
+                    self._book,
+                    cached,
                     closing,
                 )
         return closing
