@@ -87,7 +87,7 @@ Sources: https://www.youtube.com/@VyaparApp/videos ; https://www.youtube.com/@my
 | Channel | They do | We do now | Gap → what to add |
 |---|---|---|---|
 | YouTube | Hundreds of searchable how-to videos; 1-min testimonials | **Nothing published.** Shorts wait on the voice recording | 1 how-to a week titled with the searched question ("How to send a payment reminder on WhatsApp", "How to make a GST bill on your phone"), 3–6 min screen recording + voice. Captions/subtitles let it start before the voice is ready |
-| YouTube | One demo per kind of business (myBillBook) | Guide pages per kind exist; posts don't name kinds | **Owner decision:** a demo per kind on YouTube only, linking its guide page (not a post listing kinds) |
+| YouTube | One demo per kind of business (myBillBook) | Guide pages per kind exist; posts don't name kinds | **Owner, 18 Nov: no.** Every video stays general; no per-kind videos |
 | All | Real customer testimonials | None (rule: no testimonials until real) | Ask the first 3 active businesses for a 30-s clip, once PostHog shows active users |
 | Instagram/FB | Influencer and creator reach (Khatabook) | Own page only | Later: 2–3 small business creators, paid. Needs owner approval and budget |
 | LinkedIn | CA and accountant voices (Vyapar's CA testimonial) | Problem posts | One post a week aimed at accountants: "what to ask your client to send you" + day-close/GST summary |
