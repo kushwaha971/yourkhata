@@ -16,13 +16,13 @@ Links: `https://yourkhata.com/?utm_source=<platform>&utm_medium=<social|short|bi
 
 | Date | Problem (slug) | Proof clip | LinkedIn | IG carousel | FB carousel | YT Short | IG Reel | FB Reel | Results |
 |---|---|---|---|---|---|---|---|---|---|
-| Wed 19 | Money stuck with customers (remind) | feat-reminder | scheduled | draft | draft | draft | draft | draft | — |
-| Thu 20 | Slow bills at a busy counter (bill) | feat-bill | scheduled | draft | draft | draft | draft | draft | — |
-| Fri 21 | Stock register vs shelf (stock) | feat-stock | scheduled | draft | draft | draft | draft | draft | — |
-| Sat 22 | Supplier bills in a drawer (purchase) | feat-purchase | scheduled | draft | draft | draft | draft | draft | — |
-| Sun 23 | Closing the day (close-day) | feat-reports | scheduled | draft | draft | draft | draft | draft | — |
-| Mon 24 | "I already paid you" (receipt) | feat-khata | scheduled | draft | draft | draft | draft | draft | — |
-| Tue 25 | Daily collection round, Ledger app (collection) | mod-lending | scheduled | draft | draft | draft | draft | draft | — |
+| Wed 19 | Money stuck with customers (remind) | feat-reminder | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Thu 20 | Slow bills at a busy counter (bill) | feat-bill | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Fri 21 | Stock register vs shelf (stock) | feat-stock | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Sat 22 | Supplier bills in a drawer (purchase) | feat-purchase | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Sun 23 | Closing the day (close-day) | feat-reports | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Mon 24 | "I already paid you" (receipt) | feat-khata | scheduled | scheduled | scheduled | draft | draft | draft | — |
+| Tue 25 | Daily collection round, Ledger app (collection) | mod-lending | scheduled | scheduled | scheduled | draft | draft | draft | — |
 
 ## Superseded first draft of 19 Nov (kept for the record)
 ### Cycle 1 — Wed 19 Nov 2026 · "Know who owes you, remind them on WhatsApp"
@@ -100,9 +100,20 @@ stock goes down with every bill (feat-stock) · record a supplier bill
 One 3–5 min walkthrough per job above, recorded with `e2e/demo/` scripts, each
 linking to its guide page; first: "Your first GST bill, start to finish".
 
-## Proposed plan for 26 Nov–2 Dec (analytics session, 18 Nov). Awaiting the Social media manager's reply, then the owner's yes
-Basis: `reports/2026-11-18-baseline.md`. LinkedIn is the only channel bringing visitors, and guide pages draw the most interest.
-- LinkedIn 8:30 AM daily stays. Each post links in its body (UTM) to the **guide page** for its job, and ends with a question.
-- IG/FB carousels: owner posts them from Meta Business Suite on the phone (Meta upload block), or they're held. No change to content.
-- YouTube Shorts 6:30 PM: one per job, the first description line answers the search question, link to the guide page.
-- Review on 25 Nov: compare the 19–25 Nov posts by utm_campaign in PostHog. Swap the weakest topic.
+## Agreed plan for 26 Nov–2 Dec (analytics + content sessions, 18 Nov). Needs the owner's yes before any asset is scheduled
+Agreed in writing between the two sessions on 18 Nov. Basis: `reports/2026-11-18-baseline.md`.
+- **Cadence:** same as 19–25 Nov. LinkedIn 8:30 AM, Instagram carousel 12:30 PM, Facebook carousel 1:30 PM. YouTube Shorts and Reels start only once the owner's voice is recorded.
+- **Links:** to the job guide page, not the home page. There are only three job pages today: `/solutions/shop-billing` for bill, stock, purchase, close-day and remind; `/solutions/library-management`; and `/solutions/lending-collections`. The other guide pages are per kind of shop. They can be linked, but posts don't name the kinds. Images are built from the linked page's screens. Every link carries UTMs. The Instagram bio link gets `utm_medium=bio` (content session, before 19 Nov).
+- **Words:** "Free. No charges, no hidden charges, no card needed." Never "free forever" or a price.
+- **Each post:** a hook, a real moment, the search question and its answer, 3 steps, a save/share nudge and a closing question.
+- **Topics:** the 19–25 Nov results decide. On 25 Nov the analytics session ranks the seven by utm_campaign: visits, /login, otp_verified (once deployed) and engagement. The top 3 are repeated with a new hook; the weakest is dropped. One slot goes to the Library module (`/solutions/library-management`) and one to "Your name on every bill, no password, just your mobile" (trust).
+
+| Date | Topic | Link |
+|---|---|---|
+| Wed 26 | Top performer #1 (new hook) | its guide page |
+| Thu 27 | Library: members and fees | /solutions/library-management |
+| Fri 28 | Top performer #2 | its guide page |
+| Sat 29 | Trust: your name on bills, sign in with mobile + WhatsApp code | /solutions/shop-billing |
+| Sun 30 | Top performer #3 | its guide page |
+| Mon 1 | Staff each get their own login | /solutions/shop-billing |
+| Tue 2 | Ledger: daily collection round (if 25 Nov did well, else a performer #4) | /solutions/lending-collections |
