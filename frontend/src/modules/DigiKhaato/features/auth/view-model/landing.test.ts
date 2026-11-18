@@ -61,11 +61,22 @@ describe('entryRoute (owner, 18 Nov 2026)', () => {
   it('opens Money Book when no business is starred', () => {
     expect(entryRoute(app, [{ isDefault: false, status: 'active' }], home)).toBe(ROUTES.KHATA);
     expect(entryRoute({ kind: 'no_business' }, [], home)).toBe(ROUTES.KHATA);
-    expect(entryRoute({ kind: 'choose_business' }, [{ status: 'active' }], home)).toBe(ROUTES.KHATA);
+    expect(entryRoute({ kind: 'choose_business' }, [{ status: 'active' }], home)).toBe(
+      ROUTES.KHATA
+    );
   });
 
   it('opens the starred business when there is one', () => {
-    expect(entryRoute(app, [{ isDefault: true, status: 'active' }], home)).toBe('/dashboard');
+    expect(entryRoute(app, [{ isDefault: true, primaryApp: 'shop', status: 'active' }], home)).toBe(
+      '/dashboard'
+    );
+  });
+
+  /** Setup marks a first business default with no app: that is not a star. */
+  it('does not count the default setup gives a first business as a star', () => {
+    expect(entryRoute(app, [{ isDefault: true, primaryApp: '', status: 'active' }], home)).toBe(
+      ROUTES.KHATA
+    );
   });
 
   it('keeps a page the person was heading to, and the password change', () => {

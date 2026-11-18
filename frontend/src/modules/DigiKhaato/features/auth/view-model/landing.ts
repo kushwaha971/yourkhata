@@ -46,7 +46,11 @@ export const landingRoute = (landing: Landing, nextPath: string): string => {
  */
 export const entryRoute = (
   landing: Landing,
-  tenants: readonly { readonly isDefault?: boolean; readonly status?: string }[],
+  tenants: readonly {
+    readonly isDefault?: boolean;
+    readonly primaryApp?: string;
+    readonly status?: string;
+  }[],
   nextPath: string
 ): string => {
   const keeps =
@@ -55,7 +59,12 @@ export const entryRoute = (
     landing.kind === 'invitation' ||
     nextPath !== AUTH_CONFIG.defaultPostLoginPath;
   if (keeps) return landingRoute(landing, nextPath);
-  const starred = tenants.some((t) => t.isDefault && (t.status ?? 'active') === 'active');
+  // A star is a default WITH the app it was set in, as the server counts it
+  // (`preferred_membership`): setup marks a first business default on its own,
+  // and that is not the person choosing it.
+  const starred = tenants.some(
+    (t) => t.isDefault && !!t.primaryApp && (t.status ?? 'active') === 'active'
+  );
   return starred ? landingRoute(landing, nextPath) : ROUTES.KHATA;
 };
 

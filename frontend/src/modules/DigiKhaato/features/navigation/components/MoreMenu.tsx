@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import {
   ArrowLeftRight,
+  LayoutGrid,
   LogOut,
   MessageSquare,
   MonitorSmartphone,
@@ -90,15 +91,26 @@ export function MoreMenu({
     [sections, tabKeys, needle, w]
   );
 
-  const businessRows: UbMenuListRow[] = [
-    {
-      key: 'switch',
-      label: t('nav.workspace.label'),
-      caption: tenant?.name,
-      href: ROUTES.SWITCH_TENANT,
-      icon: <ArrowLeftRight aria-hidden className="h-5 w-5" />,
-    },
-  ];
+  // No business set up (owner, 18 Nov 2026): "Switch business" means nothing
+  // yet, so the row is Apps and opens the choice of apps to set up.
+  const businessRows: UbMenuListRow[] = !tenant
+    ? [
+        {
+          key: 'apps',
+          label: t('nav.apps'),
+          href: ROUTES.SWITCH_TENANT,
+          icon: <LayoutGrid aria-hidden className="h-5 w-5" />,
+        },
+      ]
+    : [
+        {
+          key: 'switch',
+          label: t('nav.workspace.label'),
+          caption: tenant?.name,
+          href: ROUTES.SWITCH_TENANT,
+          icon: <ArrowLeftRight aria-hidden className="h-5 w-5" />,
+        },
+      ];
 
   const displayName = user ? accountDisplayName(user) : '';
   const accountRows: UbMenuListRow[] = [

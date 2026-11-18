@@ -98,6 +98,7 @@ const AUTH_RESULT_A = {
       timezone: 'Asia/Kolkata',
       role: 'owner',
       isDefault: true,
+      primaryApp: 'shop',
       status: 'active',
       membershipId: 'm-a',
       onboardingStep: 4,

@@ -82,8 +82,9 @@ export function RequireSession({
     // No business open: back to Money Book, the person's home (owner, 18 Nov
     // 2026), not into business setup; "Add a business" goes there on purpose.
     const noBusiness = landing.kind === 'no_business' || landing.kind === 'choose_business';
-    router.replace(noBusiness ? ROUTES.KHATA : landingRoute(landing, ROUTES.DASHBOARD));
-  }, [status, router, pathname, blocked, landing]);
+    // The chooser is where Apps / "Add a business" leads: that asks for setup.
+    router.replace(noBusiness && !isChooser ? ROUTES.KHATA : landingRoute(landing, ROUTES.DASHBOARD));
+  }, [status, router, pathname, blocked, landing, isChooser]);
 
   if (status === 'loading' || status === 'idle') return <UbPageSkeleton variant="app" />;
   if (status === 'anonymous') return null;

@@ -141,6 +141,8 @@ export interface AuthTenant {
   readonly timezone: string;
   readonly role: RoleCode | null;
   readonly isDefault: boolean;
+  /** With `isDefault`: the app the ★ was set in. Setup marks a first business default without one. */
+  readonly primaryApp?: string;
   readonly status: MembershipStatus;
   readonly membershipId: string | null;
   readonly onboardingStep: number | null;

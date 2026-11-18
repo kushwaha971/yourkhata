@@ -198,6 +198,7 @@ const toAuthTenant = (row: TenantApiRow): AuthTenant => ({
   timezone: row.timezone ?? DEFAULT_TENANT_TIMEZONE,
   role: (row.role as RoleCode | undefined) ?? null,
   isDefault: row.is_default ?? false,
+  primaryApp: row.primary_app ?? '',
   status: row.status ?? 'active',
   membershipId: row.membership_id ?? null,
   onboardingStep: row.onboarding_step ?? null,

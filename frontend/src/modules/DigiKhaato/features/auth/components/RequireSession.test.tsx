@@ -107,8 +107,24 @@ describe('RequireSession — a session with no active tenant', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('still sends an account with no membership at all from the chooser to the wizard', async () => {
+    loadSession([]);
+
+    renderWithProviders(
+      <RequireSession>
+        <UbText as="span" variant="body">
+          the app
+        </UbText>
+      </RequireSession>
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding/step/1'));
+    expect(screen.queryByText('the app')).not.toBeInTheDocument();
+  });
+
   /** Owner, 18 Nov 2026: with no business, a business page leads home to Money Book, not into setup. */
-  it('sends an account with no membership at all to Money Book', async () => {
+  it('sends an account with no membership from a business page to Money Book', async () => {
+    pathname = '/parties';
     loadSession([]);
 
     renderWithProviders(
@@ -121,6 +137,23 @@ describe('RequireSession — a session with no active tenant', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/money-book'));
     expect(screen.queryByText('the app')).not.toBeInTheDocument();
+  });
+
+  /** Money Book belongs to the person: with no business it opens, not redirects. */
+  it('lets an account with no membership open Money Book', async () => {
+    pathname = '/money-book';
+    loadSession([]);
+
+    renderWithProviders(
+      <RequireSession>
+        <UbText as="span" variant="body">
+          the book
+        </UbText>
+      </RequireSession>
+    );
+
+    expect(await screen.findByText('the book')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('sends an operator with no business to the console, not the wizard (PLT-14)', async () => {
