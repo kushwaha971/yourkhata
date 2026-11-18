@@ -65,7 +65,9 @@ const ADD_LENDING: SessionApp[] = [
 const load = (
   apps: SessionApp[],
   appsAddable: SessionApp[] = [],
-  tenants: SessionTenant[] = [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }],
+  tenants: SessionTenant[] = [
+    { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' },
+  ],
   role: 'owner' | 'staff' = 'owner'
 ) => {
   store.dispatch(resetAllFeatureState());
@@ -123,18 +125,49 @@ describe('phone App button', () => {
   });
 
   it('lists, under the open app, every business where it opens, the open one ticked and the ★ one Primary', async () => {
-    Object.assign(mockAppsOf, { t1: ['library', 'shop', 'khata'], t2: ['library'], t3: ['lending'] });
-    load(APPS, [], [
-      { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm1' },
-      { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm2', isDefault: true, primaryApp: 'library' },
-      { id: 't3', name: 'Verma Finance', timezone: 'Asia/Kolkata', role: 'staff', membershipId: 'm3' },
-    ]);
+    Object.assign(mockAppsOf, {
+      t1: ['library', 'shop', 'khata'],
+      t2: ['library'],
+      t3: ['lending'],
+    });
+    load(
+      APPS,
+      [],
+      [
+        {
+          id: 't1',
+          name: 'Kumar Kirana',
+          timezone: 'Asia/Kolkata',
+          role: 'owner',
+          membershipId: 'm1',
+        },
+        {
+          id: 't2',
+          name: 'Gyan Library Baner',
+          timezone: 'Asia/Kolkata',
+          role: 'owner',
+          membershipId: 'm2',
+          isDefault: true,
+          primaryApp: 'library',
+        },
+        {
+          id: 't3',
+          name: 'Verma Finance',
+          timezone: 'Asia/Kolkata',
+          role: 'staff',
+          membershipId: 'm3',
+        },
+      ]
+    );
     renderWithProviders(<AppsPageContent />);
     expect(screen.getByRole('heading', { name: 'Your libraries' })).toBeInTheDocument();
     // The other businesses arrive with `GET /memberships/apps`.
     await screen.findByText('Gyan Library Baner');
     const places = within(screen.getByTestId('apps-places')).getAllByTestId('apps-place');
-    expect(places.map((p) => p.textContent)).toEqual(['Kumar KiranaOwner · Open now', 'Gyan Library BanerOwner · ★ Primary']);
+    expect(places.map((p) => p.textContent)).toEqual([
+      'Kumar KiranaOwner · Open now',
+      'Gyan Library BanerOwner · ★ Primary',
+    ]);
     expect(places[0]).toHaveAttribute('aria-current', 'true');
     const stars = screen.getAllByTestId('apps-star');
     expect(stars.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
@@ -191,7 +224,13 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     rememberAppPlace('t1', 'khata', '/khata/aging');
     renderWithProviders(<AppsPageContent />);
     const cards = within(screen.getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(cards.map((card) => card.textContent)).toEqual(['LibraryOpen now', 'BusinessBills, stock', 'Money bookYou gave, you got']);
+    // Owner, 18 Nov 2026: all four apps always have a card; one not added says so.
+    expect(cards.map((card) => card.textContent)).toEqual([
+      'LibraryOpen now',
+      'BusinessBills, stock',
+      'Money bookYou gave, you got',
+      'LedgerNot added yet · tap to start',
+    ]);
     expect(within(screen.getByTestId('app-add-tiles')).getByRole('button')).toHaveTextContent(
       'Add Ledger'
     );
@@ -250,7 +289,13 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
 describe('switching to another business from the Apps page asks first', () => {
   const TWO: SessionTenant[] = [
     { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm1' },
-    { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm2' },
+    {
+      id: 't2',
+      name: 'Gyan Library Baner',
+      timezone: 'Asia/Kolkata',
+      role: 'owner',
+      membershipId: 'm2',
+    },
   ];
   const setUp = async () => {
     Object.assign(mockAppsOf, { t1: ['library', 'shop', 'khata'], t2: ['library'] });
@@ -259,7 +304,12 @@ describe('switching to another business from the Apps page asks first', () => {
     authService.switchTenant.mockResolvedValue({
       ...store.getState().session,
       version: 2,
-      activeTenant: { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner' },
+      activeTenant: {
+        id: 't2',
+        name: 'Gyan Library Baner',
+        timezone: 'Asia/Kolkata',
+        role: 'owner',
+      },
     });
     renderWithProviders(<AppsPageContent />);
     await screen.findByText('Gyan Library Baner');
@@ -270,7 +320,9 @@ describe('switching to another business from the Apps page asks first', () => {
   it('names both businesses and the app, and sends nothing until Switch is tapped', async () => {
     const dialog = await setUp();
     expect(within(dialog).getByText('Switch to Gyan Library Baner?')).toBeInTheDocument();
-    expect(dialog).toHaveTextContent('You are in Kumar Kirana now. Library will open at Gyan Library Baner, and every screen will show its records.');
+    expect(dialog).toHaveTextContent(
+      'You are in Kumar Kirana now. Library will open at Gyan Library Baner, and every screen will show its records.'
+    );
     expect(authService.switchTenant).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Switch' }));
     await waitFor(() => expect(authService.switchTenant).toHaveBeenCalledWith('t2'));

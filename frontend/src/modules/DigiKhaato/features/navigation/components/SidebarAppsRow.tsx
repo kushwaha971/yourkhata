@@ -33,10 +33,10 @@ export function SidebarAppsRow({ onNavigate }: Readonly<{ onNavigate?: () => voi
   // The Apps screen is also where a person with several businesses changes
   // business (owner, 12 Nov 2026), so it is reachable for them too.
   // No business open (Money Book after sign-in, owner 18 Nov 2026): the same
-  // row, leading to starting or choosing a business.
+  // row and the same Apps page, where every app can be opened or added.
   const noBusiness = useAppSelector(selectActiveTenant) === null;
   if (!noBusiness && apps.length < 2 && addable.length === 0 && tenants.length < 2) return null;
-  const href = noBusiness ? ROUTES.SWITCH_TENANT : ROUTES.APPS;
+  const href = ROUTES.APPS;
   const active = pathname === href;
 
   return (

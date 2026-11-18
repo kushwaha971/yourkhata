@@ -11,7 +11,7 @@ import { MLSpinner } from 'src/design-system/primitives';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveTenant, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import { selectActiveTenant, selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { addBusinessPath } from 'src/routes';
 import { cn } from 'src/utils/cn';
@@ -26,11 +26,16 @@ import { fetchAppsPerBusiness } from '../../tenant-switcher/api/tenantSwitcherSe
 import { setDefaultTenant } from '../../tenant-switcher/redux/tenantSwitcherThunk';
 import { appPlace } from '../appPlace';
 import { PERSONAL_APPS } from '../personalApps';
+import { useAddApp } from '../useAddApp';
 import { appForPath, useNavigation } from '../useNavigation';
 
 /** Apps with their own words for "Your …" and "Add …"; any other says "place". */
 const WORDED: ReadonlySet<string> = new Set(['shop', 'library', 'lending']);
 const wordOf = (code: string): string => (WORDED.has(code) ? code : 'any');
+/** The four apps the Apps screen always offers, in the design's order. */
+const HUB_APPS: readonly string[] = ['shop', 'library', 'lending', 'khata'].filter((code) =>
+  APP_MANIFESTS.some((m) => m.code === code)
+);
 /** Apps with a one-line "what it is for" under their name (design: the Apps canvas). */
 const ABOUT: ReadonlySet<string> = new Set(['shop', 'khata', 'library', 'lending']);
 
@@ -74,6 +79,8 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const active = useAppSelector(selectActiveTenant);
   const tenants = useAppSelector(selectSessionTenants);
   const [chosen, setChosen] = useState<string | null>(current ?? null);
+  const addable = useAppSelector(selectAppsAddable);
+  const { addApp } = useAddApp(onLeave);
   const [busy, setBusy] = useState<string | null>(null);
   const [asking, setAsking] = useState<{ readonly tenantId: string; readonly code: string } | null>(null);
   // Which apps each business opens, from its own request; until it answers (or
@@ -96,8 +103,14 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
     const elsewhere = new Set<string>();
     usable.forEach((row) => (appsOf[row.id] ?? []).forEach((code) => elsewhere.add(code)));
     const first = here.map((a) => a.code);
-    return [...first, ...APP_MANIFESTS.map((m) => m.code).filter((code) => elsewhere.has(code) && !first.includes(code))];
+    const mine = [...first, ...APP_MANIFESTS.map((m) => m.code).filter((code) => elsewhere.has(code) && !first.includes(code))];
+    // Every released app has a card (owner, 18 Nov 2026: Business, Library,
+    // Ledger, Money Book), the ones not added yet last, to start one.
+    return [...mine, ...HUB_APPS.filter((code) => !mine.includes(code))];
   }, [appsOf, here, usable]);
+  /** An app with no place yet: its card offers to add it rather than open it. */
+  const notAdded = (code: string): boolean =>
+    !PERSONAL_APPS.has(code) && !here.some((a) => a.code === code) && placesOf(code).length === 0;
   const view = chosen && codes.includes(chosen) ? chosen : (current ?? codes[0] ?? null);
 
   const placesOf = (code: string): Place[] =>
@@ -157,6 +170,14 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   };
 
   const openApp = (code: string): void => {
+    if (notAdded(code)) {
+      // Not added yet. The open business can run it: add it there, as the
+      // "Add …" tile below does. Otherwise start one with this app ticked.
+      const toThis = addable.find((a) => a.code === code);
+      if (toThis) void addApp(toThis.code, toThis.homePath, t(toThis.labelId));
+      else addPlace(code);
+      return;
+    }
     setChosen(code);
     const places = placesOf(code);
     if (PERSONAL_APPS.has(code)) {
@@ -229,7 +250,7 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                   {t(manifest?.labelId ?? code)}
                 </UbText>
                 <UbText as="span" variant="caption" tone="secondary" className="break-words">
-                  {isOpen ? t('tenant.apps.openNow') : ABOUT.has(code) ? t(`tenant.apps.about.${code}`) : ''}
+                  {isOpen ? t('tenant.apps.openNow') : notAdded(code) ? t('tenant.apps.notAdded') : ABOUT.has(code) ? t(`tenant.apps.about.${code}`) : ''}
                 </UbText>
               </UbStack>
               {isOpen && <Check aria-hidden className="absolute right-3 top-3 h-4 w-4" strokeWidth={2.5} />}

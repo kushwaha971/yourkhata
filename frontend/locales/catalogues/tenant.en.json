@@ -9,6 +9,7 @@
   "tenant.apps.add.shop": "Add business",
   "tenant.apps.hint": "Tap an app to open it. Tap a place to open that one. Tap ☆ to make it Primary — it opens after you log in.",
   "tenant.apps.makePrimary": "Make {name} your Primary",
+  "tenant.apps.notAdded": "Not added yet · tap to start",
   "tenant.apps.notOwner": "In businesses where you are Staff or Accountant, the owner adds apps. You can still open them and set what opens first.",
   "tenant.apps.openError": "Could not open it. Try again.",
   "tenant.apps.openNow": "Open now",

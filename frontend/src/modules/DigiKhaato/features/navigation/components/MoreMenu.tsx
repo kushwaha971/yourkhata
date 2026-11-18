@@ -91,26 +91,27 @@ export function MoreMenu({
     [sections, tabKeys, needle, w]
   );
 
-  // No business set up (owner, 18 Nov 2026): "Switch business" means nothing
-  // yet, so the row is Apps and opens the choice of apps to set up.
-  const businessRows: UbMenuListRow[] = !tenant
-    ? [
-        {
-          key: 'apps',
-          label: t('nav.apps'),
-          href: ROUTES.SWITCH_TENANT,
-          icon: <LayoutGrid aria-hidden className="h-5 w-5" />,
-        },
-      ]
-    : [
-        {
-          key: 'switch',
-          label: t('nav.workspace.label'),
-          caption: tenant?.name,
-          href: ROUTES.SWITCH_TENANT,
-          icon: <ArrowLeftRight aria-hidden className="h-5 w-5" />,
-        },
-      ];
+  // Apps first, always (owner, 18 Nov 2026): every app is opened, switched or
+  // added there. "Switch business" follows only when there is one to switch.
+  const businessRows: UbMenuListRow[] = [
+    {
+      key: 'apps',
+      label: t('nav.apps'),
+      href: ROUTES.APPS,
+      icon: <LayoutGrid aria-hidden className="h-5 w-5" />,
+    },
+    ...(tenant
+      ? [
+          {
+            key: 'switch',
+            label: t('nav.workspace.label'),
+            caption: tenant.name,
+            href: ROUTES.SWITCH_TENANT,
+            icon: <ArrowLeftRight aria-hidden className="h-5 w-5" />,
+          },
+        ]
+      : []),
+  ];
 
   const displayName = user ? accountDisplayName(user) : '';
   const accountRows: UbMenuListRow[] = [

@@ -144,14 +144,28 @@ for (const device of DEVICES.filter((d) => !ONLY || d.name === ONLY)) {
     // ── 4. Apps → set up a business ─────────────────────────────────────────
     await page.goto(`${FE}/more`, { waitUntil: 'networkidle' });
     await page.getByRole('link', { name: /^Apps$/ }).first().click();
-    await page.waitForURL(/\/onboarding\/step\/1/, { timeout: 30000 });
+    await page.waitForURL(/\/apps$/, { timeout: 30000 });
+    // The Apps hub: all four apps, the ones not added saying so.
+    await page.getByTestId('apps-card-library').waitFor({ timeout: 15000 }).catch(() => {});
+    for (const code of ['shop', 'library', 'lending', 'khata']) {
+      check(tag(`the Apps page has a ${code} card`), (await page.getByTestId(`apps-card-${code}`).count()) === 1);
+    }
+    check(tag('Business says it is not added yet'), /Not added yet/.test(await page.getByTestId('apps-card-shop').innerText()));
+    check(tag('the Apps page opens with no business, no red message'), (await redSnackbar()) === 0);
+    await shot('4a-apps-no-business');
+    await page.getByTestId('apps-card-shop').click();
+    await page.waitForURL(/\/onboarding\/step\/1/, { timeout: 30000 }).catch(() => {});
+    check(tag('a card not added yet starts its setup'), /\/onboarding\/step\/1/.test(page.url()), page.url());
+    await shot('4b-after-card');
     check(tag('Apps opens the choice of apps'), await page.getByRole('group', { name: 'What do you want to use?' }).waitFor({ timeout: 15000 }).then(() => true, () => false));
     await page.getByLabel(/Business name/).fill('Raju Traders');
     if (await page.getByLabel(/Your name/).count()) await page.getByLabel(/Your name/).fill('Raju Verma');
     await page.getByRole('combobox', { name: /State/ }).click();
     await page.getByPlaceholder(/Search/).fill('Maha');
     await page.getByRole('option', { name: /Maharashtra/ }).click();
-    await page.getByRole('group', { name: 'What do you want to use?' }).getByRole('checkbox', { name: /^(Business|Shop)/ }).click();
+    const businessBox = page.getByRole('group', { name: 'What do you want to use?' }).getByRole('checkbox', { name: /^(Business|Shop)/ });
+    check(tag('the Business card arrives with Business already ticked'), (await businessBox.getAttribute('aria-checked')) === 'true');
+    if ((await businessBox.getAttribute('aria-checked')) !== 'true') await businessBox.click();
     if (await page.getByRole('radiogroup').count()) await page.getByRole('radio').first().click();
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.waitForURL(/\/onboarding\/step\/2/, { timeout: 30000 });
