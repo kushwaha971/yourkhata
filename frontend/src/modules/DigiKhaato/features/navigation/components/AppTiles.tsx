@@ -6,11 +6,11 @@ import { UbBox, UbGrid, UbPressable, UbText } from 'src/design-system';
 import { MLSpinner } from 'src/design-system/primitives';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectAppsAddable } from 'src/redux/slice/sessionSlice';
 import { cn } from 'src/utils/cn';
 
 import { manifestFor } from 'modules/appManifests';
 
+import { selectBusinessAppsAddable } from '../personalApps';
 import { useAddApp } from '../useAddApp';
 import { useNavigation } from '../useNavigation';
 import { useOpenApp } from '../useOpenApp';
@@ -43,7 +43,7 @@ export function AppTiles({
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { apps, app: current } = useNavigation();
-  const addable = useAppSelector(selectAppsAddable);
+  const addable = useAppSelector(selectBusinessAppsAddable);
   const openApp = useOpenApp();
   const { addApp, addingApp, busy } = useAddApp(onLeave);
 

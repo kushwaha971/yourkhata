@@ -17,12 +17,13 @@ import { MLMenu, MLMenuItem, MLMenuLabel, MLSpinner } from 'src/design-system/pr
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectAppsAddable, selectSessionUser } from 'src/redux/slice/sessionSlice';
+import { selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 import { roleLabel } from 'src/utils/roleLabel';
 
 import { leaveApp, setAppRunning } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
+import { selectBusinessAppsAddable } from 'modules/DigiKhaato/features/navigation/personalApps';
 import { useAddApp } from 'modules/DigiKhaato/features/navigation/useAddApp';
 import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
@@ -94,7 +95,7 @@ export function TenantSwitcherMenu({
   const dispatch = useAppDispatch();
   const { apps, app } = useNavigation();
   const { kindLabel } = useAppWords();
-  const addable = useAppSelector(selectAppsAddable);
+  const addable = useAppSelector(selectBusinessAppsAddable);
   // The Money Book's avatar is its owner's initials (design I1: "RK"), not the business's.
   const userName = useAppSelector(selectSessionUser)?.name;
   const [appAction, setAppAction] = useState<'off' | 'leave' | null>(null);

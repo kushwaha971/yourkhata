@@ -219,6 +219,17 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     expect(screen.getByRole('link', { name: 'Apps' })).toBeInTheDocument();
   });
 
+  /** Owner, 18 Nov 2026: Money Book is the person's own and always listed, never "added". */
+  it('never offers to add Money Book, even when the server still lists it', () => {
+    load(LIBRARY_ONLY, [
+      ...ADD_LENDING,
+      { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 50 },
+    ]);
+    renderWithProviders(<AppsPageContent />);
+    const adds = within(screen.getByTestId('app-add-tiles')).getAllByRole('button');
+    expect(adds.map((b) => b.textContent)).toEqual(['Add Ledger']);
+  });
+
   it('opens another app from the Apps page where the person left it; Money book has no places', () => {
     load(APPS, ADD_LENDING);
     rememberAppPlace('t1', 'khata', '/khata/aging');
