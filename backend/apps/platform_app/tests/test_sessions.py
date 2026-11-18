@@ -125,7 +125,9 @@ def test_the_grace_window_never_covers_a_token_whose_successor_was_used(
     old_refresh = data["refresh_token"]
     rotated = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
     auth_client.post(
-        reverse(REFRESH_URL), {"refresh_token": rotated.json()["data"]["refresh_token"]}, format="json"
+        reverse(REFRESH_URL),
+        {"refresh_token": rotated.json()["data"]["refresh_token"]},
+        format="json",
     )
 
     replayed = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
@@ -416,3 +418,52 @@ def test_a_bearer_client_is_exempt_from_csrf(api_as: Any, tenant: Any) -> None:
     """ "API clients … are exempt from CSRF because they are not cookie-driven"."""
     client, _member = api_as(tenant)
     assert client.post(reverse(LOGOUT_URL)).status_code == 200
+
+
+def test_signing_out_another_device_stops_its_access_at_once(
+    auth_client: Any, membership: Any
+) -> None:
+    """Owner, 18 Nov 2026: Devices → Sign out on the desktop left the phone
+    signed in, because its access token stayed good for up to fifteen minutes.
+    The phone's very next request is refused now."""
+    from rest_framework.test import APIClient
+
+    from apps.platform_app.services import sessions as session_service
+
+    data = _login(auth_client, membership)
+    phone = session_service.issue(
+        user=membership.user, tenant=membership.tenant, membership=membership
+    )
+    phone_client = APIClient()
+    phone_client.credentials(HTTP_AUTHORIZATION=f"Bearer {phone.access}", HTTP_X_CLIENT="api")
+    assert phone_client.get(reverse(PARTY_LIST_URL)).status_code == 200
+
+    auth_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {data['access_token']}", HTTP_X_CLIENT="api"
+    )
+    ended = auth_client.delete(
+        reverse("v1:auth-session-detail", kwargs={"session_id": phone.session.id})
+    )
+    assert ended.status_code in (200, 204), ended.content
+
+    refused = phone_client.get(reverse(PARTY_LIST_URL))
+    assert refused.status_code == 401
+    assert refused.json()["error"]["code"] == "session_revoked"
+    # The device that signed it out carries on.
+    assert auth_client.get(reverse(PARTY_LIST_URL)).status_code == 200
+
+
+def test_a_refreshed_session_keeps_its_last_access_token(auth_client: Any, membership: Any) -> None:
+    """A refresh ends the old session row by REPLACING it; the access token
+    minted just before must not be read as signed out."""
+    data = _login(auth_client, membership)
+    auth_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {data['access_token']}", HTTP_X_CLIENT="api"
+    )
+    assert (
+        auth_client.post(
+            reverse(REFRESH_URL), {"refresh_token": data["refresh_token"]}, format="json"
+        ).status_code
+        == 200
+    )
+    assert auth_client.get(reverse(PARTY_LIST_URL)).status_code == 200

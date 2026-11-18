@@ -65,6 +65,16 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         if claimed_epoch is None or int(claimed_epoch) != int(user.token_epoch):
             raise exceptions.AuthenticationFailed("session_revoked")
 
+        # One device signed out from another (Devices → Sign out): its session
+        # row is revoked, and its access token must stop working NOW, not when
+        # its fifteen minutes run out (owner, 18 Nov 2026: the phone stayed
+        # signed in). A session REPLACED by a refresh is revoked too, but its
+        # last access token is still the live device's, so only a revocation
+        # with no successor counts. Support sessions carry their own checks.
+        session_id = validated.payload.get("sid")
+        if session_id and not validated.payload.get("imp") and _session_signed_out(session_id):
+            raise exceptions.AuthenticationFailed("session_revoked")
+
         if cookie_auth and request.method not in SAFE_METHODS:
             self._assert_csrf(request)
 
@@ -280,3 +290,12 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         header = request.headers.get(CSRF_HEADER) or ""
         if not cookie or not header or cookie != header:
             raise exceptions.PermissionDenied("CSRF token missing or incorrect.")
+
+
+def _session_signed_out(session_id: Any) -> bool:
+    """True when this session was ended by a sign-out, not by a refresh."""
+    from apps.platform_app.models import Session
+
+    return Session.objects.filter(
+        pk=session_id, revoked_at__isnull=False, replaced_by__isnull=True
+    ).exists()
