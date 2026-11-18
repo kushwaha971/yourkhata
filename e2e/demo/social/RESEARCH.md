@@ -94,3 +94,37 @@ Sources: https://www.youtube.com/@VyaparApp/videos ; https://www.youtube.com/@my
 
 ## Where we can honestly be different
 Free right now with no charges, nothing to install, mobile + WhatsApp code sign-in, and your own name on bills. Rivals' titles sell features; ours can lead with the shopkeeper's moment (STRATEGY.md quality bar).
+
+---
+# Fourth pass: Reddit, Product Hunt and competitors' complaints (18 Nov 2026, analytics session)
+Reddit itself blocked automated reads (HTTP 403, and the browser pane refuses reddit.com), so every subreddit rule below comes from **cached mirrors or guides and is unverified**. Read the live sidebar before the first comment.
+
+## (a) Subreddits
+| Subreddit | Fit | Self-promotion rule (as reported) | Source, date of snapshot |
+|---|---|---|---|
+| r/StartUpIndia | Founders, early users | **Weekly Startups Promotion Thread every Monday**; link-only comments removed; main-feed promo only for regular users, mod-approved | https://lr.sudovanilla.org/r/StartUpIndia/comments/1ehbppz/announcement_weekly_startups_promotion_thread (Aug 2024) |
+| r/smallbusiness | Global, mostly US; few Indian shopkeepers | No business promotion posts; **weekly "Promote your business" thread only**; blogspam removed | https://lr.in.psf.lt/r/smallbusiness/comments/1cfnz3o/promote_your_business_week_of_april_29_2024 (Apr 2024) |
+| r/india | Huge, general | No promotional content; long-standing members ~1 promo per 10 contributions, after messaging the mods | https://axebps-redlib.hf.space/r/India/wiki/rules (undated mirror) |
+| r/IndiaBusiness, r/Indian_Business | Closest audience (Indian owners) | **Not found**, check the sidebar | https://lr.in.psf.lt/r/indiabusiness ; https://lr.ggtyler.dev/r/Indian_Business |
+| r/IndianStartups | Founders | Weekly thread is for hiring, not promotion; promo rule **not found** | https://lr.eu.psf.lt/r/IndianStartups |
+| r/IndiaTax, r/CAIndia | GST questions: best place to *answer*, not to post | **Not found** | — |
+| Karma/account age | — | No official figure found for these subs; guides cite ~50 karma and a 30-day-old account for r/Entrepreneur, and 100+ for r/SaaS (anecdotal) | https://redship.io/blog/reddit-self-promotion-rules-2026 |
+**Implication:** the Social media manager's plan is right. Answer GST/dues/stock questions with no link for 2–3 weeks. The only promotion goes in r/StartUpIndia's Monday thread (and r/smallbusiness's weekly thread), with context, not just a link.
+
+## (b) Product Hunt
+- Day: most guides say Tue–Thu; one count of 4,962 launches in 2026 says Tuesday has ~30 launches a day vs Saturday ~11, so a **weekend has less competition**. 12:01 AM PT is 1:31 PM IST, a convenient time for us. Sources: https://www.producthunt.com/p/databox/best-day-to-launch-on-product-hunt-here-s-what-4-962-launches-in-2026-actually-show-2 ; https://dev.to/whoffagents/why-were-launching-on-tuesday-instead-of-monday-data-backed-ph-strategy-18j2
+- Benchmarks (blogs, unverified): #1 of the day typically 1,200–1,800 upvotes; **median indie launch about 3 upvotes**; 40–60% of upvotes come from the maker's own audience. Sources: https://www.shno.co/marketing-statistics/product-hunt-launch-statistics ; https://www.indiehackers.com/post/the-median-indie-launch-last-week-got-3-upvotes-d1c2406a1f
+- No data found on non-US business-software launches. **Expectation:** with ~10 LinkedIn followers, YourKhata won't rank. The value is a backlink, a listing that AI answers and search can cite, and feedback, not Indian shopkeeper sign-ups.
+- **Recommend a Saturday launch** (less competition, and ranking needs fewer votes) once 4–6 real screens and the demo cut exist. **Owner decision:** Product Hunt requires a real person as the maker. Options: the owner's own account, with the listing fully branded YourKhata; or another named team member's account, only with their consent.
+
+## (c) Competitors' complaints → problem statements
+From `docs/testing/edge-case-catalogue.md` (sources and dates there), plus the 18 Nov search. Aggregated 1★ App Store share for myBillBook is ~9% (https://apptail.io/app/mybillbook-billing-software-xWB/india); Vyapar has slow loading after updates and a "not for serious accounting" 1★ (https://www.capterra.in/reviews/180579/vyapar).
+| Complaint users report (source ref) | Problem statement for a post (no rival named) | Only if YourKhata really does it |
+|---|---|---|
+| Totals don't match at year-end; past entries changed (C1) | "Your book says one total, your drawer says another." | A posted entry is never edited; a correction is shown as a new line |
+| Bill failed after typing everything (C2, C3) | "You typed the whole bill, and it failed." | Check before claiming |
+| Typed 1500 for 150 (C8) | "One extra zero, and the customer's bill is wrong." | Correction with reason, visible history |
+| Subscription surprises ("Do not subscribe") | "Paid for a plan, then found the feature locked." | Free right now: no charges, no hidden charges |
+| Reminders couldn't be sent through the app (C7) | "Reminding a customer shouldn't take five apps." | Remind opens WhatsApp with the amount |
+| Hard to correct a wrong entry (C6) | "Wrote it against the wrong customer?" | Reverse/correct flow |
+Each one becomes a problem post whose proof is a real screen. Claims must be checked against the app before posting.

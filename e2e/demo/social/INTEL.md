@@ -32,3 +32,10 @@ A PostHog dashboard called "Marketing": daily visitors by source/utm_campaign; f
 - Weekly, Monday 10 AM: full funnel, per-post results, next-week calendar changes
 - Monthly, 1st, 11 AM: channel trends, SEO queries, competitor changes
 - Quarterly: strategy review and positioning check
+
+## Added 18 Nov: Reddit and Product Hunt (see RESEARCH.md, fourth pass)
+| # | Priority | Action | Impact | Effort | Measured by |
+|---|---|---|---|---|---|
+| 13 | High | Reddit: YourKhata account answers GST/dues/stock questions with no links for 2–3 weeks, then posts in r/StartUpIndia's Monday promotion thread | Trust, real complaints, a few early users | S/week | utm_source=reddit visits, comment karma |
+| 14 | Medium | Product Hunt launch on a Saturday, after the screens and demo cut are ready | Backlink, a listing AI answers can cite | M | Referral visits, PH listing indexed |
+| 15 | High | 26 Nov–2 Dec: two posts built from rivals' complaints (wrong totals, typing mistakes), claims checked in the app | Sharper hooks | S | Engagement against the 19–25 Nov average |
