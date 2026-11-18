@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+import { track } from 'src/analytics/track';
 import type { SessionPayload } from 'src/redux/slice/sessionSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { toApiError } from 'src/utils/apiError';
@@ -146,11 +147,13 @@ export const createTenant = createAsyncThunk<
     // L8 — the SAME key every time: a retry is a replay request, never a
     // second create. The status stays `loading` throughout, so Continue
     // cannot be pressed again while it waits.
-    return await retryWhile(
+    const result = await retryWhile(
       () => onboardingService.createTenant(input, idempotencyKey),
       isInProgress,
       CREATE_IN_PROGRESS_RETRY_DELAYS_MS
     );
+    track('business_created');
+    return result;
   } catch (error) {
     return rejectWithValue(toApiError(error, 'onboarding.error.create'));
   }

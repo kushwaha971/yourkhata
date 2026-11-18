@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+import { track } from 'src/analytics/track';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { toApiError } from 'src/utils/apiError';
 
@@ -84,7 +85,10 @@ export const issueInvoice = createAsyncThunk<SalesDocumentEnvelope, IssueArg, Re
   'invoiceEditor/issueInvoice',
   async ({ id, body, idempotencyKey }, { rejectWithValue }) => {
     try {
-      return await (await service()).issueInvoice(id, body, idempotencyKey);
+      const result = await (await service()).issueInvoice(id, body, idempotencyKey);
+      // Every issue is sent; "first bill" is the funnel's first occurrence per person.
+      track('bill_issued');
+      return result;
     } catch (error) {
       return rejectWithValue(toApiError(error, 'sales.editor.error.issue'));
     }

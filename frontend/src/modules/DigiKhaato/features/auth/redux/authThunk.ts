@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+import { track } from 'src/analytics/track';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { toApiError } from 'src/utils/apiError';
 
@@ -53,7 +54,11 @@ export const verifyOtp = createAsyncThunk<
   { rejectValue: ApiErrorShape }
 >('auth/verifyOtp', async (input, { rejectWithValue }) => {
   try {
-    return await authService.verifyOtp(input);
+    const result = await authService.verifyOtp(input);
+    // The funnel's first step after the landing page (INTEL #1): a fact about
+    // the account, never the number that was verified.
+    track('otp_verified', { is_new: result.isNew });
+    return result;
   } catch (error) {
     return rejectWithValue(toApiError(error, 'auth.otp.verifyError'));
   }
