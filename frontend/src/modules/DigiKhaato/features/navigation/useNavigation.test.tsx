@@ -183,7 +183,8 @@ describe('one menu per app', () => {
     });
     mockPath = '/settings';
     const nav = listed();
-    expect(nav.apps.map((a) => a.code)).toEqual(['lending']);
+    // Money Book, the person's own, is listed after the server's apps (owner, 18 Nov 2026).
+    expect(nav.apps.map((a) => a.code)).toEqual(['lending', 'khata']);
     // A reader sees the book; Lending settings needs `lending.settings.manage`.
     expect(keysOf(nav)).toEqual(['lendingToday', 'lendingLoans', 'lendingBorrowers', 'lendingRoutes', 'lendingMessages']);
   });
@@ -235,12 +236,15 @@ describe('the switcher', () => {
       { code: 'library', labelId: 'nav.workspace.library', href: '/library' },
       { code: 'lending', labelId: 'nav.workspace.lending', href: '/lending' },
       { code: 'shop', labelId: 'nav.workspace.shop', href: '/dashboard' },
+      // Then Money Book, the person's own, wherever they are (owner, 18 Nov 2026).
+      { code: 'khata', labelId: 'nav.workspace.khata', href: '/money-book' },
     ]);
   });
 
-  it('is not offered to a person who can open one app', () => {
+  /** Owner, 18 Nov 2026: one business app and Money Book are always two, one tap apart. */
+  it('lists Money Book beside a single business app', () => {
     load({ apps: [SERVER_APPS[2] as SessionApp], activeApp: 'shop' });
-    expect(listed().apps).toHaveLength(1);
+    expect(listed().apps.map((a) => a.code)).toEqual(['shop', 'khata']);
   });
 
   it('tells the server when a page of another app is opened directly', async () => {

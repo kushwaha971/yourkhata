@@ -218,12 +218,13 @@ describe('choosing an app', () => {
     expect(authService.switchApp).toHaveBeenCalledTimes(1);
   });
 
-  it('offers no app group to a person who can open one app', async () => {
+  /** Owner, 18 Nov 2026: Money Book is beside even a single business app, so the group shows. */
+  it('offers the app group with one business app, for Money Book', async () => {
     load([APPS[0] as SessionApp]);
     renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
     await userEvent.click(screen.getByRole('button', { name: /Verma Finance/ }));
     await screen.findByText('Your businesses');
-    expect(screen.queryByText('Apps')).toBeNull();
+    expect(screen.getByText('Apps')).toBeInTheDocument();
   });
 });
 

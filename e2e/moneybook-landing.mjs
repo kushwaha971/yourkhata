@@ -178,6 +178,18 @@ for (const device of DEVICES.filter((d) => !ONLY || d.name === ONLY)) {
     check(tag('the business is still one tap away'), where() === '/dashboard', where());
     await shot('5-relogin-unstarred');
 
+    // ── 5b. Business ↔ Money Book in one tap each, no star needed ──────────
+    await page.goto(`${FE}/apps`, { waitUntil: 'networkidle' });
+    await page.getByTestId('apps-card-khata').click();
+    await page.waitForURL(/\/money-book/, { timeout: 15000 }).catch(() => {});
+    check(tag('Apps → Money Book opens it from the business'), where().startsWith('/money-book'), where());
+    check(tag('Money Book opens there without a red message'), (await redSnackbar()) === 0);
+    await page.goto(`${FE}/apps`, { waitUntil: 'networkidle' });
+    await page.getByTestId('apps-card-shop').click();
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 }).catch(() => {});
+    check(tag('Apps → Business opens it from Money Book'), where() === '/dashboard', where());
+    await shot('5b-switched-back');
+
     // ── 6. Star the business ────────────────────────────────────────────────
     await page.goto(`${FE}/apps`, { waitUntil: 'networkidle' });
     await page.getByTestId('apps-star').first().click();

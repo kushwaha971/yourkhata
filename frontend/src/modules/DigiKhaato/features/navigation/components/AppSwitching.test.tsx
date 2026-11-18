@@ -143,11 +143,11 @@ describe('phone App button', () => {
     expect(screen.getByTestId('apps-card-lending')).toHaveTextContent('Ledger');
   });
 
-  it('keeps More for a person with one app', () => {
+  /** Owner, 18 Nov 2026: Money Book is always one tap away, so one business app still makes two. */
+  it('offers the App button to a person with one business app, for Money Book', () => {
     load([APPS[0] as SessionApp]);
     renderWithProviders(<MobileTabBar />);
-    expect(screen.getByRole('link', { name: 'More' })).toHaveAttribute('href', '/more');
-    expect(screen.queryByRole('button', { name: /Apps and more/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Apps and more/ })).toBeInTheDocument();
   });
 });
 
@@ -173,10 +173,11 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     expect(within(rail).getByRole('link', { name: 'Settings' })).toBeInTheDocument();
   });
 
-  it('draws no Apps row for one app with nothing to add', () => {
+  /** Owner, 18 Nov 2026: Money Book is listed in Apps wherever the person is. */
+  it('draws the Apps row for one business app, because Money Book is always there', () => {
     load(LIBRARY_ONLY);
     renderWithProviders(<UbSidebar />);
-    expect(screen.queryByTestId('sidebar-apps-row')).not.toBeInTheDocument();
+    expect(screen.getByTestId('sidebar-apps-row')).toBeInTheDocument();
   });
 
   it('draws the Apps row for an owner with one app and one to add', () => {

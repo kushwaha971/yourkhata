@@ -159,7 +159,16 @@ export function useNavigation(): UseNavigationResult {
       .flatMap((section) => section.items)
       .filter((item) => item.bottomNav)
       .slice(0, 4);
-    const apps: AppView[] = accessible.map(({ manifest, home }) => ({
+    // Money Book is listed in Apps wherever the person is (owner, 18 Nov 2026),
+    // so Business and Money Book are one tap apart; its menu still shows only
+    // on its own pages, above.
+    const listed = [
+      ...accessible,
+      ...APP_MANIFESTS.filter(
+        (m) => PERSONAL_APPS.has(m.code) && !accessible.some((a) => a.manifest.code === m.code)
+      ).map((manifest) => ({ manifest, home: manifest.navigation[0]?.href ?? '/' })),
+    ];
+    const apps: AppView[] = listed.map(({ manifest, home }) => ({
       code: manifest.code,
       labelId: manifest.labelId,
       shortLabelId: manifest.shortLabelId ?? manifest.labelId,

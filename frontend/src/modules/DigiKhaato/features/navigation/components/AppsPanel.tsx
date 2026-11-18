@@ -159,7 +159,13 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const openApp = (code: string): void => {
     setChosen(code);
     const places = placesOf(code);
-    if (PERSONAL_APPS.has(code) || places.length === 0) {
+    if (PERSONAL_APPS.has(code)) {
+      // The person's own book: no business to switch, just open it where they left it.
+      onLeave?.();
+      router.push(appPlace(active?.id ?? '', code, homeOf(code)));
+      return;
+    }
+    if (places.length === 0) {
       void openPlace(active?.id ?? '', code);
       return;
     }
