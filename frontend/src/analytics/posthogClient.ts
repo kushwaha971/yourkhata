@@ -57,6 +57,9 @@ export const loadPosthog = (): Promise<PostHog | null> => {
         // may be seen; the SDK's own would report a share link's token.
         capture_pageview: false,
         capture_pageleave: false,
+        // Owner, 18 Nov 2026: the survey opens only when somebody presses
+        // Give feedback (`FeedbackTab` shows it on request), never by itself.
+        disable_surveys_automatic_display: true,
         mask_all_text: true,
         mask_all_element_attributes: true,
         // Replays show the words on screen unless the build asks for them

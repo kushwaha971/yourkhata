@@ -10,11 +10,12 @@ import { NetworkStrip } from 'src/components/layout/NetworkStrip';
 import { ShellNotices } from 'src/components/layout/ShellNotices';
 import { UbAppTopBar } from 'src/components/layout/UbAppTopBar';
 import { UbSidebar } from 'src/components/layout/UbSidebar';
-import { UbBox, UbLink, UbLogo, UbStack, UbViewOnlyProvider } from 'src/design-system';
+import { UbActionLink, UbBox, UbLink, UbLogo, UbStack, UbViewOnlyProvider } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectImpersonation } from 'src/redux/slice/sessionSlice';
+import { selectActiveTenant, selectImpersonation } from 'src/redux/slice/sessionSlice';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
+import { ROUTES } from 'src/routes';
 
 import { useLandingPath } from 'modules/DigiKhaato/features/navigation/useLandingPath';
 import { useMobileNav } from 'modules/DigiKhaato/features/navigation/useMobileNav';
@@ -66,6 +67,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
   // The logo opens this workspace's first page — a library's, not the shop's.
   const landing = useLandingPath();
   const impersonating = useAppSelector(selectImpersonation) !== null;
+  const hasBusiness = useAppSelector(selectActiveTenant) !== null;
   const mobileNav = useMobileNav();
 
   return (
@@ -121,13 +123,22 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           ) : (
             <MobileBackButton upHref={mobileNav.upHref} />
           )}
-          <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
+          {hasBusiness ? (
+            <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
+          ) : (
+            // No business open (owner, 18 Nov 2026: sign-in lands on Money Book
+            // then): the way to start one, where the switcher would be.
+            <UbStack direction="row" className="min-w-0 flex-1">
+              <UbActionLink href={ROUTES.SWITCH_TENANT} variant="secondary" size="sm">
+                {t('tenant.switcher.add')}
+              </UbActionLink>
+            </UbStack>
+          )}
           {/* UAT D2 — below `lg` the top bar does not render, and it held the
               only party search. It is here as a 44 px icon, reusing the same
               component. The account (and Sign out) moved to the More tab with
               the mobile redesign, which also took the ☰ drawer's place. */}
           <MobileQuickSearch />
-          <FeedbackButton />
           {/* NTF-01 FR-4 — the bell sits beside search. */}
           <NotificationBell />
         </UbStack>
@@ -136,6 +147,11 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
         <UbAppTopBar />
 
         <NetworkStrip />
+
+        {/* Feedback on every signed-in screen, in PostHog's own tab shape on the
+            right edge (owner, 18 Nov 2026): the header that used to hold it is
+            hidden on forms and detail screens, so it went missing there. */}
+        <FeedbackButton floating />
 
         {/* PLT-14 / PLT-10 — the support-session and pending-deletion banners. */}
         <ShellNotices />

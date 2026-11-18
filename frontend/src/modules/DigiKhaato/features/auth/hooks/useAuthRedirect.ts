@@ -16,7 +16,7 @@ import { AUTH_CONFIG } from '../config';
 import { authResultConsumed, selectAuthResult } from '../redux/authSlice';
 import { fetchSession } from '../redux/sessionThunk';
 import { safeNextPath } from '../view-model/authDisplay';
-import { landingRoute } from '../view-model/landing';
+import { entryRoute, landingRoute } from '../view-model/landing';
 
 /**
  * Part 19 §19.1.1 layer 4 — the single place a successful authentication turns
@@ -122,17 +122,20 @@ export const useAuthRedirect = (): UseAuthRedirectResult => {
     // docs/platform/14 §4.1 — the server decided where this session goes. A
     // body without `landing` is a test fixture or a server older than this
     // client: the active business, or create one.
-    redirectTo(
+    const landing =
       result.landing ??
-        landingFromFacts({
-          mustChangePassword: result.mustChangePassword,
-          activeTenantId: result.activeTenantId,
-          tenantStatuses: result.tenants.map((t) => t.status),
-          isSuperAdmin: false,
-        })
-    );
+      landingFromFacts({
+        mustChangePassword: result.mustChangePassword,
+        activeTenantId: result.activeTenantId,
+        tenantStatuses: result.tenants.map((t) => t.status),
+        isSuperAdmin: false,
+      });
+    // Owner, 18 Nov 2026: the starred business, else Money Book.
+    const path = entryRoute(landing, result.tenants, nextPath);
+    if (heldBefore) replaceDocument(path);
+    else router.replace(path);
     dispatch(authResultConsumed());
-  }, [result, dispatch, redirectTo, heldBefore]);
+  }, [result, dispatch, router, nextPath, heldBefore]);
 
   return { redirectTo, nextPath };
 };

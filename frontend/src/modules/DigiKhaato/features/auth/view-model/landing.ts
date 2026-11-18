@@ -35,6 +35,34 @@ export const landingRoute = (landing: Landing, nextPath: string): string => {
   }
 };
 
+/**
+ * Where a person lands when they sign in or open the app (owner, 18 Nov 2026):
+ * the business they starred (★ on the Apps screen), and otherwise Money Book,
+ * their own book that needs no business. The server still opens a business in
+ * the session (`preferred_membership`), so every business screen works the
+ * moment they switch to it; this only decides the first page. A `?next=` the
+ * person was heading to, a password change, an operator and an invitation keep
+ * their own routes, because each is something specific they came to do.
+ */
+export const entryRoute = (
+  landing: Landing,
+  tenants: readonly { readonly isDefault?: boolean; readonly status?: string }[],
+  nextPath: string
+): string => {
+  const keeps =
+    landing.kind === 'set_password' ||
+    landing.kind === 'admin' ||
+    landing.kind === 'invitation' ||
+    nextPath !== AUTH_CONFIG.defaultPostLoginPath;
+  if (keeps) return landingRoute(landing, nextPath);
+  const starred = tenants.some((t) => t.isDefault && (t.status ?? 'active') === 'active');
+  return starred ? landingRoute(landing, nextPath) : ROUTES.KHATA;
+};
+
+/** Money Book belongs to the person, so a session with no business may open it. */
+export const isPersonalPath = (pathname: string): boolean =>
+  pathname === ROUTES.KHATA || pathname.startsWith(`${ROUTES.KHATA}/`);
+
 /** Kinds that leave no business to show: the guard must not render the app page. */
 export const isTenantless = (landing: Landing): boolean =>
   landing.kind === 'choose_business' ||

@@ -32,6 +32,7 @@ export function FeedbackButton({
       variant="primary"
       onClick={feedback}
       data-testid="feedback-button-floating"
+      data-print="hide"
       className={cn(
         // Vertical text, read bottom to top, without rotating the box: a 44 px
         // wide target whose height follows the words in any language. rotate-180

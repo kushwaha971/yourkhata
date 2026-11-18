@@ -4,13 +4,13 @@ import { useSearchParams } from 'next/navigation';
 
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { selectLanding, selectSessionStatus } from 'src/redux/slice/sessionSlice';
+import { selectLanding, selectSessionStatus, selectSessionTenants } from 'src/redux/slice/sessionSlice';
 
 import { AUTH_CONFIG } from '../config';
 import { selectAuthStatus, selectOtp } from '../redux/authSlice';
 import { fetchSession } from '../redux/sessionThunk';
 import { safeNextPath } from '../view-model/authDisplay';
-import { landingRoute } from '../view-model/landing';
+import { entryRoute } from '../view-model/landing';
 
 /**
  * QA B48 / B49 (12 Oct 2026) — `/login` and `/signup` opened while signed in drew
@@ -34,6 +34,7 @@ export const useSignedInGate = (): { readonly checking: boolean } => {
   const searchParams = useSearchParams();
   const status = useAppSelector(selectSessionStatus);
   const landing = useAppSelector(selectLanding);
+  const tenants = useAppSelector(selectSessionTenants);
   // The merchant has started signing in here: the gate's question is answered.
   const otp = useAppSelector(selectOtp);
   const authStatus = useAppSelector(selectAuthStatus);
@@ -58,8 +59,8 @@ export const useSignedInGate = (): { readonly checking: boolean } => {
     if (!goIn || left.current) return;
     left.current = true;
     const next = safeNextPath(searchParams.get('next'), AUTH_CONFIG.defaultPostLoginPath);
-    router.replace(landingRoute(landing, next));
-  }, [goIn, landing, router, searchParams]);
+    router.replace(entryRoute(landing, tenants, next));
+  }, [goIn, landing, tenants, router, searchParams]);
 
   return { checking: !started && (waiting || goIn) };
 };

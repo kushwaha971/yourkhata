@@ -10,7 +10,7 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { selectLanding, selectSessionStatus } from 'src/redux/slice/sessionSlice';
 import { ROUTES, loginPathWithNext } from 'src/routes';
 
-import { isTenantless, landingRoute } from '../view-model/landing';
+import { isPersonalPath, isTenantless, landingRoute } from '../view-model/landing';
 
 /**
  * Part 19 §19.7.3 — the real guard. `proxy.ts` does the cheap
@@ -69,6 +69,8 @@ export function RequireSession({
     mustChange ||
     (status === 'no_tenant' &&
       isTenantless(landing) &&
+      // Money Book needs no business (owner, 18 Nov 2026).
+      !isPersonalPath(pathname) &&
       !(isChooser && (landing.kind === 'choose_business' || landing.kind === 'invitation')));
 
   useEffect(() => {

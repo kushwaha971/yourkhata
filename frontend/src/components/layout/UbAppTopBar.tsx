@@ -1,7 +1,6 @@
 'use client';
 
 import { AccountMenu } from 'src/components/layout/AccountMenu';
-import { FeedbackButton } from 'src/components/layout/FeedbackButton';
 import { UbBox } from 'src/design-system';
 
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
@@ -42,7 +41,6 @@ export function UbAppTopBar(): React.JSX.Element {
         <UbBox />
       )}
       <UbBox className="flex items-center gap-2">
-        <FeedbackButton />
         <NotificationBell />
         <AccountMenu />
       </UbBox>
