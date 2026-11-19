@@ -8,7 +8,7 @@ Running a business means a hundred small questions every day.
 How do I remind a customer politely? How do I keep stock right? How do I close the day?
 
 We started a free WhatsApp community for YourKhata.
-Two short, practical tips a week. Only we post, so no noise, and members' numbers stay private.
+Two short, practical tips a week. Only we post, so no spam.
 
 Join here: https://chat.whatsapp.com/Gxq1X8BNLTy7PjB4IEMK9L
 
@@ -19,10 +19,9 @@ What's one thing about your daily accounts you wish was easier? Tell us in the c
 ## Facebook post (draft, awaiting owner's yes)
 Join YourKhata on WhatsApp 📲
 
-✅ Easy tips for your shop, 2 times a week
+✅ Easy tips for your business, 2 times a week
 ✅ Bills, stock and money to collect
 ✅ Only we post – no spam
-✅ Your number stays private
 
 Free. No charges.
 
