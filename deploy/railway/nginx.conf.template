@@ -16,8 +16,15 @@ http {
     limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
     limit_req_zone $binary_remote_addr zone=otp:10m rate=1r/s;
     limit_req_status 429;
+    # One public address: www answers with a permanent move to the bare
+    # domain, so search engines index a single copy of every page.
     server {
         listen ${PORT};
+        server_name www.yourkhata.com;
+        return 301 https://yourkhata.com$request_uri;
+    }
+    server {
+        listen ${PORT} default_server;
         server_name _;
         add_header X-Content-Type-Options nosniff always;
         add_header X-Frame-Options DENY always;
