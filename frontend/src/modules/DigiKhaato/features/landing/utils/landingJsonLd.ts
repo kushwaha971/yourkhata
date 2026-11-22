@@ -1,5 +1,6 @@
 import { PUBLIC_PHONE, PUBLIC_SOCIAL_PROFILES } from '../config/contact';
 import { faqAnswerKey, faqIds, faqQuestionKey } from '../config/faq';
+import { BRAND_ALTERNATE_NAMES, HOME_SEARCH_TERMS } from '../config/searchTerms';
 import { LANDING_DESCRIPTION, LOGO_IMAGE } from '../config/seo';
 import { SOLUTIONS } from '../config/solutions';
 
@@ -129,6 +130,7 @@ export const buildLandingJsonLd = ({
         '@type': 'Organization',
         '@id': organizationId,
         name: appName,
+        alternateName: [...BRAND_ALTERNATE_NAMES],
         url: home,
         telephone: PUBLIC_PHONE,
         sameAs: PUBLIC_SOCIAL_PROFILES,
@@ -143,6 +145,7 @@ export const buildLandingJsonLd = ({
         '@type': 'WebSite',
         '@id': `${home}#website`,
         name: appName,
+        alternateName: [...BRAND_ALTERNATE_NAMES],
         url: home,
         inLanguage: ['en', 'hi'],
         publisher: { '@id': organizationId },
@@ -153,6 +156,8 @@ export const buildLandingJsonLd = ({
         name: appName,
         url: home,
         description: LANDING_DESCRIPTION,
+        alternateName: [...BRAND_ALTERNATE_NAMES],
+        keywords: HOME_SEARCH_TERMS.join(', '),
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         inLanguage: ['en', 'hi'],

@@ -5,6 +5,11 @@ import en from 'locales/catalogues/landing.en.json';
 import { faqAnswerKey, faqIds, faqQuestionKey } from 'modules/DigiKhaato/features/landing/config/faq';
 import { ALL_MODULES_VISIBLE } from 'modules/DigiKhaato/features/landing/config/modules';
 import { SHOW_PRICING } from 'modules/DigiKhaato/features/landing/config/pricing';
+import {
+  BRAND_ALTERNATE_NAMES,
+  HOME_SEARCH_TERMS,
+  searchTermsFor,
+} from 'modules/DigiKhaato/features/landing/config/searchTerms';
 import { LANDING_DESCRIPTION, LANDING_TITLE } from 'modules/DigiKhaato/features/landing/config/seo';
 import { SOLUTIONS } from 'modules/DigiKhaato/features/landing/config/solutions';
 
@@ -20,7 +25,11 @@ const words = en as Record<string, string>;
 
 export function GET(): Response {
   const pages = SOLUTIONS.map(
-    (s) => `- [${s.name}](${absoluteUrl(`/solutions/${s.slug}`)}): ${s.summary ?? s.description}`
+    (s) => {
+      const terms = searchTermsFor(s.slug);
+      const also = terms.length ? ` Also searched as: ${terms.join(', ')}.` : '';
+      return `- [${s.name}](${absoluteUrl(`/solutions/${s.slug}`)}): ${s.summary ?? s.description}${also}`;
+    }
   );
   const faq = faqIds(SHOW_PRICING).flatMap((id) => {
     const q = words[faqQuestionKey(id)];
@@ -33,6 +42,10 @@ export function GET(): Response {
     `> ${LANDING_DESCRIPTION}`,
     '',
     `YourKhata is a business app for India: GST bills, stock, purchases, payments and who owes you, on a phone or a computer. Sign in with a mobile number and a code sent on WhatsApp. Home: ${absoluteUrl('/')}`,
+    '',
+    `Also written as: ${BRAND_ALTERNATE_NAMES.join(', ')}.`,
+    '',
+    `People find it by searching: ${HOME_SEARCH_TERMS.join(', ')}.`,
     '',
     '## Guides by business',
     '',

@@ -294,6 +294,102 @@ export const SOLUTIONS: readonly Solution[] = [
       },
     ],
   },
+  {
+    slug: 'money-book-udhaar',
+    name: 'Money Book: udhaar and len-den record',
+    title: 'Money Book — Udhaar Khata & Len-Den App | YourKhata',
+    description:
+      'Write down money you gave and got with each person, see who owes what, and open a WhatsApp reminder with the exact amount. Start free, on any phone.',
+    audience:
+      'Anyone who lends or borrows money with people they know: friends, family, the milkman, a neighbour. It is your own book, separate from any business.',
+    problem:
+      'Small amounts given and taken are remembered differently by each side. Without a written record, it is hard to say who owes what and since when.',
+    summary:
+      'YourKhata Money Book is a personal udhaar khata. For each person you write what you gave and what you got. YourKhata keeps the balance for each person, shows the total you will get and the total you will give, and opens a WhatsApp or SMS reminder with the exact amount for you to send. A wrong entry is removed with a reason and stays in the history. It opens first when you sign in with your mobile number, before you set up any business.',
+    features: [
+      'Add a person with a name and, if you like, a mobile number.',
+      'Write each amount as You gave or You got, with a date and a note.',
+      'See each person’s balance and the totals you will get and give.',
+      'Open a reminder in WhatsApp or SMS with the amount and your UPI ID; you press send.',
+      'Remove or replace a wrong entry with a reason; the original stays in the history.',
+      'A report of every person’s balance, and a list of old dues.',
+    ],
+    steps: [
+      'Sign in at yourkhata.com with your mobile number and the code sent on WhatsApp.',
+      'Money Book opens. Add a person.',
+      'Tap You gave or You got and enter the amount.',
+    ],
+    questions: [
+      {
+        question: 'Is Money Book free?',
+        answer: 'You can start free with only your mobile number. No card is needed.',
+      },
+      {
+        question: 'Does the other person get a message when I add an entry?',
+        answer:
+          'No. Nothing is sent by itself. A reminder opens in WhatsApp or SMS with the text ready, and you decide whether to send it.',
+      },
+      {
+        question: 'Is my Money Book mixed with my shop’s accounts?',
+        answer:
+          'No. Money Book is your personal book. A business you add later keeps its own customers and suppliers, and neither shows the other’s money.',
+      },
+      {
+        question: 'I wrote the wrong amount. Can I fix it?',
+        answer:
+          'Yes. Replace or remove the entry with a reason. The balance updates and the original stays in the history, so the record always makes sense.',
+      },
+    ],
+  },
+  {
+    slug: 'khata-app-alternatives',
+    name: 'Choosing a khata, billing or business app',
+    title: 'Khata & Billing App Alternatives for Indian Businesses | YourKhata',
+    description:
+      'Comparing khata, udhaar and GST billing apps? What YourKhata does, what it does not, and how to try it free with only a mobile number.',
+    audience:
+      'Shop owners, lenders, libraries and anyone comparing apps for udhaar, billing, stock or collections, or moving from paper or another app.',
+    problem:
+      'Many apps keep udhaar, others make GST bills, others track loans. Picking one means knowing exactly what each does for your kind of work.',
+    summary:
+      'YourKhata is a browser-based app for India with four apps under one mobile-number login: Money Book (personal udhaar), Business (GST bills, stock, purchases, customer and supplier dues), Library (members, seats, fees, books) and Ledger (loans and daily, weekly or monthly collections). Each app keeps its own money. It runs on any phone or computer with nothing to install, and bills carry your business name, not ours.',
+    features: [
+      'Udhaar and len-den: Money Book, your personal book.',
+      'GST bills, stock and purchases, with customer and supplier dues: Business.',
+      'Loans and daily collections on a route: Ledger.',
+      'Library members, seats, fees and books: Library.',
+      'Sign in with your mobile number and a WhatsApp code; no password.',
+      'Staff logins with roles, and your data downloadable any time.',
+    ],
+    steps: [
+      'Write down the three jobs you do most every day.',
+      'Open the guide for your kind of work on yourkhata.com/solutions and check each job against the real screens.',
+      'Sign in free and try those three jobs with your own figures before moving anything.',
+    ],
+    limitsTitle: 'What YourKhata does not do',
+    limits: [
+      'There is no app to install; it runs in the browser.',
+      'It does not send messages by itself; reminders open in WhatsApp for you to send.',
+      'It does not file GST returns; it prepares the summary for your accountant.',
+      'It does not provide loans or credit.',
+    ],
+    questions: [
+      {
+        question: 'Can I use YourKhata instead of my current khata or billing app?',
+        answer:
+          'If the jobs you need are listed above, yes. Try them free first. Customer, supplier and loan lists can be imported from a file.',
+      },
+      {
+        question: 'Which app is best for my business?',
+        answer:
+          'The one that does your daily jobs in the fewest steps. Open the guide for your kind of work, look at the real screens, and try the same three jobs in each app you are comparing.',
+      },
+      {
+        question: 'Is YourKhata free?',
+        answer: 'You can start free with only a mobile number. No card is needed.',
+      },
+    ],
+  },
   ...SHOP_KIND_SOLUTIONS,
 ];
 export const solutionBySlug = (slug: string): Solution | undefined =>

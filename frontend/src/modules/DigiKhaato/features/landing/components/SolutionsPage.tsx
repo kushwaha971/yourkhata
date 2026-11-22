@@ -17,6 +17,7 @@ import { cn } from 'src/utils/cn';
 import { absoluteUrl } from 'src/utils/seo';
 
 import { LANDING_CONTAINER, LANDING_SCALE } from '../config/layout';
+import { searchTermsFor } from '../config/searchTerms';
 import { SOLUTIONS, solutionBySlug, type Solution, type SolutionGuide } from '../config/solutions';
 
 import { BusinessSection } from './BusinessSection';
@@ -413,6 +414,15 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
           ))}
         </UbStack>
       </UbStack>
+
+      {searchTermsFor(solution.slug).length ? (
+        <UbStack as="section" gap={2} data-testid="solution-search-terms">
+          <UbText variant="body-sm-medium" tone="secondary">
+            Also searched as
+          </UbText>
+          <UbText tone="secondary">{searchTermsFor(solution.slug).join(' · ')}</UbText>
+        </UbStack>
+      ) : null}
     </>
   );
 }
@@ -455,6 +465,9 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
           'Explore YourKhata modules for billing, inventory, libraries and lending records.',
         isPartOf: { '@id': `${absoluteUrl('/')}#website` },
         inLanguage: 'en-IN',
+        ...(solution && searchTermsFor(solution.slug).length
+          ? { keywords: searchTermsFor(solution.slug).join(', ') }
+          : {}),
       },
       {
         '@type': 'BreadcrumbList',
