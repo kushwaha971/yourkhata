@@ -39,7 +39,10 @@ const SiteDrawer = dynamic(() => import('./SiteDrawer').then((m) => m.SiteDrawer
 export function ContractorSitesPanel({
   party,
   onPaid,
-}: Readonly<{ party: { readonly id: string; readonly name: string }; onPaid?: () => void }>): React.JSX.Element | null {
+}: Readonly<{
+  party: { readonly id: string; readonly name: string };
+  onPaid?: () => void;
+}>): React.JSX.Element | null {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { can } = usePermissions();
@@ -70,7 +73,13 @@ export function ContractorSitesPanel({
     setBusy(true);
     try {
       await paySites({ mode, splits }, key.current.value);
-      dispatch(showSnackbar({ severity: 'success', id: 'sales.site.paidSaved', params: { amount: formatInr(total) } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'sales.site.paidSaved',
+          params: { amount: formatInr(total) },
+        })
+      );
       setAmounts({});
       key.current = null;
       setAttempt((n) => n + 1);
@@ -86,15 +95,27 @@ export function ContractorSitesPanel({
   return (
     <UbCard className="mt-4">
       <UbStack gap={3} data-testid="contractor-sites">
-        <UbText variant="body-sm" className="font-semibold">{t('sales.site.title')}</UbText>
-        {list.sites.length === 0 && <UbText variant="body-sm" tone="secondary">{t('sales.site.noneYet')}</UbText>}
+        <UbText variant="body-sm" className="font-semibold">
+          {t('sales.site.title')}
+        </UbText>
+        {list.sites.length === 0 && (
+          <UbText variant="body-sm" tone="secondary">
+            {t('sales.site.noneYet')}
+          </UbText>
+        )}
         {list.sites.map((site) => (
           <UbStack key={site.id} gap={1}>
             <UbStack direction="row" gap={2} className="items-center justify-between">
-              <UbActionLink href={`${ROUTES.SALES_SITES}/${site.id}`} variant="ghost" className="h-auto min-w-0 justify-start whitespace-normal p-0 text-left">
+              <UbActionLink
+                href={`${ROUTES.SALES_SITES}/${site.id}`}
+                variant="ghost"
+                className="h-auto min-w-0 justify-start whitespace-normal p-0 text-left"
+              >
                 {site.name}
               </UbActionLink>
-              <UbText variant="body-sm" className="shrink-0 font-semibold">{formatInr(site.due)}</UbText>
+              <UbText variant="body-sm" className="shrink-0 font-semibold">
+                {formatInr(site.due)}
+              </UbText>
             </UbStack>
             {Number(site.due) > 0 && can('payments.payment.write') && (
               <UbMoneyInput
@@ -123,7 +144,11 @@ export function ContractorSitesPanel({
           </>
         )}
         {can('sales.invoice.write') && (
-          <UbButton variant="secondary" onClick={() => setAdding(true)} data-testid="contractor-site-new">
+          <UbButton
+            variant="secondary"
+            onClick={() => setAdding(true)}
+            data-testid="contractor-site-new"
+          >
             {t('sales.site.new')}
           </UbButton>
         )}

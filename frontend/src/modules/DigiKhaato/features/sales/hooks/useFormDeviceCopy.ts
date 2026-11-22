@@ -4,7 +4,6 @@ import { readLocal, removeLocal, writeLocal } from 'src/utils/storage';
 
 import type { FieldValues, UseFormReturn } from 'react-hook-form';
 
-
 /**
  * P0 §5 — a half-typed form survives a reload: each change is written to the
  * device at once and offered back when the form opens again. Saving or closing

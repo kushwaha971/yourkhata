@@ -38,15 +38,27 @@ def test_purchases_fill_batches_and_a_sale_takes_the_earliest_first(
                     dolo,
                     qty,
                     "24.00",
-                    batches=[{"batch_no": number, "expiry": (today + dt.timedelta(days=days)).isoformat(), "mrp": "32"}],
+                    batches=[
+                        {
+                            "batch_no": number,
+                            "expiry": (today + dt.timedelta(days=days)).isoformat(),
+                            "mrp": "32",
+                        }
+                    ],
                 )
             ],
         )
     assert {b.batch_no: b.qty for b in Batch.objects.all()} == {
-        "OLD1": Decimal("4.000"), "NEAR": Decimal("10.000"), "LATE": Decimal("30.000")
+        "OLD1": Decimal("4.000"),
+        "NEAR": Decimal("10.000"),
+        "LATE": Decimal("30.000"),
     }
     party = PartyFactory(tenant=shop, name="Ramesh", state_code="27")
-    made = sale_draft(owner, party_id=str(party.id), lines=[{"item_id": str(dolo.id), "qty": "12", "unit_price": "32"}]).json()["data"]
+    made = sale_draft(
+        owner,
+        party_id=str(party.id),
+        lines=[{"item_id": str(dolo.id), "qty": "12", "unit_price": "32"}],
+    ).json()["data"]
     issued = sale_issue(owner, made["id"], version=made["version"])
     assert issued.status_code == 200, issued.json()
     taken = issued.json()["data"]["lines"][0]["batches"]
@@ -59,11 +71,15 @@ def test_purchases_fill_batches_and_a_sale_takes_the_earliest_first(
     assert [(r["batch_no"], r["qty"]) for r in expired] == [("OLD1", "4.000")]
 
 
-def test_a_batch_purchase_needs_its_number_and_expiry(owner: Any, make_item: Any, make_supplier: Any) -> None:
+def test_a_batch_purchase_needs_its_number_and_expiry(
+    owner: Any, make_item: Any, make_supplier: Any
+) -> None:
     from apps.purchases.tests.conftest import draft, record
 
     dolo = make_item("Dolo 650", "24.00", "GST0", tracking="batch")
-    made = draft(owner, party_id=str(make_supplier().id), lines=[line(dolo, "5", "24.00")]).json()["data"]
+    made = draft(owner, party_id=str(make_supplier().id), lines=[line(dolo, "5", "24.00")]).json()[
+        "data"
+    ]
     refused = record(owner, made["id"], version=made["version"])
     assert refused.status_code == 400
     assert {"lines.0.batch_no", "lines.0.expiry"} <= set(refused.json()["error"]["details"])
@@ -81,7 +97,16 @@ def test_an_expiring_batch_names_the_bill_it_came_in_on(
     bill = recorded_bill(
         owner,
         party_id=str(make_supplier().id),
-        lines=[line(dolo, "6", "24.00", batches=[{"batch_no": "DL1", "expiry": (today + dt.timedelta(days=10)).isoformat()}])],
+        lines=[
+            line(
+                dolo,
+                "6",
+                "24.00",
+                batches=[
+                    {"batch_no": "DL1", "expiry": (today + dt.timedelta(days=10)).isoformat()}
+                ],
+            )
+        ],
     )
     row = owner.get(reverse("v1:stock-expiry") + "?within=30").json()["data"][0]
     assert row["batch_no"] == "DL1" and row["purchase_id"] == bill["id"]

@@ -38,7 +38,12 @@ import { formatInr } from 'src/utils/money';
 
 import { inventoryGridLabels } from 'modules/DigiKhaato/features/inventory/view-model/gridLabels';
 
-import { listSchemes, setSchemeActive, type SchemeList, type SchemeRow } from '../api/schemeService';
+import {
+  listSchemes,
+  setSchemeActive,
+  type SchemeList,
+  type SchemeRow,
+} from '../api/schemeService';
 
 import { schemeRuleText } from './SchemeFreeLines';
 
@@ -68,24 +73,87 @@ const ruleWithItem = (s: SchemeRow, t: TranslateFn): string =>
 const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<SchemeRow>[] => {
   if (tier === 'cards')
     return [
-      { id: 'code', header: t('sales.scheme.col.scheme'), priority: 1, cardSlot: 'title', cell: (s) => `${s.code} · ${s.company}` },
+      {
+        id: 'code',
+        header: t('sales.scheme.col.scheme'),
+        priority: 1,
+        cardSlot: 'title',
+        cell: (s) => `${s.code} · ${s.company}`,
+      },
       {
         id: 'meta',
         header: t('sales.scheme.col.rule'),
         priority: 1,
         cardSlot: 'meta',
-        cell: (s) => `${ruleWithItem(s, t)} · ${t('sales.scheme.till', { date: formatBusinessDate(s.valid_till) })} · ${given(s, t)}`,
+        cell: (s) =>
+          `${ruleWithItem(s, t)} · ${t('sales.scheme.till', { date: formatBusinessDate(s.valid_till) })} · ${given(s, t)}`,
       },
-      { id: 'claim', header: t('sales.scheme.col.claim'), priority: 1, cardSlot: 'trailing', cell: (s) => t('sales.scheme.toClaim', { amount: formatInr(s.claim) }) },
+      {
+        id: 'claim',
+        header: t('sales.scheme.col.claim'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: (s) => t('sales.scheme.toClaim', { amount: formatInr(s.claim) }),
+      },
     ];
   return [
-    { id: 'code', header: t('sales.scheme.col.scheme'), priority: 1, cardSlot: 'none', widthShare: 11, cell: (s) => s.code },
-    { id: 'company', header: t('sales.scheme.col.company'), priority: 1, cardSlot: 'none', widthShare: 15, cell: (s) => s.company },
-    { id: 'rule', header: t('sales.scheme.col.rule'), priority: 1, cardSlot: 'none', widthShare: 21, cell: (s) => ruleWithItem(s, t) },
-    { id: 'till', header: t('sales.scheme.col.till'), priority: 2, cardSlot: 'none', widthShare: 11, cell: (s) => formatBusinessDate(s.valid_till) },
-    { id: 'status', header: t('sales.scheme.col.status'), priority: 2, cardSlot: 'none', widthShare: 10, cell: (s) => statusBadge(s, t) },
-    { id: 'given', header: t('sales.scheme.col.given'), priority: 2, cardSlot: 'none', widthShare: 13, cell: (s) => given(s, t) },
-    { id: 'claim', header: t('sales.scheme.col.claim'), priority: 1, cardSlot: 'none', align: 'end', widthShare: 19, cell: (s) => t('sales.scheme.toClaim', { amount: formatInr(s.claim) }) },
+    {
+      id: 'code',
+      header: t('sales.scheme.col.scheme'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 11,
+      cell: (s) => s.code,
+    },
+    {
+      id: 'company',
+      header: t('sales.scheme.col.company'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 15,
+      cell: (s) => s.company,
+    },
+    {
+      id: 'rule',
+      header: t('sales.scheme.col.rule'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 21,
+      cell: (s) => ruleWithItem(s, t),
+    },
+    {
+      id: 'till',
+      header: t('sales.scheme.col.till'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 11,
+      cell: (s) => formatBusinessDate(s.valid_till),
+    },
+    {
+      id: 'status',
+      header: t('sales.scheme.col.status'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 10,
+      cell: (s) => statusBadge(s, t),
+    },
+    {
+      id: 'given',
+      header: t('sales.scheme.col.given'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 13,
+      cell: (s) => given(s, t),
+    },
+    {
+      id: 'claim',
+      header: t('sales.scheme.col.claim'),
+      priority: 1,
+      cardSlot: 'none',
+      align: 'end',
+      widthShare: 19,
+      cell: (s) => t('sales.scheme.toClaim', { amount: formatInr(s.claim) }),
+    },
   ];
 };
 
@@ -121,7 +189,9 @@ export function SchemesPageContent(): React.JSX.Element {
   }, [q, attempt]);
 
   const columns = useMemo(() => createColumns(t, tier), [t, tier]);
-  const rows = (list?.schemes ?? []).filter((s) => show === 'all' || s.status === 'running' || s.status === 'waiting');
+  const rows = (list?.schemes ?? []).filter(
+    (s) => show === 'all' || s.status === 'running' || s.status === 'waiting'
+  );
   const gridState: UbGridState = failed
     ? 'error'
     : !list
@@ -133,7 +203,12 @@ export function SchemesPageContent(): React.JSX.Element {
         : 'rows';
   const tools = (
     <UbStack direction="row" gap={2} className="flex-wrap items-center">
-      <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.scheme.search')} aria-label={t('sales.scheme.search')} />
+      <UbSearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder={t('sales.scheme.search')}
+        aria-label={t('sales.scheme.search')}
+      />
       <UbChoiceChips<Show>
         value={show}
         onChange={setShow}
@@ -146,7 +221,12 @@ export function SchemesPageContent(): React.JSX.Element {
     </UbStack>
   );
   const newButton = canWrite && (
-    <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} iconOnly="mobile" onClick={() => setAdding(true)} data-testid="scheme-new">
+    <UbButton
+      icon={<Plus className="h-4 w-4" aria-hidden />}
+      iconOnly="mobile"
+      onClick={() => setAdding(true)}
+      data-testid="scheme-new"
+    >
       {t('sales.scheme.new')}
     </UbButton>
   );
@@ -175,7 +255,11 @@ export function SchemesPageContent(): React.JSX.Element {
               closeLabel: t('common.action.close'),
               primaryPlacement: 'header',
               primary: canWrite
-                ? { label: t('sales.scheme.new'), icon: <Plus className="h-6 w-6" aria-hidden />, onClick: () => setAdding(true) }
+                ? {
+                    label: t('sales.scheme.new'),
+                    icon: <Plus className="h-6 w-6" aria-hidden />,
+                    onClick: () => setAdding(true),
+                  }
                 : undefined,
             }}
           />
@@ -203,7 +287,11 @@ export function SchemesPageContent(): React.JSX.Element {
             selectRow: 'sales.scheme.title',
           })}
           emptyStates={{
-            firstUse: { title: t('sales.scheme.empty.title'), description: t('sales.scheme.empty.body'), action: newButton || undefined },
+            firstUse: {
+              title: t('sales.scheme.empty.title'),
+              description: t('sales.scheme.empty.body'),
+              action: newButton || undefined,
+            },
             filtered: { title: t('sales.scheme.noMatch'), description: '' },
             error: {
               title: t('sales.scheme.error'),
@@ -225,35 +313,67 @@ export function SchemesPageContent(): React.JSX.Element {
           onRowOpen={(s) => setOpen(s)}
         />
         <UbCard>
-          <UbText variant="body-sm" tone="secondary">{t('sales.scheme.note')}</UbText>
+          <UbText variant="body-sm" tone="secondary">
+            {t('sales.scheme.note')}
+          </UbText>
         </UbCard>
       </UbStack>
       {claims && list && (
-        <UbDialog open onOpenChange={(next) => !next && setClaims(false)} title={t('sales.scheme.claimsTitle')} closeLabel={t('common.action.close')}>
+        <UbDialog
+          open
+          onOpenChange={(next) => !next && setClaims(false)}
+          title={t('sales.scheme.claimsTitle')}
+          closeLabel={t('common.action.close')}
+        >
           <UbStack gap={3} data-testid="scheme-claims-list">
-            {list.claims.length === 0 && <UbText tone="secondary">{t('sales.scheme.noClaims')}</UbText>}
+            {list.claims.length === 0 && (
+              <UbText tone="secondary">{t('sales.scheme.noClaims')}</UbText>
+            )}
             {list.claims.map((row) => (
-              <UbStack key={row.company} direction="row" gap={2} className="items-center justify-between">
-                <UbText variant="body-sm" className="font-semibold">{row.company}</UbText>
-                <UbText variant="body-sm" className="font-semibold">{formatInr(row.claim)}</UbText>
+              <UbStack
+                key={row.company}
+                direction="row"
+                gap={2}
+                className="items-center justify-between"
+              >
+                <UbText variant="body-sm" className="font-semibold">
+                  {row.company}
+                </UbText>
+                <UbText variant="body-sm" className="font-semibold">
+                  {formatInr(row.claim)}
+                </UbText>
               </UbStack>
             ))}
-            <UbText variant="caption" tone="secondary">{t('sales.scheme.claimsNote')}</UbText>
+            <UbText variant="caption" tone="secondary">
+              {t('sales.scheme.claimsNote')}
+            </UbText>
           </UbStack>
         </UbDialog>
       )}
       {open && (
-        <UbDialog open onOpenChange={(next) => !next && setOpen(null)} title={`${open.code} · ${open.company}`} closeLabel={t('common.action.close')}>
+        <UbDialog
+          open
+          onOpenChange={(next) => !next && setOpen(null)}
+          title={`${open.code} · ${open.company}`}
+          closeLabel={t('common.action.close')}
+        >
           <UbStack gap={3} data-testid="scheme-sheet">
             <UbText variant="body-sm">{ruleWithItem(open, t)}</UbText>
             <UbText variant="body-sm" tone="secondary">
-              {t('sales.scheme.fromTill', { from: formatBusinessDate(open.valid_from), till: formatBusinessDate(open.valid_till) })}
+              {t('sales.scheme.fromTill', {
+                from: formatBusinessDate(open.valid_from),
+                till: formatBusinessDate(open.valid_till),
+              })}
             </UbText>
             <UbText variant="body-sm" tone="secondary">
               {given(open, t)} · {t('sales.scheme.toClaim', { amount: formatInr(open.claim) })}
             </UbText>
             {canWrite && (
-              <UbButton variant="secondary" onClick={() => void toggle(open)} data-testid="scheme-toggle">
+              <UbButton
+                variant="secondary"
+                onClick={() => void toggle(open)}
+                data-testid="scheme-toggle"
+              >
                 {open.active ? t('sales.scheme.stop') : t('sales.scheme.restart')}
               </UbButton>
             )}
@@ -265,7 +385,13 @@ export function SchemesPageContent(): React.JSX.Element {
           onClose={() => setAdding(false)}
           onSaved={(scheme) => {
             setAdding(false);
-            dispatch(showSnackbar({ severity: 'success', id: 'sales.scheme.saved', params: { code: scheme.code } }));
+            dispatch(
+              showSnackbar({
+                severity: 'success',
+                id: 'sales.scheme.saved',
+                params: { code: scheme.code },
+              })
+            );
             setAttempt((n) => n + 1);
           }}
         />

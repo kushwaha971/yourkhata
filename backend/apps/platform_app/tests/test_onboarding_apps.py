@@ -69,7 +69,9 @@ def test_a_new_business_is_offered_every_released_app(
     assert response.status_code == 200
     codes = [app["code"] for app in response.json()["data"]]
     assert {"shop", "library", "lending"} <= set(codes)
-    assert all(app["label_id"] and app["home_path"].startswith("/") for app in response.json()["data"])
+    assert all(
+        app["label_id"] and app["home_path"].startswith("/") for app in response.json()["data"]
+    )
 
 
 def test_an_unreleased_app_is_never_offered_at_sign_up(
@@ -129,7 +131,9 @@ def test_several_apps_can_be_chosen_together(
     api_as: Any, tenant: Any, onboarding_ready: Any
 ) -> None:
     client, _member = api_as(tenant)
-    created = _tenant_of(_create(client, apps=["shop", "library", "lending"], business_type="retail"))
+    created = _tenant_of(
+        _create(client, apps=["shop", "library", "lending"], business_type="retail")
+    )
     assert _running(created) == {"shop", "library", "lending"}
 
 
@@ -230,7 +234,9 @@ def test_choosing_apps_is_audited_like_adding_one_later(
     assert AuditLog.objects.filter(tenant=created).count() >= 2
 
 
-def test_the_tenant_says_which_apps_it_runs(api_as: Any, tenant: Any, onboarding_ready: Any) -> None:
+def test_the_tenant_says_which_apps_it_runs(
+    api_as: Any, tenant: Any, onboarding_ready: Any
+) -> None:
     """The wizard restores its step-1 choice from this after a reload."""
     client, _member = api_as(tenant)
     response = _create(client, apps=["library", "lending"])
@@ -263,10 +269,11 @@ def test_staff_cannot_change_what_the_business_runs(
     api_as: Any, tenant: Any, onboarding_ready: Any
 ) -> None:
     """Permission scenario: the choice is the owner's, at sign-up as later."""
+    from rest_framework.test import APIClient
+
     from apps.platform_app.models import Role
     from tests.factories.platform import MembershipFactory, UserFactory
     from tests.fixtures import build_access_token
-    from rest_framework.test import APIClient
 
     client, _member = api_as(tenant)
     created = _tenant_of(_create(client, apps=["library"]))
@@ -310,9 +317,7 @@ def test_wholesale_of_what_is_saved_with_the_business(
     assert row.value == {"value": False}
 
 
-def test_extra_types_is_no_longer_accepted(
-    api_as: Any, tenant: Any, onboarding_ready: Any
-) -> None:
+def test_extra_types_is_no_longer_accepted(api_as: Any, tenant: Any, onboarding_ready: Any) -> None:
     """R-DEC-64 withdrew "+ I also sell…": the key is ignored, nothing is stored."""
     from apps.platform_app.models import TenantSetting
 

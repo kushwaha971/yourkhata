@@ -97,7 +97,13 @@ describe('columnWidths — the table always fills itself', () => {
 
   it('normalises whatever set is being painted to a full 100%', () => {
     // The party list's weights. All five, then the three `compact` keeps.
-    const all = [col('name', 34), col('balance', 20), col('activity', 16), col('contact', 18), col('status', 12)];
+    const all = [
+      col('name', 34),
+      col('balance', 20),
+      col('activity', 16),
+      col('contact', 18),
+      col('status', 12),
+    ];
     const sum = (columns: ReturnType<typeof col>[]) =>
       columnWidths(columns).reduce((total, width) => total + Number.parseFloat(width), 0);
 

@@ -179,7 +179,11 @@ class Item(TenantModel, SoftDeleteModel):
     rack = models.CharField(max_length=16, null=True, blank=True)
     #: D P2 — the garment this size × colour belongs to, and which one it is.
     product = models.ForeignKey(
-        "inventory.Product", on_delete=models.RESTRICT, null=True, blank=True, related_name="variants"
+        "inventory.Product",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="variants",
     )
     attributes = models.JSONField(default=dict, blank=True)
     #: D P3 — "serial": every piece has its own IMEI / serial, entered when it
@@ -784,7 +788,9 @@ class OldGold(TenantModel):
         db_table = "inventory_old_gold"
         verbose_name = "old gold"
         verbose_name_plural = "old gold"
-        constraints = [models.UniqueConstraint(fields=["tenant", "document_id"], name="uq_old_gold_document")]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "document_id"], name="uq_old_gold_document")
+        ]
 
 
 class ShortBookEntry(TenantModel):

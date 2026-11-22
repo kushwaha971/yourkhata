@@ -37,7 +37,12 @@ TransferPermissions = HasPermission(
 
 
 def location_dict(place: Location) -> dict:
-    return {"id": str(place.id), "name": place.name, "code": place.code, "is_default": place.is_default}
+    return {
+        "id": str(place.id),
+        "name": place.name,
+        "code": place.code,
+        "is_default": place.is_default,
+    }
 
 
 class LocationViewSet(_InventoryView, viewsets.ViewSet):
@@ -64,7 +69,10 @@ class StockTransferViewSet(_InventoryView, viewsets.ViewSet):
         tenant = self.get_tenant()
         ids = [request.query_params.get("from"), request.query_params.get("to")]
         try:
-            places = {str(p.id): p for p in Location.objects.filter(tenant=tenant, pk__in=[i for i in ids if i])}
+            places = {
+                str(p.id): p
+                for p in Location.objects.filter(tenant=tenant, pk__in=[i for i in ids if i])
+            }
         except (ValueError, TypeError):
             places = {}
         if not all(i in places for i in ids):
@@ -72,7 +80,9 @@ class StockTransferViewSet(_InventoryView, viewsets.ViewSet):
 
         def held(location_id: str) -> Subquery:
             return Subquery(
-                ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values("on_hand")[:1]
+                ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values(
+                    "on_hand"
+                )[:1]
             )
 
         qs = Item.objects.filter(

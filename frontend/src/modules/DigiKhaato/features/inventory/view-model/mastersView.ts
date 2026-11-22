@@ -1,4 +1,3 @@
-
 import type { Category, Unit } from '../types/item.types';
 
 /**
@@ -78,4 +77,3 @@ export const unitSeed = (query: string): { readonly code: string; readonly name:
     ? { code: text.toUpperCase(), name: '' }
     : { code: '', name: text };
 };
-

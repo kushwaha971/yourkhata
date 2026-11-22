@@ -59,20 +59,52 @@ export const ShopPartySummary = memo(function ShopPartySummary({
     const tpl = (id: string) =>
       t(id, { amount: '{amount}', n: '{n}', total: '{total}', count: total, all: all ?? 0 });
     const list: UbCountLineItem[] = [
-      { id: 'primary', template: tpl(`parties.list.countLine.${side}.primary`), values: { amount: primary }, className: 'max-lg:hidden' },
-      { id: 'primaryPhone', template: tpl(`parties.list.countLine.${side}.primaryPhone`), values: { amount: primary }, className: 'lg:hidden' },
-      { id: 'secondary', template: tpl(`parties.list.countLine.${side}.secondary`), values: { amount: secondary }, className: 'max-lg:hidden' },
-      { id: 'showing', template: tpl(`parties.list.countLine.${side}.${count}`), values: { n, total: of }, className: 'max-lg:hidden' },
-      { id: 'showingPhone', template: tpl(all === undefined ? `parties.list.countLine.${side}.count` : 'parties.list.countLine.showingPhone'), values: { n, total: of }, className: 'lg:hidden' },
+      {
+        id: 'primary',
+        template: tpl(`parties.list.countLine.${side}.primary`),
+        values: { amount: primary },
+        className: 'max-lg:hidden',
+      },
+      {
+        id: 'primaryPhone',
+        template: tpl(`parties.list.countLine.${side}.primaryPhone`),
+        values: { amount: primary },
+        className: 'lg:hidden',
+      },
+      {
+        id: 'secondary',
+        template: tpl(`parties.list.countLine.${side}.secondary`),
+        values: { amount: secondary },
+        className: 'max-lg:hidden',
+      },
+      {
+        id: 'showing',
+        template: tpl(`parties.list.countLine.${side}.${count}`),
+        values: { n, total: of },
+        className: 'max-lg:hidden',
+      },
+      {
+        id: 'showingPhone',
+        template: tpl(
+          all === undefined
+            ? `parties.list.countLine.${side}.count`
+            : 'parties.list.countLine.showingPhone'
+        ),
+        values: { n, total: of },
+        className: 'lg:hidden',
+      },
     ];
     // Not in the design, and kept on purpose: a total that is only THIS page's
     // sum must say so, or it is a claim about the whole book that is false.
     if (scope === 'page')
       list.push({
         id: 'scope',
-        template: t(supplier ? 'parties.list.supplier.pageScope' : 'parties.list.totals.scope.page', {
-          count: rowCount,
-        }),
+        template: t(
+          supplier ? 'parties.list.supplier.pageScope' : 'parties.list.totals.scope.page',
+          {
+            count: rowCount,
+          }
+        ),
       });
     return list;
   }, [t, supplier, total, all, totals.payable, totals.receivable, scope, rowCount]);

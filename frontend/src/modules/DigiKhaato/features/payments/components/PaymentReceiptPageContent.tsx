@@ -57,14 +57,12 @@ const VoidDialogLazy = dynamic(
 );
 const PaymentFormDrawerLazy = dynamic(
   () => import('./PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 /* A4a — Apply to bills loads with the tap, like the cancel dialog. */
 const ApplyAdvanceDialogLazy = dynamic(
   () => import('./ApplyAdvanceDialog').then((m) => m.ApplyAdvanceDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

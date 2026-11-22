@@ -115,10 +115,31 @@ def test_one_shop_opening_per_side_and_the_udhaar_one_is_separate(tenant: Any, a
     )
     party_id = response.json()["data"]["id"]
     ctx = Ctx(tenant=tenant, actor=member.user)
-    post_opening_balance(ctx=ctx, party_id=party_id, amount="200.00", direction="debit", as_of="2026-10-28", bucket="shop")
-    post_opening_balance(ctx=ctx, party_id=party_id, amount="300.00", direction="credit", as_of="2026-10-28", bucket="shop")
+    post_opening_balance(
+        ctx=ctx,
+        party_id=party_id,
+        amount="200.00",
+        direction="debit",
+        as_of="2026-10-28",
+        bucket="shop",
+    )
+    post_opening_balance(
+        ctx=ctx,
+        party_id=party_id,
+        amount="300.00",
+        direction="credit",
+        as_of="2026-10-28",
+        bucket="shop",
+    )
     with pytest.raises(BusinessRuleViolation) as refused:
-        post_opening_balance(ctx=ctx, party_id=party_id, amount="5.00", direction="debit", as_of="2026-10-28", bucket="shop")
+        post_opening_balance(
+            ctx=ctx,
+            party_id=party_id,
+            amount="5.00",
+            direction="debit",
+            as_of="2026-10-28",
+            bucket="shop",
+        )
     assert refused.value.code == "opening_balance_exists"
 
     party = Party.objects.get(id=party_id)
@@ -142,7 +163,9 @@ def test_undoing_a_shop_opening_stays_in_the_shop(tenant: Any, api_as: Any) -> N
     entry = LedgerEntry.objects.get(party_id=party_id, entry_type=EntryType.OPENING)
 
     response = client.post(
-        f"{reverse(ENTRY, args=[entry.id])}/reverse", {"reason": "Typed the wrong amount"}, format="json"
+        f"{reverse(ENTRY, args=[entry.id])}/reverse",
+        {"reason": "Typed the wrong amount"},
+        format="json",
     )
     assert response.status_code in (200, 201), response.json()
 

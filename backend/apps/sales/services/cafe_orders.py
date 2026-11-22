@@ -24,7 +24,8 @@ from apps.common.context import Ctx
 from apps.common.dates import tenant_timezone, tenant_today
 from apps.common.exceptions import BusinessRuleViolation, NotFound, ValidationFailed
 from apps.sales.models import CafeOrder
-from apps.sales.services.order_lines import clean_lines as _clean_lines, dec as _dec
+from apps.sales.services.order_lines import clean_lines as _clean_lines
+from apps.sales.services.order_lines import dec as _dec
 
 MONEY_MODES = ("cash", "upi", "bank", "cheque", "card")
 KINDS = (CafeOrder.TOKEN, CafeOrder.TABLE, CafeOrder.ADVANCE)
@@ -71,7 +72,9 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
     party = None
     if data.get("party_id"):
         try:
-            party = Party.objects.filter(tenant=ctx.tenant, pk=data["party_id"], deleted_at__isnull=True).first()
+            party = Party.objects.filter(
+                tenant=ctx.tenant, pk=data["party_id"], deleted_at__isnull=True
+            ).first()
         except (ValueError, TypeError, ValidationError):
             party = None
         if party is None:
@@ -138,15 +141,24 @@ def _next_number(ctx: Ctx, kind: str, table: str) -> str:
     if kind == CafeOrder.TABLE:
         return table
     if kind == CafeOrder.ADVANCE:
-        last = CafeOrder.objects.filter(tenant=ctx.tenant, kind=CafeOrder.ADVANCE).order_by("-number").first()
+        last = (
+            CafeOrder.objects.filter(tenant=ctx.tenant, kind=CafeOrder.ADVANCE)
+            .order_by("-number")
+            .first()
+        )
         return f"ADV-{(int(last.number.split('-')[1]) + 1) if last else 1:04d}"
     from django.utils import timezone
 
     today = tenant_today(ctx.tenant)
     tokens = [
         int(o.number)
-        for o in CafeOrder.objects.filter(tenant=ctx.tenant, kind=CafeOrder.TOKEN, created_at__gte=timezone.now() - dt.timedelta(days=2))
-        if o.created_at.astimezone(tenant_timezone(ctx.tenant)).date() == today and o.number.isdigit()
+        for o in CafeOrder.objects.filter(
+            tenant=ctx.tenant,
+            kind=CafeOrder.TOKEN,
+            created_at__gte=timezone.now() - dt.timedelta(days=2),
+        )
+        if o.created_at.astimezone(tenant_timezone(ctx.tenant)).date() == today
+        and o.number.isdigit()
     ]
     return str(max(tokens, default=0) + 1)
 
@@ -164,10 +176,16 @@ def create_order(*, ctx: Ctx, data: dict) -> tuple[CafeOrder, bool]:
     same = CafeOrder.objects.filter(tenant=ctx.tenant, client_key=clean["client_key"]).first()
     if same is not None:
         return same, False
-    if clean["kind"] == CafeOrder.TABLE and CafeOrder.objects.filter(
-        tenant=ctx.tenant, kind=CafeOrder.TABLE, number__iexact=clean["table"], status__in=LIVE
-    ).exists():
-        raise ValidationFailed({"table": ["This table already has an open order. Add items to it."]}, "Check the order.")
+    if (
+        clean["kind"] == CafeOrder.TABLE
+        and CafeOrder.objects.filter(
+            tenant=ctx.tenant, kind=CafeOrder.TABLE, number__iexact=clean["table"], status__in=LIVE
+        ).exists()
+    ):
+        raise ValidationFailed(
+            {"table": ["This table already has an open order. Add items to it."]},
+            "Check the order.",
+        )
     order = CafeOrder.objects.create(
         tenant=ctx.tenant,
         client_key=clean["client_key"],
@@ -194,7 +212,11 @@ def create_order(*, ctx: Ctx, data: dict) -> tuple[CafeOrder, bool]:
                 "allocations": [],
                 "meta": {
                     "cafe_order_number": order.number,
-                    "earmark": {"module": "sales", "subject_type": "cafe_order", "subject_id": str(order.id)},
+                    "earmark": {
+                        "module": "sales",
+                        "subject_type": "cafe_order",
+                        "subject_id": str(order.id),
+                    },
                 },
             },
         )
@@ -224,7 +246,11 @@ def _release(ctx: Ctx, order: CafeOrder) -> list[str]:
 
     if not order.advance_payment_id:
         return []
-    payment = Payment.objects.select_for_update().filter(tenant=ctx.tenant, pk=order.advance_payment_id).first()
+    payment = (
+        Payment.objects.select_for_update()
+        .filter(tenant=ctx.tenant, pk=order.advance_payment_id)
+        .first()
+    )
     if payment is None:
         return []
     payment.meta = {k: v for k, v in (payment.meta or {}).items() if k != "earmark"}
@@ -238,7 +264,9 @@ def update_order(*, ctx: Ctx, order_id: Any, data: dict) -> CafeOrder:
     order = _lock(ctx, order_id)
     data = data if isinstance(data, dict) else {}
     if order.status not in LIVE:
-        raise BusinessRuleViolation("cafe_order_status", "This order is already finished.", details={"status": order.status})
+        raise BusinessRuleViolation(
+            "cafe_order_status", "This order is already finished.", details={"status": order.status}
+        )
     fields = ["updated_at"]
     if "lines" in data:
         errors: dict[str, list[str]] = {}
@@ -253,7 +281,9 @@ def update_order(*, ctx: Ctx, order_id: Any, data: dict) -> CafeOrder:
     if status is not None and status != order.status:
         if status not in NEXT.get(order.status, ()):
             raise BusinessRuleViolation(
-                "cafe_order_status", "This order cannot move to that status.", details={"status": order.status}
+                "cafe_order_status",
+                "This order cannot move to that status.",
+                details={"status": order.status},
             )
         order.status = status
         fields.append("status")
@@ -277,9 +307,14 @@ def list_orders(*, tenant: Any, scope: str = "open") -> dict:
     soon = [
         view(o)
         for o in advance
-        if o.ready_at is not None and o.ready_at.astimezone(tenant_timezone(tenant)).date() <= today + dt.timedelta(days=1)
+        if o.ready_at is not None
+        and o.ready_at.astimezone(tenant_timezone(tenant)).date() <= today + dt.timedelta(days=1)
     ]
-    shown = advance if scope == "advance" else rows.exclude(kind=CafeOrder.ADVANCE).order_by("created_at")
+    shown = (
+        advance
+        if scope == "advance"
+        else rows.exclude(kind=CafeOrder.ADVANCE).order_by("created_at")
+    )
     return {"rows": [view(o) for o in shown[:200]], "counts": counts, "soon": soon[:20]}
 
 
@@ -325,9 +360,15 @@ def advance_for_issue(*, ctx: Ctx, document: Any) -> tuple[CafeOrder | None, lis
         return None, []
     order = CafeOrder.objects.select_for_update().filter(tenant=ctx.tenant, pk=link["id"]).first()
     if order is None or order.status not in LIVE:
-        raise BusinessRuleViolation("cafe_order_status", "This order is already billed. Remove it from the bill.", details={})
+        raise BusinessRuleViolation(
+            "cafe_order_status",
+            "This order is already billed. Remove it from the bill.",
+            details={},
+        )
     if order.party_id and order.party_id != document.party_id:
-        raise BusinessRuleViolation("cafe_order_status", "This bill is for a different customer than the order.", details={})
+        raise BusinessRuleViolation(
+            "cafe_order_status", "This bill is for a different customer than the order.", details={}
+        )
     return order, _release(ctx, order)
 
 
@@ -346,7 +387,9 @@ def due_soon(tenant: Any, today: dt.date) -> dict | None:
     zone = tenant_timezone(tenant)
     end = dt.datetime.combine(today + dt.timedelta(days=2), dt.time.min, tzinfo=zone)
     rows = (
-        CafeOrder.objects.filter(tenant=tenant, kind=CafeOrder.ADVANCE, status__in=LIVE, ready_at__lt=end)
+        CafeOrder.objects.filter(
+            tenant=tenant, kind=CafeOrder.ADVANCE, status__in=LIVE, ready_at__lt=end
+        )
         .select_related("party")
         .order_by("ready_at")[:10]
     )

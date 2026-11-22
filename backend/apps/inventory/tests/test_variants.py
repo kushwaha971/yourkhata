@@ -29,7 +29,9 @@ def shirt(client: Any, **extra: Any) -> Any:
         "variants": {"sizes": ["S", "M", "L", "XL"], "colours": ["Blue", "White"]},
         **extra,
     }
-    return client.post(reverse("v1:item-list"), body, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()))
+    return client.post(
+        reverse("v1:item-list"), body, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4())
+    )
 
 
 def test_four_sizes_in_two_colours_make_eight_items(owner: Any) -> None:
@@ -47,9 +49,13 @@ def test_four_sizes_in_two_colours_make_eight_items(owner: Any) -> None:
 def test_the_bill_picker_lists_one_garments_sizes(owner: Any) -> None:
     shirt(owner)
     product = Product.objects.get()
-    rows = owner.get(reverse("v1:item-list") + f"?product_id={product.id}&page_size=50").json()["data"]
+    rows = owner.get(reverse("v1:item-list") + f"?product_id={product.id}&page_size=50").json()[
+        "data"
+    ]
     assert len(rows) == 8
-    assert {tuple(sorted(r["attributes"].items())) for r in rows} >= {(("colour", "Blue"), ("size", "M"))}
+    assert {tuple(sorted(r["attributes"].items())) for r in rows} >= {
+        (("colour", "Blue"), ("size", "M"))
+    }
     assert rows[0]["product"] == {"id": str(product.id), "name": "Cotton shirt"}
 
 
@@ -75,7 +81,6 @@ def test_home_strip_of_a_plain_shop_has_due_week_and_low_stock_names(owner: Any)
     assert tiles["dueWeek"]["value"] == "0.00"
     assert tiles["dueWeek"]["count"] == 0
     assert tiles["lowStock"]["names"] == []
-
 
 
 @pytest.mark.django_db

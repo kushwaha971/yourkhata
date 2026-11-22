@@ -5,7 +5,11 @@ import { useMemo, type ReactNode } from 'react';
 import { UbLink, UbPageShell, UbPanel, UbStack, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveRole, selectActiveTenant, selectEnabledModules } from 'src/redux/slice/sessionSlice';
+import {
+  selectActiveRole,
+  selectActiveTenant,
+  selectEnabledModules,
+} from 'src/redux/slice/sessionSlice';
 
 import { useSettingsAccess } from '../hooks/useSettingsAccess';
 import { settingsGroups } from '../settingsLinks';

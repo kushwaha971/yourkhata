@@ -48,11 +48,26 @@ function ShiftFee({ shift, onSaved }: Readonly<{ shift: Shift; onSaved: () => vo
   const save = async () => {
     setBusy(true);
     try {
-      await saveShift({ name: shift.name, monthlyFee: fee || '0', fullDay: shift.fullDay }, shift.id);
-      dispatch(showSnackbar({ severity: 'success', id: 'library.settings.feeSaved', params: { name: shift.name } }));
+      await saveShift(
+        { name: shift.name, monthlyFee: fee || '0', fullDay: shift.fullDay },
+        shift.id
+      );
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'library.settings.feeSaved',
+          params: { name: shift.name },
+        })
+      );
       onSaved();
     } catch (e) {
-      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'library.settings.saveError').message ?? t('library.settings.saveError') }));
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          message:
+            toApiError(e, 'library.settings.saveError').message ?? t('library.settings.saveError'),
+        })
+      );
     } finally {
       setBusy(false);
     }
@@ -69,14 +84,23 @@ function ShiftFee({ shift, onSaved }: Readonly<{ shift: Shift; onSaved: () => vo
         aria-label={t('library.settings.feeFor', { name: shift.name })}
         className="flex-1 text-right"
       />
-      <UbButton size="sm" variant="outlineNeutral" busy={busy} disabled={!changed} onClick={() => void save()}>
+      <UbButton
+        size="sm"
+        variant="outlineNeutral"
+        busy={busy}
+        disabled={!changed}
+        onClick={() => void save()}
+      >
         {t('library.common.save')}
       </UbButton>
     </UbStack>
   );
 }
 
-function SettingsForm({ settings, onSaved }: Readonly<{ settings: LibrarySettings; onSaved: () => void }>) {
+function SettingsForm({
+  settings,
+  onSaved,
+}: Readonly<{ settings: LibrarySettings; onSaved: () => void }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const formId = useId();
@@ -85,7 +109,11 @@ function SettingsForm({ settings, onSaved }: Readonly<{ settings: LibrarySetting
   const form = useForm<SettingsValues>({
     resolver: yupResolver(settingsSchema),
     mode: 'onTouched',
-    defaultValues: { signAs: settings.signAs, upiId: settings.upiId, dueSoonDays: String(settings.dueSoonDays) },
+    defaultValues: {
+      signAs: settings.signAs,
+      upiId: settings.upiId,
+      dueSoonDays: String(settings.dueSoonDays),
+    },
   });
   const save = async (values: SettingsValues) => {
     setSaving(true);
@@ -94,23 +122,63 @@ function SettingsForm({ settings, onSaved }: Readonly<{ settings: LibrarySetting
       dispatch(showSnackbar({ severity: 'success', id: 'library.settings.saved' }));
       onSaved();
     } catch (e) {
-      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'library.settings.saveError').message ?? t('library.settings.saveError') }));
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          message:
+            toApiError(e, 'library.settings.saveError').message ?? t('library.settings.saveError'),
+        })
+      );
     } finally {
       setSaving(false);
     }
   };
   return (
     <UbForm id={formId} form={form} onSubmit={save}>
-      <UbField name="signAs" label={t('library.settings.name')} hint={t('library.settings.nameHint', { name: settings.name })} optionalLabel={t('library.common.optional')}>
-        {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" placeholder={settings.name} />}
+      <UbField
+        name="signAs"
+        label={t('library.settings.name')}
+        hint={t('library.settings.nameHint', { name: settings.name })}
+        optionalLabel={t('library.common.optional')}
+      >
+        {(field) => (
+          <UbTextInput
+            {...field}
+            value={field.value as string}
+            autoComplete="off"
+            placeholder={settings.name}
+          />
+        )}
       </UbField>
-      <UbField name="upiId" label={t('library.settings.upi')} hint={t('library.settings.upiHint')} optionalLabel={t('library.common.optional')}>
-        {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" placeholder="name@bank" />}
+      <UbField
+        name="upiId"
+        label={t('library.settings.upi')}
+        hint={t('library.settings.upiHint')}
+        optionalLabel={t('library.common.optional')}
+      >
+        {(field) => (
+          <UbTextInput
+            {...field}
+            value={field.value as string}
+            autoComplete="off"
+            placeholder="name@bank"
+          />
+        )}
       </UbField>
-      <UbField name="dueSoonDays" label={t('library.settings.dueSoon')} hint={t('library.settings.dueSoonHint')}>
+      <UbField
+        name="dueSoonDays"
+        label={t('library.settings.dueSoon')}
+        hint={t('library.settings.dueSoonHint')}
+      >
         {(field) => <UbTextInput {...field} value={field.value as string} inputMode="numeric" />}
       </UbField>
-      <UbButton type="submit" form={formId} busy={saving} className="justify-self-start" data-testid="library-settings-save">
+      <UbButton
+        type="submit"
+        form={formId}
+        busy={saving}
+        className="justify-self-start"
+        data-testid="library-settings-save"
+      >
         {t('library.common.save')}
       </UbButton>
     </UbForm>
@@ -133,7 +201,9 @@ export function SettingsPageContent(): React.JSX.Element {
   const load = useCallback(() => {
     const r = dispatch(fetchSettings());
     const controller = new AbortController();
-    listShifts(controller.signal).then(setShifts).catch(() => undefined);
+    listShifts(controller.signal)
+      .then(setShifts)
+      .catch(() => undefined);
     return () => {
       r.abort();
       controller.abort();
@@ -147,9 +217,16 @@ export function SettingsPageContent(): React.JSX.Element {
       <UbStack gap={3} className="pb-24 lg:pb-6">
         <UbPageHeader title={t('library.settings.title')} />
         {!canManage ? (
-          <OwnerOnly title={t('library.common.ownerOnly.title')} body={t('library.common.ownerOnly.body')} />
+          <OwnerOnly
+            title={t('library.common.ownerOnly.title')}
+            body={t('library.common.ownerOnly.body')}
+          />
         ) : lib.settings.status === 'failed' && !settings ? (
-          <UbEmptyState variant="error" title={t('library.settings.error')} action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>} />
+          <UbEmptyState
+            variant="error"
+            title={t('library.settings.error')}
+            action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>}
+          />
         ) : !settings ? (
           <UbSkeleton variant="list" count={4} label={t('library.common.loading')} />
         ) : (
@@ -167,7 +244,12 @@ export function SettingsPageContent(): React.JSX.Element {
                 <UbText variant="inherit" className="font-semibold">
                   {t('library.settings.seats', { count: settings.seats })}
                 </UbText>
-                <UbButton size="sm" variant="outlineNeutral" onClick={() => setSeats(true)} data-testid="library-settings-seats">
+                <UbButton
+                  size="sm"
+                  variant="outlineNeutral"
+                  onClick={() => setSeats(true)}
+                  data-testid="library-settings-seats"
+                >
                   {t('library.seats.edit')}
                 </UbButton>
               </UbStack>

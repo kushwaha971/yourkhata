@@ -53,4 +53,3 @@ def record_cash_count(*, ctx: Ctx, counted_amount: Decimal, note: str = "") -> C
         metadata={"idempotency_key": ctx.idempotency_key},
     )
     return count
-

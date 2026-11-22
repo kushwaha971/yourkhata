@@ -55,8 +55,7 @@ import type { PurchaseBillEnvelope, PurchaseKind } from '../types/purchase.types
 /* The "Paid now" sheet loads with the tap on Record, never with the editor. */
 const PaidNowDrawerLazy = dynamic(
   () => import('./PurchasePaidNowDrawer').then((m) => m.PurchasePaidNowDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -332,7 +331,11 @@ export function PurchaseBillEditorPageContent({
     <UbPageShell>
       {phoneBar && (
         <UbTaskBar
-          title={t(documentId || server.documentId ? 'purchases.editor.editTitle' : 'purchases.editor.newTitle')}
+          title={t(
+            documentId || server.documentId
+              ? 'purchases.editor.editTitle'
+              : 'purchases.editor.newTitle'
+          )}
           onClose={requestClose}
           closeLabel={t('purchases.editor.close')}
           className="-mx-4 -mt-4 mb-1"
@@ -352,7 +355,9 @@ export function PurchaseBillEditorPageContent({
         />
       )}
       <UbPageHeader
-        className={phoneBar ? (paymentRefused || recordRecovery ? '[&_h1]:hidden' : 'hidden') : undefined}
+        className={
+          phoneBar ? (paymentRefused || recordRecovery ? '[&_h1]:hidden' : 'hidden') : undefined
+        }
         title={
           documentId || server.documentId
             ? t(order ? 'purchases.order.editTitle' : 'purchases.editor.editTitle')
@@ -382,68 +387,68 @@ export function PurchaseBillEditorPageContent({
         }
         actions={
           phoneBar ? undefined : (
-          <>
-            <UbButton
-              variant="ghost"
-              iconOnly
-              icon={<X className="h-4 w-4" aria-hidden />}
-              onClick={requestClose}
-              disabled={baseLocked || preparing}
-            >
-              {t(order ? 'purchases.order.close' : 'purchases.editor.close')}
-            </UbButton>
-            {server.documentId && (
+            <>
               <UbButton
                 variant="ghost"
-                iconOnly="mobile"
-                icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                onClick={() => setConfirmDelete(true)}
-                disabled={locked}
+                iconOnly
+                icon={<X className="h-4 w-4" aria-hidden />}
+                onClick={requestClose}
+                disabled={baseLocked || preparing}
               >
-                {t('purchases.editor.delete')}
+                {t(order ? 'purchases.order.close' : 'purchases.editor.close')}
               </UbButton>
-            )}
-            <UbButton
-              variant="secondary"
-              iconOnly="mobile"
-              icon={<Save className="h-4 w-4" aria-hidden />}
-              onClick={saveNow}
-              busy={server.saveState === 'saving'}
-              disabled={locked || offline}
-              /* Below 1536 px Save and Record are docked under the total (below). */
-              className="max-2xl:hidden"
-            >
-              {t('purchases.editor.saveDraft')}
-            </UbButton>
-            <UbButton
-              iconOnly="mobile"
-              icon={<Send className="h-4 w-4" aria-hidden />}
-              onClick={submitShortcut}
-              busy={preparing || finishing || server.recording}
-              busyLabel={t(
-                preparing
-                  ? 'purchases.editor.checking'
-                  : order
-                    ? 'purchases.order.sending'
-                    : 'purchases.editor.recording'
+              {server.documentId && (
+                <UbButton
+                  variant="ghost"
+                  iconOnly="mobile"
+                  icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={locked}
+                >
+                  {t('purchases.editor.delete')}
+                </UbButton>
               )}
-              disabled={!hasLines || baseLocked || preparing || (offline && !recordRecovery)}
-              data-testid="purchase-record"
-              className="max-2xl:hidden"
-            >
-              {t(
-                recordRecovery
-                  ? order
-                    ? 'purchases.order.checkSent'
-                    : 'purchases.record.check'
-                  : paymentRefused
-                    ? 'purchases.record.payLater'
+              <UbButton
+                variant="secondary"
+                iconOnly="mobile"
+                icon={<Save className="h-4 w-4" aria-hidden />}
+                onClick={saveNow}
+                busy={server.saveState === 'saving'}
+                disabled={locked || offline}
+                /* Below 1536 px Save and Record are docked under the total (below). */
+                className="max-2xl:hidden"
+              >
+                {t('purchases.editor.saveDraft')}
+              </UbButton>
+              <UbButton
+                iconOnly="mobile"
+                icon={<Send className="h-4 w-4" aria-hidden />}
+                onClick={submitShortcut}
+                busy={preparing || finishing || server.recording}
+                busyLabel={t(
+                  preparing
+                    ? 'purchases.editor.checking'
                     : order
-                      ? 'purchases.order.send'
-                      : 'purchases.editor.record'
-              )}
-            </UbButton>
-          </>
+                      ? 'purchases.order.sending'
+                      : 'purchases.editor.recording'
+                )}
+                disabled={!hasLines || baseLocked || preparing || (offline && !recordRecovery)}
+                data-testid="purchase-record"
+                className="max-2xl:hidden"
+              >
+                {t(
+                  recordRecovery
+                    ? order
+                      ? 'purchases.order.checkSent'
+                      : 'purchases.record.check'
+                    : paymentRefused
+                      ? 'purchases.record.payLater'
+                      : order
+                        ? 'purchases.order.send'
+                        : 'purchases.editor.record'
+                )}
+              </UbButton>
+            </>
           )
         }
       />

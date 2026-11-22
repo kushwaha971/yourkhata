@@ -24,7 +24,10 @@ describe('a person page that opens before its person has loaded', () => {
        with the person in memory and threw them away. */
     let state = reducer(start, fetchPerson.pending('r-person', 'p2'));
     state = reducer(state, fetchEntries.pending('r-entries', { personId: 'p2' }));
-    state = reducer(state, fetchEntries.fulfilled({ rows: [ENTRY], total: 1 }, 'r-entries', { personId: 'p2' }));
+    state = reducer(
+      state,
+      fetchEntries.fulfilled({ rows: [ENTRY], total: 1 }, 'r-entries', { personId: 'p2' })
+    );
     expect(state.entriesFor).toBe('p2');
     expect(state.entries).toHaveLength(1);
     expect(state.entriesStatus).toBe('succeeded');
@@ -37,8 +40,16 @@ describe('a person page that opens before its person has loaded', () => {
     state = reducer(state, fetchEntries.pending('old-e', { personId: 'p1' }));
     state = reducer(state, fetchPerson.pending('new', 'p2'));
     state = reducer(state, fetchEntries.pending('new-e', { personId: 'p2' }));
-    state = reducer(state, fetchPerson.fulfilled({ ...PERSON, id: 'p1', name: 'Old' }, 'old', 'p1'));
-    state = reducer(state, fetchEntries.fulfilled({ rows: [{ ...ENTRY, personId: 'p1' }], total: 1 }, 'old-e', { personId: 'p1' }));
+    state = reducer(
+      state,
+      fetchPerson.fulfilled({ ...PERSON, id: 'p1', name: 'Old' }, 'old', 'p1')
+    );
+    state = reducer(
+      state,
+      fetchEntries.fulfilled({ rows: [{ ...ENTRY, personId: 'p1' }], total: 1 }, 'old-e', {
+        personId: 'p1',
+      })
+    );
     expect(state.person?.id).not.toBe('p1');
     expect(state.entriesFor).toBe('p2');
     expect(state.entries).toHaveLength(0);

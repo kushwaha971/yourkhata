@@ -52,10 +52,12 @@ export const SCHEDULE_TONE: Readonly<Record<ScheduleState, UbStatusBadgeTone>> =
 };
 
 /** "Tea stall · L-0112" — the round's second line (I8). */
-export const workLine = (l: Pick<Loan, 'work' | 'number'>): string => [l.work, l.number].filter(Boolean).join(' · ');
+export const workLine = (l: Pick<Loan, 'work' | 'number'>): string =>
+  [l.work, l.number].filter(Boolean).join(' · ');
 
 /** "Daily · 40 days", "Weekly · 10 weeks", "Monthly · 6 months". */
 export const planLine = (l: Pick<Loan, 'frequency' | 'count'>, t: TranslateFn): string =>
   t(`lending.plan.${l.frequency}`, { count: l.count });
 
-export const whatsappHref = (mobile: string, text: string): string => buildWhatsAppUrl(text, mobile);
+export const whatsappHref = (mobile: string, text: string): string =>
+  buildWhatsAppUrl(text, mobile);

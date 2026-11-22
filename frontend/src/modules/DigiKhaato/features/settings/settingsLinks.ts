@@ -53,7 +53,10 @@ export interface SettingsLinkFlags {
   readonly readsCalendar: boolean;
 }
 
-export function settingsGroups(access: SettingsAccess, flags: SettingsLinkFlags): readonly SettingsGroup[] {
+export function settingsGroups(
+  access: SettingsAccess,
+  flags: SettingsLinkFlags
+): readonly SettingsGroup[] {
   const ro = access.canView && !access.canEdit;
   const row = (key: string, href: string, icon: LucideIcon, show: boolean, own = false) =>
     show ? [{ key, href, icon, viewOnly: !own && ro }] : [];
@@ -64,10 +67,25 @@ export function settingsGroups(access: SettingsAccess, flags: SettingsLinkFlags)
       key: 'business',
       links: [
         ...row('profile', ROUTES.SETTINGS_PROFILE, Building2, access.canView),
-        ...row('shopFeatures', ROUTES.SETTINGS_SHOP_FEATURES, Store, access.canView && flags.runsShop),
+        ...row(
+          'shopFeatures',
+          ROUTES.SETTINGS_SHOP_FEATURES,
+          Store,
+          access.canView && flags.runsShop
+        ),
         ...row('branding', ROUTES.SETTINGS_BRANDING, Palette, access.canView),
-        ...row('messages', ROUTES.SETTINGS_MESSAGES, MessageSquare, access.canView && flags.hasOwnMessages),
-        ...row('businessDays', ROUTES.SETTINGS_BUSINESS_DAYS, CalendarDays, access.canView && flags.readsCalendar),
+        ...row(
+          'messages',
+          ROUTES.SETTINGS_MESSAGES,
+          MessageSquare,
+          access.canView && flags.hasOwnMessages
+        ),
+        ...row(
+          'businessDays',
+          ROUTES.SETTINGS_BUSINESS_DAYS,
+          CalendarDays,
+          access.canView && flags.readsCalendar
+        ),
       ],
     },
     {

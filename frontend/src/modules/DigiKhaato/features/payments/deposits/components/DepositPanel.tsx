@@ -39,13 +39,11 @@ import 'src/i18n/catalogues/payments';
 
 const DepositMoneyDrawer = dynamic(
   () => import('./DepositMoneyDrawer').then((module) => module.DepositMoneyDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const ApplyDepositDialog = dynamic(
   () => import('./ApplyDepositDialog').then((module) => module.ApplyDepositDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const STATUS_TONE = { expected: 'warning', held: 'info', released: 'neutral' } as const;

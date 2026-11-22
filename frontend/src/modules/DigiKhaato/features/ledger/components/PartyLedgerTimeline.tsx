@@ -68,8 +68,7 @@ import type { LedgerEntry } from '../types/ledger.types';
  */
 const LedgerCorrectionDrawerLazy = dynamic(
   () => import('./LedgerCorrectionDrawer').then((m) => m.LedgerCorrectionDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const ReverseEntryDialogLazy = dynamic(
   () => import('./ReverseEntryDialog').then((m) => m.ReverseEntryDialog),
@@ -156,7 +155,11 @@ export function PartyLedgerTimeline({
        padding around every line. */
     <UbStack gap={3} className={fillHeight ? 'min-h-0 flex-1' : undefined}>
       <UbSectionHeading
-        className={fillHeight ? 'flex-wrap [&_h2]:whitespace-normal [&_h2]:overflow-visible [&_h2]:text-clip' : undefined}
+        className={
+          fillHeight
+            ? 'flex-wrap [&_h2]:overflow-visible [&_h2]:text-clip [&_h2]:whitespace-normal'
+            : undefined
+        }
         title={title ?? t('ledger.timeline.title')}
         meta={
           hasEntries
@@ -177,7 +180,16 @@ export function PartyLedgerTimeline({
         }
       />
 
-      <UbPanel as="section" aria-label={fillHeight ? title : undefined} tabIndex={fillHeight ? 0 : undefined} className={fillHeight ? 'relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:shadow-focus [&_[data-testid=entry-source]]:flex-wrap [&_[data-testid=entry-source]_a]:whitespace-normal [&_[data-testid=entry-source]_a]:overflow-visible [&_[data-testid=entry-source]_a]:text-clip [&_.line-clamp-2]:line-clamp-none' : undefined}>
+      <UbPanel
+        as="section"
+        aria-label={fillHeight ? title : undefined}
+        tabIndex={fillHeight ? 0 : undefined}
+        className={
+          fillHeight
+            ? 'relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:shadow-focus [&_.line-clamp-2]:line-clamp-none [&_[data-testid=entry-source]]:flex-wrap [&_[data-testid=entry-source]_a]:overflow-visible [&_[data-testid=entry-source]_a]:text-clip [&_[data-testid=entry-source]_a]:whitespace-normal'
+            : undefined
+        }
+      >
         {/* BrandHub PaymentsCard's two-cell total row: label 12/16 medium grey,
             figure 16/24 medium, a hairline between the cells. */}
         {hasEntries && ledger.summary && !shopBook && !fillHeight && (

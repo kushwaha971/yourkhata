@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from .base import *  # noqa: F403
+from .base import *
 
 DEBUG = True
 ENV_NAME = "local"
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
 UB_LOG_FORMAT = "console"
-LOGGING = build_logging_config(level="DEBUG", fmt="console")  # noqa: F405
+LOGGING = build_logging_config(level="DEBUG", fmt="console")
 
 # ── One database connection per request, locally ────────────────────────────
 # `runserver` is threaded: a thread per request, and with `CONN_MAX_AGE` > 0
@@ -18,7 +18,7 @@ LOGGING = build_logging_config(level="DEBUG", fmt="console")  # noqa: F405
 # server and every next request answered 500 "too many clients already" (seen
 # twice in the 9 Oct 2026 regression runs). Production runs a process server
 # with a fixed worker count, where reuse is the point; it keeps base's 60 s.
-DATABASES["default"]["CONN_MAX_AGE"] = env.int("UB_DB_CONN_MAX_AGE", 0)  # noqa: F405
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("UB_DB_CONN_MAX_AGE", 0)
 
 # ── E2E: lift the shared per-IP auth budgets (local ONLY) ────────────────────
 # Every e2e harness signs up and signs in from 127.0.0.1, so the budgets keyed
@@ -37,7 +37,7 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("UB_DB_CONN_MAX_AGE", 0)  # noqa:
 # `tests/architecture/test_settings.py`. The budgets are module constants in
 # `apps/platform_app/services/throttle.py`, read at call time as
 # `throttle.<NAME>`, so rebinding them here is the whole mechanism.
-UB_E2E_RELAX_THROTTLES = env.bool("UB_E2E_RELAX_THROTTLES", False)  # noqa: F405
+UB_E2E_RELAX_THROTTLES = env.bool("UB_E2E_RELAX_THROTTLES", False)
 if UB_E2E_RELAX_THROTTLES:
     from apps.platform_app.services import throttle as _ub_throttle
 

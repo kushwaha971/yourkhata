@@ -40,7 +40,8 @@ export interface SchemeFreeLine {
 /** decimal.js-light's ROUND_DOWN: whole cases only, never a part of one. */
 const ROUND_DOWN = 1;
 
-const num = (raw: string | null | undefined) => toDecimal(raw && /^-?\d+(\.\d+)?$/.test(raw.trim()) ? raw.trim() : '0');
+const num = (raw: string | null | undefined) =>
+  toDecimal(raw && /^-?\d+(\.\d+)?$/.test(raw.trim()) ? raw.trim() : '0');
 
 export const applySchemes = (
   lines: readonly SchemeLineInput[],
@@ -60,7 +61,12 @@ export const applySchemes = (
       const total = mine.reduce((sum, i) => sum.plus(num(at(i).qty)), toDecimal('0'));
       const qty = total.div(buy).toDecimalPlaces(0, ROUND_DOWN).mul(give);
       if (qty.gt(0))
-        free.push({ item_id: item, qty: qty.toString(), unit_code: at(mine[0] as number).unit_code, scheme: scheme.code });
+        free.push({
+          item_id: item,
+          qty: qty.toString(),
+          unit_code: at(mine[0] as number).unit_code,
+          scheme: scheme.code,
+        });
       continue;
     }
     const open = mine.filter((i) => discounts[i] === null && !at(i).discount_type);
@@ -71,13 +77,18 @@ export const applySchemes = (
         const value = toDecimal(off.mul(qty).toFixed(2));
         const cap = toDecimal(qty.mul(num(at(i).unit_price)).toFixed(2));
         const taken = value.gt(cap) ? cap : value;
-        if (taken.gt(0)) discounts[i] = { type: 'amount', value: taken.toFixed(2), scheme: scheme.code };
+        if (taken.gt(0))
+          discounts[i] = { type: 'amount', value: taken.toFixed(2), scheme: scheme.code };
       }
     } else if (scheme.rule === 'percent') {
       const pct = num(scheme.amount);
-      const base = open.reduce((sum, i) => sum.plus(num(at(i).qty).mul(num(at(i).unit_price))), toDecimal('0'));
+      const base = open.reduce(
+        (sum, i) => sum.plus(num(at(i).qty).mul(num(at(i).unit_price))),
+        toDecimal('0')
+      );
       if (pct.gt(0) && open.length > 0 && base.gte(num(scheme.min_bill)))
-        for (const i of open) discounts[i] = { type: 'percent', value: pct.toFixed(2), scheme: scheme.code };
+        for (const i of open)
+          discounts[i] = { type: 'percent', value: pct.toFixed(2), scheme: scheme.code };
     }
   }
   return { discounts, free };
@@ -93,7 +104,10 @@ export const nearestOffer = (
     if (scheme.rule !== 'percent') continue;
     const mine = lines.filter((line) => scheme.item_id === null || line.item_id === scheme.item_id);
     if (scheme.item_id && mine.length === 0) continue;
-    const base = mine.reduce((sum, line) => sum.plus(num(line.qty).mul(num(line.unit_price))), toDecimal('0'));
+    const base = mine.reduce(
+      (sum, line) => sum.plus(num(line.qty).mul(num(line.unit_price))),
+      toDecimal('0')
+    );
     const short = num(scheme.min_bill).minus(base);
     if (short.lte(0) || base.lte(0)) continue;
     if (!best || short.lt(num(best.short))) best = { scheme, short: short.toFixed(2) };

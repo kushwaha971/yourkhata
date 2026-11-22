@@ -49,13 +49,17 @@ class ItemTagsView(_TagsView):
 
     def post(self, request: Any, pk: Any) -> Any:
         return StandardResponse.created(
-            tags.add_tag(ctx=Ctx.from_request(request), item=self._item(request, pk), data=request.data)
+            tags.add_tag(
+                ctx=Ctx.from_request(request), item=self._item(request, pk), data=request.data
+            )
         )
 
 
 class TagSummaryView(_TagsView):
     def get(self, request: Any) -> Any:
-        return StandardResponse.ok({"in_stock": tags.in_stock_count(tenant=get_effective_tenant(request))})
+        return StandardResponse.ok(
+            {"in_stock": tags.in_stock_count(tenant=get_effective_tenant(request))}
+        )
 
 
 class TagLookupView(_TagsView):
@@ -63,7 +67,9 @@ class TagLookupView(_TagsView):
     today's rate. A sold or unknown tag is a 404 the counter can say aloud."""
 
     def get(self, request: Any) -> Any:
-        found = tags.lookup(tenant=get_effective_tenant(request), tag_no=request.query_params.get("tag", ""))
+        found = tags.lookup(
+            tenant=get_effective_tenant(request), tag_no=request.query_params.get("tag", "")
+        )
         if found is None:
             raise NotFound("No tag in stock with this number.")
         return StandardResponse.ok(found)

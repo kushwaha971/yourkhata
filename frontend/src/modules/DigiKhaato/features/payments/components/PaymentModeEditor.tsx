@@ -168,7 +168,11 @@ export function PaymentModeEditor({
                           {...field}
                           // The first amount is focused on open: leaving it untyped (to tap
                           // Received / Paid out) must not paint it red before Save (E26).
-                          onBlur={index === 0 ? blurIfTyped(field, form.formState.isSubmitted) : field.onBlur}
+                          onBlur={
+                            index === 0
+                              ? blurIfTyped(field, form.formState.isSubmitted)
+                              : field.onBlur
+                          }
                           value={field.value as string}
                           inputMode="decimal"
                           disabled={disabled}

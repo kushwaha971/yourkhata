@@ -136,7 +136,11 @@ export function UbChipTabs<T extends string>({
           )}
           style={
             measured
-              ? { width: indicator.width, transform: `translateX(${indicator.left - 4}px)`, left: 4 }
+              ? {
+                  width: indicator.width,
+                  transform: `translateX(${indicator.left - 4}px)`,
+                  left: 4,
+                }
               : undefined
           }
         />
@@ -155,8 +159,8 @@ export function UbChipTabs<T extends string>({
               className={cn(
                 'relative z-10 inline-flex items-center gap-2 whitespace-nowrap rounded-pill',
                 size === 'sm'
-                  ? 'ub-hit h-8 px-3 ds-body-sm-medium'
-                  : 'h-10 px-4 ds-body-base-medium',
+                  ? 'ub-hit ds-body-sm-medium h-8 px-3'
+                  : 'ds-body-base-medium h-10 px-4',
                 'transition-colors duration-fast ease-standard',
                 'outline-none focus-visible:shadow-focus',
                 selected

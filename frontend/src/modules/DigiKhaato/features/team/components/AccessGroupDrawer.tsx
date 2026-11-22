@@ -57,7 +57,9 @@ export function AccessGroupDrawer({
   const dispatch = useAppDispatch();
   const [name, setName] = useState(group?.name ?? start.name);
   const [isDefault, setIsDefault] = useState(group?.isDefault ?? false);
-  const [levels, setLevels] = useState<Record<string, AccessLevel>>({ ...(group?.levels ?? start.levels) });
+  const [levels, setLevels] = useState<Record<string, AccessLevel>>({
+    ...(group?.levels ?? start.levels),
+  });
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const formId = useId();
@@ -76,7 +78,9 @@ export function AccessGroupDrawer({
       dispatch(
         showSnackbar({
           severity: 'success',
-          message: group ? t('team.access.saved', { name: draft.name, count: group.members }) : t('team.access.made', { name: draft.name }),
+          message: group
+            ? t('team.access.saved', { name: draft.name, count: group.members })
+            : t('team.access.made', { name: draft.name }),
         })
       );
       onSaved();
@@ -95,14 +99,22 @@ export function AccessGroupDrawer({
     setBusy('delete');
     try {
       await deleteAccessGroup(group.id);
-      dispatch(showSnackbar({ severity: 'success', message: t('team.access.deleted', { name: group.name }) }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          message: t('team.access.deleted', { name: group.name }),
+        })
+      );
       onSaved();
     } catch (e) {
       const error = toApiError(e, 'team.access.error');
       dispatch(
         showSnackbar({
           severity: 'error',
-          message: error.code === 'group_has_members' ? t('team.access.hasMembers', { count: group.members }) : t('team.access.error'),
+          message:
+            error.code === 'group_has_members'
+              ? t('team.access.hasMembers', { count: group.members })
+              : t('team.access.error'),
         })
       );
     } finally {
@@ -130,17 +142,27 @@ export function AccessGroupDrawer({
             data-testid="access-group-save"
             className="flex-1"
           >
-            {group && group.members > 0 ? t('team.access.saveCount', { count: group.members }) : t('team.access.save')}
+            {group && group.members > 0
+              ? t('team.access.saveCount', { count: group.members })
+              : t('team.access.save')}
           </UbButton>
         </>
       }
     >
       <UbStack gap={3} data-testid="access-group-form">
         <UbStack direction="row">
-          <UbStatusBadge tone="info" label={t('team.access.context', { app: app.label, business })} />
+          <UbStatusBadge
+            tone="info"
+            label={t('team.access.context', { app: app.label, business })}
+          />
         </UbStack>
         <UbStack gap={1.5}>
-          <UbText as="span" variant="inherit" className="text-[13px] font-medium" id={`${formId}-name`}>
+          <UbText
+            as="span"
+            variant="inherit"
+            className="text-[13px] font-medium"
+            id={`${formId}-name`}
+          >
             {t('team.access.name')}
           </UbText>
           <UbTextInput

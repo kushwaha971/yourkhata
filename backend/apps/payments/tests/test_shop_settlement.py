@@ -140,9 +140,7 @@ def test_it_settles_the_oldest_invoice_first_and_the_purchase_bill(tenant, owner
     assert (purchase.amount_due, purchase.status) == (Decimal("0.00"), "paid")
 
 
-def test_the_dialog_is_told_which_bills_a_settlement_reaches_in_the_order_it_settles(
-    owner, ramesh
-):
+def test_the_dialog_is_told_which_bills_a_settlement_reaches_in_the_order_it_settles(owner, ramesh):
     """A contra entry names the invoices and bills it settles (Sage 200). The dialog shows
     them before the merchant confirms, so the list must be exactly the rows and the order
     the settlement then uses — an order that differed would name the wrong bill."""

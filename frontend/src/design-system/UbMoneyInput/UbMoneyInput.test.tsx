@@ -242,7 +242,13 @@ describe('selectWhenFilled', () => {
     const [value, setValue] = useState('');
     return (
       <>
-        <UbMoneyInput aria-label="Amount" value={value} onChange={setValue} selectWhenFilled={select} autoFocus />
+        <UbMoneyInput
+          aria-label="Amount"
+          value={value}
+          onChange={setValue}
+          selectWhenFilled={select}
+          autoFocus
+        />
         <button type="button" onClick={() => setValue('340.00')}>
           fill
         </button>

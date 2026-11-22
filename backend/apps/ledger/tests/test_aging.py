@@ -319,10 +319,10 @@ def test_another_tenants_book_is_not_in_the_report(two_tenants_full: dict) -> No
 
 # ── Through the endpoint ────────────────────────────────────────────────────
 
-import csv as _csv  # noqa: E402
-from io import StringIO  # noqa: E402
+import csv as _csv  # noqa: E402 — reason: imports for the tests below this point
+from io import StringIO  # noqa: E402 — reason: imports for the tests below this point
 
-from django.urls import reverse  # noqa: E402
+from django.urls import reverse  # noqa: E402 — reason: imports for the tests below this point
 
 AGING = "v1:ledger-aging"
 SUMMARY = "v1:ledger-summary"

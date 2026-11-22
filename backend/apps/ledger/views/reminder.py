@@ -116,7 +116,6 @@ class ReminderListCreateView(_ReminderBase):
     def get(self, request: Any) -> Any:
         params = request.query_params
         rows = self.scope_to_tenant(Reminder.objects.select_related("party", "recipient_party"))
-        from django.db.models import Q
 
         from apps.common.permissions_registry import permissions_for_app
         from apps.common.tenancy import get_effective_tenant

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Lock } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -257,90 +256,90 @@ export function BrandingPageContent(): React.JSX.Element {
           <BillDefaultsPanel />
           {/* The brand look the design has no place for stays, closed. */}
           <UbDisclosure label={t('branding.more.title')} hint={t('branding.more.hint')}>
-          <UbPanel as="section">
-            <UbPanelSection
-              title={t('branding.colour.label')}
-              action={sourceBadge('primary_hex', 'primary_hex')}
-            >
-              <UbField
-                name="primaryHex"
-                label={t('branding.colour.hex')}
-                placeholder={t('branding.colour.placeholder')}
-                labelHidden
+            <UbPanel as="section">
+              <UbPanelSection
+                title={t('branding.colour.label')}
+                action={sourceBadge('primary_hex', 'primary_hex')}
               >
-                {(field) => (
-                  <ColourField
-                    field={field}
-                    disabled={disabled || locked('primary_hex')}
-                    suggestedHex={branding.suggestedHex}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.appName.label')}
-              action={sourceBadge('app_name', 'app_name')}
-            >
-              <UbField
-                name="appName"
-                label={t('branding.appName.label')}
-                placeholder={t('branding.appName.placeholder')}
-                hint={t('branding.appName.hint')}
-                labelHidden
+                <UbField
+                  name="primaryHex"
+                  label={t('branding.colour.hex')}
+                  placeholder={t('branding.colour.placeholder')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <ColourField
+                      field={field}
+                      disabled={disabled || locked('primary_hex')}
+                      suggestedHex={branding.suggestedHex}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.appName.label')}
+                action={sourceBadge('app_name', 'app_name')}
               >
-                {(field) => (
-                  <UbTextInput
-                    {...field}
-                    maxLength={APP_NAME_MAX}
-                    disabled={disabled || locked('app_name')}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.docHeader.label')}
-              action={sourceBadge('doc_header')}
-            >
-              <UbField
-                name="docHeader"
-                label={t('branding.docHeader.label')}
-                placeholder={t('branding.docHeader.placeholder')}
-                labelHidden
+                <UbField
+                  name="appName"
+                  label={t('branding.appName.label')}
+                  placeholder={t('branding.appName.placeholder')}
+                  hint={t('branding.appName.hint')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextInput
+                      {...field}
+                      maxLength={APP_NAME_MAX}
+                      disabled={disabled || locked('app_name')}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.docHeader.label')}
+                action={sourceBadge('doc_header')}
               >
-                {(field) => (
-                  <UbTextArea
-                    {...field}
-                    rows={2}
-                    maxLength={DOC_HEADER_MAX}
-                    counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
-                    disabled={disabled}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.docFooter.label')}
-              action={sourceBadge('doc_footer', 'doc_footer')}
-            >
-              <UbField
-                name="docFooter"
-                label={t('branding.docFooter.label')}
-                placeholder={t('branding.docFooter.placeholder')}
-                hint={data.legalFooter ? t('branding.docFooter.legalHint') : undefined}
-                labelHidden
+                <UbField
+                  name="docHeader"
+                  label={t('branding.docHeader.label')}
+                  placeholder={t('branding.docHeader.placeholder')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextArea
+                      {...field}
+                      rows={2}
+                      maxLength={DOC_HEADER_MAX}
+                      counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
+                      disabled={disabled}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.docFooter.label')}
+                action={sourceBadge('doc_footer', 'doc_footer')}
               >
-                {(field) => (
-                  <UbTextArea
-                    {...field}
-                    rows={3}
-                    maxLength={DOC_FOOTER_MAX}
-                    counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
-                    disabled={disabled || locked('doc_footer')}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-          </UbPanel>
+                <UbField
+                  name="docFooter"
+                  label={t('branding.docFooter.label')}
+                  placeholder={t('branding.docFooter.placeholder')}
+                  hint={data.legalFooter ? t('branding.docFooter.legalHint') : undefined}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextArea
+                      {...field}
+                      rows={3}
+                      maxLength={DOC_FOOTER_MAX}
+                      counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
+                      disabled={disabled || locked('doc_footer')}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+            </UbPanel>
           </UbDisclosure>
           {canEdit && (
             <UbStack direction="row" justify="end">

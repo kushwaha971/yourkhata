@@ -71,7 +71,8 @@ export const REGISTER_TH =
 /** The sort button fills the header cell's height, not 48 px of its own. */
 export const REGISTER_TH_BUTTON_HEIGHT = 'h-[45px]';
 
-export const REGISTER_TD = 'truncate px-[14px] py-[10px] text-[14px] align-middle text-text-primary';
+export const REGISTER_TD =
+  'truncate px-[14px] py-[10px] text-[14px] align-middle text-text-primary';
 
 /**
  * The one frame around a register's rows AND its pager (A7 ¶1–2): rounded,
@@ -80,4 +81,5 @@ export const REGISTER_TD = 'truncate px-[14px] py-[10px] text-[14px] align-middl
  * header still sticks. The pager keeps its own top line, and the last row has
  * none, so exactly one line separates them.
  */
-export const REGISTER_FRAME = 'rounded-card border border-border-hairline bg-surface-card overflow-clip';
+export const REGISTER_FRAME =
+  'rounded-card border border-border-hairline bg-surface-card overflow-clip';

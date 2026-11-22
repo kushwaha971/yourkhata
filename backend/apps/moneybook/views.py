@@ -8,7 +8,6 @@ is refused outright: this is a private book.
 from __future__ import annotations
 
 import csv
-import datetime as dt
 import io
 from typing import Any
 
@@ -18,10 +17,11 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.common.plain_requests import PlainBodyMixin, date_of as _date, page_of
-
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.common.idempotency import idempotent
+from apps.common.plain_requests import PlainBodyMixin
+from apps.common.plain_requests import date_of as _date
+from apps.common.plain_requests import page_of
 from apps.common.responses import StandardResponse
 from apps.moneybook import selectors, services
 from apps.moneybook.constants import ReminderChannel, ReminderTone
@@ -102,8 +102,11 @@ class PeopleView(OwnBook):
     def get(self, request: Any) -> Any:
         p = request.query_params
         rows = selectors.people(
-            owner=self.owner, q=p.get("q", ""), balance=p.get("balance", "all"),
-            status=p.get("status", "active"), sort=p.get("sort", "last_entry"),
+            owner=self.owner,
+            q=p.get("q", ""),
+            balance=p.get("balance", "all"),
+            status=p.get("status", "active"),
+            sort=p.get("sort", "last_entry"),
         )
         page, size = _page(request)
         total = rows.count()
@@ -125,19 +128,25 @@ class PersonView(OwnBook):
 
     def patch(self, request: Any, pk: Any) -> Any:
         data = {k: request.data[k] for k in ("name", "mobile") if k in request.data}
-        return StandardResponse.ok(person_json(services.update_person(owner=self.owner, person_id=pk, data=data)))
+        return StandardResponse.ok(
+            person_json(services.update_person(owner=self.owner, person_id=pk, data=data))
+        )
 
 
 class ArchiveView(OwnBook):
     @idempotent("moneybook.person.archive", keyed_by="user")
     def post(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(person_json(services.archive_person(owner=self.owner, person_id=pk)))
+        return StandardResponse.ok(
+            person_json(services.archive_person(owner=self.owner, person_id=pk))
+        )
 
 
 class RestoreView(OwnBook):
     @idempotent("moneybook.person.restore", keyed_by="user")
     def post(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(person_json(services.restore_person(owner=self.owner, person_id=pk)))
+        return StandardResponse.ok(
+            person_json(services.restore_person(owner=self.owner, person_id=pk))
+        )
 
 
 class EntriesView(OwnBook):
@@ -162,7 +171,9 @@ class EntriesView(OwnBook):
 class RemoveEntryView(OwnBook):
     @idempotent("moneybook.entry.remove", keyed_by="user")
     def post(self, request: Any, pk: Any) -> Any:
-        removal = services.remove_entry(owner=self.owner, entry_id=pk, reason=request.data.get("reason", ""))
+        removal = services.remove_entry(
+            owner=self.owner, entry_id=pk, reason=request.data.get("reason", "")
+        )
         person = services.get_person(owner=self.owner, person_id=removal.person_id)
         return StandardResponse.ok(entry_json(removal), meta={"person": person_json(person)})
 
@@ -184,7 +195,9 @@ class ReportView(OwnBook):
         person_id = p.get("person") or None
         if person_id:
             services.get_person(owner=self.owner, person_id=person_id)
-        result = selectors.report(owner=self.owner, person_id=person_id, date_from=date_from, date_to=date_to)
+        result = selectors.report(
+            owner=self.owner, person_id=person_id, date_from=date_from, date_to=date_to
+        )
         rows = result.pop("rows")
         if p.get("format") == "csv":
             return self._csv(rows)
@@ -194,14 +207,24 @@ class ReportView(OwnBook):
             {**entry_json(e), "person_name": e.person.name}
             for e in rows[(page - 1) * size : page * size]
         ]
-        return StandardResponse.ok(data, meta={"page": page, "page_size": size, "total": total, "summary": result})
+        return StandardResponse.ok(
+            data, meta={"page": page, "page_size": size, "total": total, "summary": result}
+        )
 
     def _csv(self, rows: Any) -> HttpResponse:
         out = io.StringIO()
         writer = csv.writer(out)
         writer.writerow([_("Date"), _("Name"), _("Entry"), _("Amount"), _("Note")])
         for e in rows:
-            writer.writerow([e.entry_date.strftime("%d/%m/%Y"), e.person.name, e.get_kind_display(), f"{e.amount:.2f}", e.note])
+            writer.writerow(
+                [
+                    e.entry_date.strftime("%d/%m/%Y"),
+                    e.person.name,
+                    e.get_kind_display(),
+                    f"{e.amount:.2f}",
+                    e.note,
+                ]
+            )
         response = HttpResponse(out.getvalue(), content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="money-book-report.csv"'
         return response
@@ -211,14 +234,19 @@ class OldDuesView(OwnBook):
     def get(self, request: Any) -> Any:
         settings = selectors.settings_for(self.owner)
         try:
-            days = min(OLD_DUES_DAYS_MAX, max(1, int(request.query_params.get("days", settings.old_dues_days))))
+            days = min(
+                OLD_DUES_DAYS_MAX,
+                max(1, int(request.query_params.get("days", settings.old_dues_days))),
+            )
         except ValueError:
             raise ValidationFailed(details={"days": [_("Enter a number of days.")]}) from None
         rows = selectors.old_dues(owner=self.owner, days=days, today=services.today())
         page, size = _page(request)
         total = rows.count()
         data = [person_json(x) for x in rows[(page - 1) * size : page * size]]
-        return StandardResponse.ok(data, meta={"page": page, "page_size": size, "total": total, "days": days})
+        return StandardResponse.ok(
+            data, meta={"page": page, "page_size": size, "total": total, "days": days}
+        )
 
 
 class ReminderTextView(OwnBook):
@@ -231,12 +259,18 @@ class ReminderTextView(OwnBook):
         # The language ON SCREEN (the person's switch), not the saved account locale:
         # a Hindi screen wrote an English message (H33, Money Book hand pass, 12 Nov).
         locale = request.query_params.get("lang") or getattr(self.owner, "locale", "en")
-        return StandardResponse.ok({"text": reminder_text(person=person, tone=tone, settings=settings, locale=locale)})
+        return StandardResponse.ok(
+            {"text": reminder_text(person=person, tone=tone, settings=settings, locale=locale)}
+        )
 
 
 class RemindersView(OwnBook):
     def get(self, request: Any) -> Any:
-        rows = Reminder.objects.filter(owner=self.owner).select_related("person").order_by("-opened_at", "-id")
+        rows = (
+            Reminder.objects.filter(owner=self.owner)
+            .select_related("person")
+            .order_by("-opened_at", "-id")
+        )
         if request.query_params.get("person"):
             rows = rows.filter(person_id=request.query_params["person"])
         page, size = _page(request)
@@ -259,9 +293,15 @@ class RemindersView(OwnBook):
         if errors:
             raise ValidationFailed(details=errors)
         if person.balance <= 0 and tone != ReminderTone.THANK_YOU:
-            raise BusinessRuleViolation("nothing_to_remind", _("%(name)s owes you nothing.") % {"name": person.name})
+            raise BusinessRuleViolation(
+                "nothing_to_remind", _("%(name)s owes you nothing.") % {"name": person.name}
+            )
         reminder = Reminder.objects.create(
-            owner=self.owner, person=person, tone=tone, channel=channel, text=text,
+            owner=self.owner,
+            person=person,
+            tone=tone,
+            channel=channel,
+            text=text,
             attached_report=bool(request.data.get("attached_report")),
         )
         return StandardResponse.created(reminder_json(reminder))

@@ -5,8 +5,15 @@ import { useEffect, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-
-import { UbBox, UbButton, UbDialog, UbQrCode, UbStack, UbStatusBanner, UbText } from 'src/design-system';
+import {
+  UbBox,
+  UbButton,
+  UbDialog,
+  UbQrCode,
+  UbStack,
+  UbStatusBanner,
+  UbText,
+} from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 
@@ -27,7 +34,12 @@ function PosterSheet({ poster, t }: Readonly<{ poster: Poster; t: TranslateFn }>
       </UbText>
       <UbStack gap={1} className="w-full max-w-[280px]">
         {poster.shifts.map((s) => (
-          <UbStack key={s.name} direction="row" justify="between" className="border-b border-border-hairline py-1.5 text-[15px]">
+          <UbStack
+            key={s.name}
+            direction="row"
+            justify="between"
+            className="border-b border-border-hairline py-1.5 text-[15px]"
+          >
             <UbText variant="inherit">{s.name}</UbText>
             <UbText variant="inherit" className="ds-num font-bold">
               {Number(s.monthlyFee) > 0 ? rupees(s.monthlyFee) : '—'}
@@ -37,7 +49,11 @@ function PosterSheet({ poster, t }: Readonly<{ poster: Poster; t: TranslateFn }>
       </UbStack>
       {poster.qr && (
         <UbStack gap={1} align="center">
-          <UbQrCode modules={poster.qr} size="44mm" label={t('library.poster.qr', { upi: poster.upiId })} />
+          <UbQrCode
+            modules={poster.qr}
+            size="44mm"
+            label={t('library.poster.qr', { upi: poster.upiId })}
+          />
           <UbText variant="inherit" className="ds-num text-[14px] font-semibold">
             {poster.upiId}
           </UbText>
@@ -64,7 +80,9 @@ export function FeePoster({ onClose }: Readonly<{ onClose: () => void }>) {
 
   useEffect(() => {
     const controller = new AbortController();
-    getPoster(controller.signal).then(setPoster).catch(() => undefined);
+    getPoster(controller.signal)
+      .then(setPoster)
+      .catch(() => undefined);
     return () => controller.abort();
   }, []);
 
@@ -90,7 +108,11 @@ export function FeePoster({ onClose }: Readonly<{ onClose: () => void }>) {
       title={t('library.fees.poster')}
       closeLabel={t('library.common.close')}
       footer={
-        <UbButton icon={<Printer className="h-4 w-4" aria-hidden />} disabled={!poster} onClick={() => setPrinting(true)}>
+        <UbButton
+          icon={<Printer className="h-4 w-4" aria-hidden />}
+          disabled={!poster}
+          onClick={() => setPrinting(true)}
+        >
           {t('library.poster.print')}
         </UbButton>
       }
@@ -103,7 +125,11 @@ export function FeePoster({ onClose }: Readonly<{ onClose: () => void }>) {
               title={t('library.poster.noUpi')}
               action={
                 canManage ? (
-                  <UbButton variant="outlineNeutral" size="sm" onClick={() => router.push(LIBRARY_ROUTES.settings)}>
+                  <UbButton
+                    variant="outlineNeutral"
+                    size="sm"
+                    onClick={() => router.push(LIBRARY_ROUTES.settings)}
+                  >
                     {t('library.poster.addUpi')}
                   </UbButton>
                 ) : undefined

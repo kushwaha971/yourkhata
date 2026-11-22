@@ -44,7 +44,9 @@ describe('pressed states', () => {
   );
 
   it('a bottom tab and a desktop table row change when pressed', () => {
-    expect(read('src/design-system/UbBottomNav/UbBottomNav.tsx')).toContain('group-active:bg-surface-active');
+    expect(read('src/design-system/UbBottomNav/UbBottomNav.tsx')).toContain(
+      'group-active:bg-surface-active'
+    );
     expect(read('src/design-system/UbDataGrid/UbDataGridTable.tsx')).toContain(
       '[&:has(button:active)]:bg-surface-active'
     );

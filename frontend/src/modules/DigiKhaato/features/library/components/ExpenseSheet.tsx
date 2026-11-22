@@ -5,7 +5,16 @@ import { useId, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
-import { UbButton, UbDateInput, UbDrawer, UbField, UbForm, UbMoneyInput, UbNativeSelect, UbTextInput } from 'src/design-system';
+import {
+  UbButton,
+  UbDateInput,
+  UbDrawer,
+  UbField,
+  UbForm,
+  UbMoneyInput,
+  UbNativeSelect,
+  UbTextInput,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -20,13 +29,23 @@ import { rupees } from '../view-model/libraryDisplay';
 
 import type { ExpenseHead } from '../types/library.types';
 
-const HEADS: readonly ExpenseHead[] = ['rent', 'electricity', 'internet', 'salary', 'cleaning', 'other'];
+const HEADS: readonly ExpenseHead[] = [
+  'rent',
+  'electricity',
+  'internet',
+  'salary',
+  'cleaning',
+  'other',
+];
 
 /**
  * Add an expense. Its own file so the form (React Hook Form, the Yup schema)
  * loads when Add is tapped, not with the list every reader opens.
  */
-export function ExpenseSheet({ onClose, onSaved }: Readonly<{ onClose: () => void; onSaved: () => void }>): React.JSX.Element {
+export function ExpenseSheet({
+  onClose,
+  onSaved,
+}: Readonly<{ onClose: () => void; onSaved: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const formId = useId();
@@ -44,10 +63,21 @@ export function ExpenseSheet({ onClose, onSaved }: Readonly<{ onClose: () => voi
     try {
       await addExpense(values, key);
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'library.expense.saved', params: { amount: rupees(values.amount) } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'library.expense.saved',
+          params: { amount: rupees(values.amount) },
+        })
+      );
       onSaved();
     } catch (e) {
-      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'library.expense.error').message ?? t('library.expense.error') }));
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          message: toApiError(e, 'library.expense.error').message ?? t('library.expense.error'),
+        })
+      );
     } finally {
       setSaving(false);
     }
@@ -60,7 +90,13 @@ export function ExpenseSheet({ onClose, onSaved }: Readonly<{ onClose: () => voi
       closeLabel={t('library.common.close')}
       keyboardAware
       footer={
-        <UbButton type="submit" form={formId} busy={saving} size="lg" data-testid="library-expense-save">
+        <UbButton
+          type="submit"
+          form={formId}
+          busy={saving}
+          size="lg"
+          data-testid="library-expense-save"
+        >
           {t('library.common.save')}
         </UbButton>
       }
@@ -76,12 +112,31 @@ export function ExpenseSheet({ onClose, onSaved }: Readonly<{ onClose: () => voi
           )}
         </UbField>
         <UbField name="amount" label={t('library.collect.amount')} required>
-          {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" autoFocus className="text-right" />}
+          {(field) => (
+            <UbMoneyInput
+              {...field}
+              value={field.value as string}
+              inputMode="decimal"
+              autoFocus
+              className="text-right"
+            />
+          )}
         </UbField>
         <UbField name="spentOn" label={t('library.expense.date')}>
-          {(field) => <UbDateInput {...field} value={field.value as string} max={today} onChange={(v) => field.onChange(v ?? today)} />}
+          {(field) => (
+            <UbDateInput
+              {...field}
+              value={field.value as string}
+              max={today}
+              onChange={(v) => field.onChange(v ?? today)}
+            />
+          )}
         </UbField>
-        <UbField name="note" label={t('library.expense.note')} optionalLabel={t('library.common.optional')}>
+        <UbField
+          name="note"
+          label={t('library.expense.note')}
+          optionalLabel={t('library.common.optional')}
+        >
           {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" />}
         </UbField>
       </UbForm>

@@ -64,13 +64,11 @@ import type { StockSummaryFilters, StockSummaryRow } from '../types/item.types';
    saved adjustment's detail belong to the chunk that opens them. */
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /** The summary's columns — a module-level factory, so no cell is a component
@@ -481,17 +479,17 @@ export function StockSummaryPageContent(): React.JSX.Element {
                 <UbStack direction="row" gap={2} wrap align="center">
                   {/* The design's register tool: the date the stock is read on. */}
                   <UbDateInput
-                name="stock-as-of"
-                appearance="inline"
-                inlineLabel={t('stock.summary.asOf')}
-                aria-label={t('stock.summary.asOf')}
-                placeholder={t('items.form.date.placeholder')}
-                value={filters.asOf ?? today}
-                max={today}
-                onChange={(value: string | null) =>
-                  update({ asOf: value && value !== today ? value : null })
-                }
-              />
+                    name="stock-as-of"
+                    appearance="inline"
+                    inlineLabel={t('stock.summary.asOf')}
+                    aria-label={t('stock.summary.asOf')}
+                    placeholder={t('items.form.date.placeholder')}
+                    value={filters.asOf ?? today}
+                    max={today}
+                    onChange={(value: string | null) =>
+                      update({ asOf: value && value !== today ? value : null })
+                    }
+                  />
                   {/* Owner, 6 Oct 2026: category and status behind ONE Filters button. */}
                   <UbFilterSheet
                     compact

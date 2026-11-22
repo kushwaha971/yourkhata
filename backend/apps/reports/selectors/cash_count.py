@@ -37,9 +37,7 @@ def count_view(count: CashCount, *, expected_now: Decimal | None = None) -> dict
         "variance": str(count.variance),
         "note": count.note,
         "counted_by": (
-            {"id": str(actor.id), "name": actor.full_name or ""}
-            if actor is not None
-            else None
+            {"id": str(actor.id), "name": actor.full_name or ""} if actor is not None else None
         ),
     }
     if expected_now is not None:

@@ -19,7 +19,9 @@ import { AppTiles } from './AppTiles';
 export function AppsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   return (
-    <UbPageShell header={<UbPageHeader title={t('nav.apps')} subtitle={t('tenant.apps.pageSubtitle')} />}>
+    <UbPageShell
+      header={<UbPageHeader title={t('nav.apps')} subtitle={t('tenant.apps.pageSubtitle')} />}
+    >
       {/* A reading width: four cards and a short list, not a data grid. */}
       <UbStack gap={6} className="w-full max-w-3xl">
         <AppsPanel />

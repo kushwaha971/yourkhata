@@ -20,7 +20,7 @@ class PlatformConfig(AppConfig):
 
     def ready(self) -> None:
         from apps.common.throttling import register_durable_throttle
-        from apps.platform_app import signals, tasks  # noqa: F401
+        from apps.platform_app import signals, tasks  # noqa: F401 — reason: imported to register handlers
         from apps.platform_app.throttling import durable_factory
 
         register_durable_throttle(durable_factory)
@@ -29,22 +29,23 @@ class PlatformConfig(AppConfig):
         # here because its capabilities are the core ones, not a vertical's.
         from apps.platform_app.apps_registry import AppSpec, register_app
 
-        register_app(AppSpec(
-            code="shop",
-            label_id="nav.workspace.shop",
-            anchor="sales",
-            capabilities=frozenset(
-                {
-                    "parties",
-                    "ledger",
-                    "inventory",
-                    "sales",
-                    "purchases",
-                    "payments",
-                    "expenses",
-                    "reports",
-                    "import_export",
-                }
+        register_app(
+            AppSpec(
+                code="shop",
+                label_id="nav.workspace.shop",
+                anchor="sales",
+                capabilities=frozenset(
+                    {
+                        "parties",
+                        "ledger",
+                        "inventory",
+                        "sales",
+                        "purchases",
+                        "payments",
+                        "expenses",
+                        "reports",
+                        "import_export",
+                    }
                 ),  # fmt: skip
                 entry_permission="parties.party.read",
                 home_path="/dashboard",

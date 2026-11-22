@@ -55,8 +55,7 @@ import type { PaymentContext, PaymentRow } from '../types/payment.types';
 /** The drawer loads with the tap that opens it, not with the list (CLAUDE.md). */
 const PaymentFormDrawerLazy = dynamic(
   () => import('./PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -239,58 +238,58 @@ export function PaymentsPageContent(): React.JSX.Element {
     />
   );
   const summary = (totals || list.status === 'loading' || list.status === 'idle') &&
-              filters.tab !== 'void' && (
-                <PaymentListStats
-                  totals={totals}
-                  loading={list.status === 'loading' || list.status === 'idle'}
-                />
-              );
+    filters.tab !== 'void' && (
+      <PaymentListStats
+        totals={totals}
+        loading={list.status === 'loading' || list.status === 'idle'}
+      />
+    );
   /* Search and period inside the table's card on a desktop (see Bills). */
   const tools = (
-            <UbStack
-              direction="row"
-              align="center"
-              className="flex-wrap gap-3"
-              data-testid="payment-register-toolbar"
-            >
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <>
-                  <UbPeriodSelect<PaymentPreset>
-                    presets={presets}
-                    value={filters.preset as PaymentPreset}
-                    customValue="custom"
-                    from={filters.dateFrom}
-                    to={filters.dateTo}
-                    max={list.today}
-                    onChange={(preset, from, to) => {
-                      if (preset === 'custom' && from && to) list.setRange(from, to);
-                      else list.setPreset(preset);
-                    }}
-                    labels={{
-                      period: t('expenses.period.label'),
-                      from: t('expenses.period.from'),
-                      to: t('expenses.period.to'),
-                      apply: t('common.action.apply'),
-                      close: t('common.action.close'),
-                    }}
-                  />
-                </>
-              )}
-            </UbStack>
+    <UbStack
+      direction="row"
+      align="center"
+      className="flex-wrap gap-3"
+      data-testid="payment-register-toolbar"
+    >
+      {searchBox}
+      {phone ? (
+        <UbFilterSheet
+          compact
+          specs={phoneSpecs}
+          values={phoneValues}
+          onApply={applyPhone}
+          labels={{
+            title: t('common.filters.title'),
+            apply: t('common.action.apply'),
+            reset: t('common.action.reset'),
+            close: t('common.action.close'),
+          }}
+        />
+      ) : (
+        <>
+          <UbPeriodSelect<PaymentPreset>
+            presets={presets}
+            value={filters.preset as PaymentPreset}
+            customValue="custom"
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            max={list.today}
+            onChange={(preset, from, to) => {
+              if (preset === 'custom' && from && to) list.setRange(from, to);
+              else list.setPreset(preset);
+            }}
+            labels={{
+              period: t('expenses.period.label'),
+              from: t('expenses.period.from'),
+              to: t('expenses.period.to'),
+              apply: t('common.action.apply'),
+              close: t('common.action.close'),
+            }}
+          />
+        </>
+      )}
+    </UbStack>
   );
   const grid = (
     <UbDataGrid

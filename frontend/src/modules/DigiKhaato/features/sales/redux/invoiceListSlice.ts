@@ -50,11 +50,7 @@ const initialState: InvoiceListState = {
   staleUrgency: null,
 };
 
-const sameFilters = (
-  a: InvoiceListArg | null,
-  b: InvoiceListArg,
-  ignorePage = false
-): boolean =>
+const sameFilters = (a: InvoiceListArg | null, b: InvoiceListArg, ignorePage = false): boolean =>
   !!a &&
   a.tab === b.tab &&
   a.dateFrom === b.dateFrom &&

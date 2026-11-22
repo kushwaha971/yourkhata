@@ -79,10 +79,10 @@ const AgingRowSheetLazy = dynamic(() => import('./AgingRowSheet').then((m) => m.
   ssr: false,
   loading: () => <UbDialogLoading />,
 });
-const AgingRowActionLazy = dynamic(
-  () => import('./AgingRowAction').then((m) => m.AgingRowAction),
-  { ssr: false, loading: () => <UbDialogLoading /> }
-);
+const AgingRowActionLazy = dynamic(() => import('./AgingRowAction').then((m) => m.AgingRowAction), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
 
 /**
  * LED-09 — how much is out there, and how old it is.
@@ -374,11 +374,7 @@ export function AgingPageContent({
                 book read as an alarm, and every shop has money in 0–30. */}
               {shop && aging.totals && aging.rows.length > 0 && (
                 <UbBox data-testid="aging-bars">
-                  <AgingBarsCardLazy
-                    t={t}
-                    totals={aging.totals}
-                    asOf={filters.asOf}
-                  />
+                  <AgingBarsCardLazy t={t} totals={aging.totals} asOf={filters.asOf} />
                 </UbBox>
               )}
               {!shop && aging.totals && aging.rows.length > 0 && (
@@ -424,31 +420,31 @@ export function AgingPageContent({
                   />
                 </UbStack>
               ) : (
-              <UbDataGrid
-                rows={aging.rows}
-                columns={columns}
-                rowId={rowId}
-                rowName={rowName}
-                state={gridState}
-                labels={labels}
-                emptyStates={emptyStates}
-                caption={t(`ledger.aging.caption.${filters.kind}`)}
-                storageId="ledger.aging"
-                page={{
-                  page: aging.page,
-                  pageSize: aging.pageSize,
-                  total: aging.total,
-                  totalPages,
-                }}
-                onPageChange={setPage}
-                sort={sort}
-                onSortChange={handleSort}
-                /* Cards only. On a table the party cell is already a link to
+                <UbDataGrid
+                  rows={aging.rows}
+                  columns={columns}
+                  rowId={rowId}
+                  rowName={rowName}
+                  state={gridState}
+                  labels={labels}
+                  emptyStates={emptyStates}
+                  caption={t(`ledger.aging.caption.${filters.kind}`)}
+                  storageId="ledger.aging"
+                  page={{
+                    page: aging.page,
+                    pageSize: aging.pageSize,
+                    total: aging.total,
+                    totalPages,
+                  }}
+                  onPageChange={setPage}
+                  sort={sort}
+                  onSortChange={handleSort}
+                  /* Cards only. On a table the party cell is already a link to
                  the same statement (`AgingColumns`), and the grid wraps the
                  first cell in its row-open button whenever this is passed —
                  which made that link an `<a>` inside a `<button>`. */
-                onRowOpen={tier === 'cards' ? (shop ? openSheet : handleOpen) : undefined}
-              />
+                  onRowOpen={tier === 'cards' ? (shop ? openSheet : handleOpen) : undefined}
+                />
               )}
             </UbStack>
           </UbTabs>

@@ -46,7 +46,9 @@ def test_asking_twice_counts_two_asks_on_one_row(owner: Any, medical: Any, make_
     assert ask(owner, crocin).status_code == 201
     assert ask(owner, crocin).status_code == 200
     rows = book(owner).json()["data"]
-    assert [(r["item"]["name"], r["reason"], r["asked_count"]) for r in rows] == [("Crocin 650", "asked", 2)]
+    assert [(r["item"]["name"], r["reason"], r["asked_count"]) for r in rows] == [
+        ("Crocin 650", "asked", 2)
+    ]
     # The screen shows what an order would carry, never a blank that becomes 1.
     assert rows[0]["qty"] == "1.000"
     assert book(owner).json()["meta"]["counts"]["asked_today"] == 1
@@ -87,7 +89,9 @@ def test_ordering_closes_the_rows_and_a_new_ask_opens_a_fresh_one(
 ) -> None:
     crocin = make_item("Crocin 650")
     ask(owner, crocin)
-    closed = owner.post(reverse("v1:short-book-ordered"), {"item_ids": [str(crocin.id)]}, format="json")
+    closed = owner.post(
+        reverse("v1:short-book-ordered"), {"item_ids": [str(crocin.id)]}, format="json"
+    )
     assert closed.json()["data"]["closed"] == 1
     assert book(owner).json()["data"] == []
     assert ask(owner, crocin).status_code == 201
@@ -114,7 +118,12 @@ def test_substitutes_share_the_salt_and_list_stock_first_then_cheapest(
 def test_a_schedule_is_none_h_h1_or_x(owner: Any, medical: Any) -> None:
     from apps.inventory.tests.conftest import unit
 
-    body = {"name": "Azithral 500", "unit_id": str(unit("NOS").id), "schedule": "h", "salt": "Azithromycin 500 mg"}
+    body = {
+        "name": "Azithral 500",
+        "unit_id": str(unit("NOS").id),
+        "schedule": "h",
+        "salt": "Azithromycin 500 mg",
+    }
     made = owner.post(reverse("v1:item-list"), body, format="json")
     assert made.status_code == 201, made.json()
     item = made.json()["data"]["item"] if "item" in made.json()["data"] else made.json()["data"]

@@ -36,8 +36,7 @@ import { WeekdaySwitches } from './WeekdaySwitches';
 // A form belongs in the chunk that OPENS it (CLAUDE.md, the LED-03 lesson).
 const ClosedDayDialog = dynamic(
   () => import('./ClosedDayDialog').then((module) => module.ClosedDayDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

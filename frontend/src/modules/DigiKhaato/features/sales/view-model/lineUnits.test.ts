@@ -4,7 +4,9 @@ import { lineUnitCaption, lineUnitChoices } from './lineUnits';
 const ROW = {
   unit: { id: 'u', code: 'PCS', allowDecimal: false },
   sellingPrice: '28.00',
-  units: [{ code: 'BOX', factor: '20.000', barcode: null, sellingPrice: null, allowDecimal: false }],
+  units: [
+    { code: 'BOX', factor: '20.000', barcode: null, sellingPrice: null, allowDecimal: false },
+  ],
 };
 const words = {
   sold: (base: string, box: string, n: string) => `Sold in ${base} · ${box} of ${n}`,

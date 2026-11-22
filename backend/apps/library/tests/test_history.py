@@ -36,7 +36,9 @@ def room(tenant, api_as, monkeypatch):
     monkeypatch.setattr(selectors, "today", lambda _t: TODAY)
     client, _ = api_as(tenant)
     client.put(ROOT + "seats", {"count": 30}, format="json")
-    client.patch(ROOT + "settings", {"sign_as": "Gyan Study Library", "upi_id": "gyan@upi"}, format="json")
+    client.patch(
+        ROOT + "settings", {"sign_as": "Gyan Study Library", "upi_id": "gyan@upi"}, format="json"
+    )
     shifts = {s.name: str(s.pk) for s in Shift.objects.filter(tenant=tenant)}
     return client, shifts
 
@@ -48,8 +50,17 @@ def post(client, path, data):
 
 
 def student(client, shifts, name, seat, shift, joined, pays=()):
-    s = post(client, "students", {"name": name, "mobile": f"98{seat:08d}", "seat": seat,
-                                  "shift_id": shifts[shift], "joined_on": joined})["data"]
+    s = post(
+        client,
+        "students",
+        {
+            "name": name,
+            "mobile": f"98{seat:08d}",
+            "seat": seat,
+            "shift_id": shifts[shift],
+            "joined_on": joined,
+        },
+    )["data"]
     for day, amount in pays:
         post(client, f"students/{s['id']}/payments", {"amount": amount, "paid_on": day})
     return client.get(ROOT + f"students/{s['id']}").json()["data"]
@@ -61,28 +72,67 @@ def test_a_library_with_a_past_adds_up_by_hand(room):
     # On time every month since June (₹800): joined 15 Jun, paid 15 Jun, 15 Jul,
     # 15 Aug, 15 Sep, 15 Oct, 12 Nov → 6 months from 15 Jun = paid to 15 Dec. Not due
     # within 7 days (33 days away) → Paid, ₹0.
-    a = student(client, shifts, "Asha OnTime", 1, "Morning", "2026-06-15",
-                [("2026-06-15", "800"), ("2026-07-15", "800"), ("2026-08-15", "800"),
-                 ("2026-09-15", "800"), ("2026-10-15", "800"), ("2026-11-12", "800")])
+    a = student(
+        client,
+        shifts,
+        "Asha OnTime",
+        1,
+        "Morning",
+        "2026-06-15",
+        [
+            ("2026-06-15", "800"),
+            ("2026-07-15", "800"),
+            ("2026-08-15", "800"),
+            ("2026-09-15", "800"),
+            ("2026-10-15", "800"),
+            ("2026-11-12", "800"),
+        ],
+    )
     assert (a["fee"], a["due"], a["paid_to"]) == ("paid", "0.00", "2026-12-15")
 
     # Stopped paying: joined 15 Jun, paid twice (→ paid to 15 Aug). Unpaid months
     # starting 15 Aug, 15 Sep, 15 Oct (15 Nov not yet) = 3 × ₹800 = ₹2,400; late since
     # 15 Aug = 89 days.
-    b = student(client, shifts, "Bala Stopped", 2, "Morning", "2026-06-15",
-                [("2026-06-15", "800"), ("2026-07-20", "800")])
-    assert (b["fee"], b["due"], b["days_late"], b["paid_to"]) == ("over", "2400.00", 89, "2026-08-15")
+    b = student(
+        client,
+        shifts,
+        "Bala Stopped",
+        2,
+        "Morning",
+        "2026-06-15",
+        [("2026-06-15", "800"), ("2026-07-20", "800")],
+    )
+    assert (b["fee"], b["due"], b["days_late"], b["paid_to"]) == (
+        "over",
+        "2400.00",
+        89,
+        "2026-08-15",
+    )
 
     # Behind AND put down a part: as Bala, plus ₹300 on 2 Oct. Still 3 months unpaid;
     # ₹2,400 − ₹300 = ₹2,100, and the status is Overdue, never "Part paid".
-    c = student(client, shifts, "Chetan PartLate", 3, "Morning", "2026-06-15",
-                [("2026-06-15", "800"), ("2026-07-20", "800"), ("2026-10-02", "300")])
+    c = student(
+        client,
+        shifts,
+        "Chetan PartLate",
+        3,
+        "Morning",
+        "2026-06-15",
+        [("2026-06-15", "800"), ("2026-07-20", "800"), ("2026-10-02", "300")],
+    )
     assert (c["fee"], c["due"], c["credit"]) == ("over", "2100.00", "300.00")
 
     # Part paid and NOT late: Full day ₹1,200, joined 20 Oct, paid ₹1,200 (→ 20 Nov) and
     # ₹500 on 10 Nov → credit ₹500, rest of the next month ₹700; 8 days to 20 Nov.
-    d = student(client, shifts, "Divya PartOnTime", 4, "Full day", "2026-10-20",
-                [("2026-10-20", "1200"), ("2026-11-10", "500")])
+    d = student(
+        client,
+        shifts,
+        "Divya PartOnTime",
+        4,
+        "Full day",
+        "2026-10-20",
+        [("2026-10-20", "1200"), ("2026-11-10", "500")],
+    )
     assert (d["fee"], d["due"], d["paid_to"]) == ("part", "700.00", "2026-11-20")
 
     # Paid three months ahead in one go: Evening ₹600, joined 1 Oct, ₹1,800 on 1 Oct →
@@ -92,11 +142,20 @@ def test_a_library_with_a_past_adds_up_by_hand(room):
 
     # Joined on the 31st: 31 Aug → 30 Sep → 31 Oct → 30 Nov (the day comes back, never
     # drifts to the 30th). Paid 3 months → paid to 30 Nov: 18 days → Paid.
-    f = student(client, shifts, "Farhan ThirtyFirst", 6, "Morning", "2026-08-31",
-                [("2026-08-31", "800"), ("2026-09-30", "800"), ("2026-10-31", "800")])
+    f = student(
+        client,
+        shifts,
+        "Farhan ThirtyFirst",
+        6,
+        "Morning",
+        "2026-08-31",
+        [("2026-08-31", "800"), ("2026-09-30", "800"), ("2026-10-31", "800")],
+    )
     assert f["paid_to"] == "2026-11-30"
     # …and one more month lands on 31 Dec, not 30 Dec.
-    nxt = client.post(ROOT + f"students/{f['id']}/payments?preview=true", {"amount": "800"}, format="json").json()["data"]
+    nxt = client.post(
+        ROOT + f"students/{f['id']}/payments?preview=true", {"amount": "800"}, format="json"
+    ).json()["data"]
     assert nxt["paid_to"] == "2026-12-31"
 
     # Due soon: Morning, joined 15 Oct, paid once → paid to 15 Nov, 3 days away → Due
@@ -117,9 +176,15 @@ def test_a_library_with_a_past_adds_up_by_hand(room):
     assert (home["due_week"], home["due_week_students"]) == ("800.00", 1)
     assert (home["collected"], home["payments"]) == ("1300.00", 2)
     fees = client.get(ROOT + "fees?fee=over").json()["data"]
-    assert sorted(r["name"] for r in fees["rows"]) == ["Bala Stopped", "Chetan PartLate", "Hari NeverPaid"]
+    assert sorted(r["name"] for r in fees["rows"]) == [
+        "Bala Stopped",
+        "Chetan PartLate",
+        "Hari NeverPaid",
+    ]
     assert sum(Decimal(r["due"]) for r in fees["rows"]) == Decimal("6100.00")
-    assert fees["counts"]["over"] == 3 and fees["counts"]["part"] == 1 and fees["counts"]["soon"] == 1
+    assert (
+        fees["counts"]["over"] == 3 and fees["counts"]["part"] == 1 and fees["counts"]["soon"] == 1
+    )
 
     # Income & expenses for October: Bala/Chetan none, Chetan 300 (2 Oct), Divya 1,200,
     # Esha 1,800, Farhan 800 (31 Oct), Gita 800, Asha 800 (15 Oct) = ₹5,700.
@@ -127,11 +192,22 @@ def test_a_library_with_a_past_adds_up_by_hand(room):
     assert money["fees"] == "5700.00"
 
     # The reminder carries the same figures and dates, in the library's name.
-    text = client.get(ROOT + f"messages/text?student={b['id']}&kind=fee_due&lang=en").json()["data"]["text"]
-    assert "₹2,400" in text and "15 Aug" in text and "Gyan Study Library" in text and "gyan@upi" in text
-    soon = client.get(ROOT + f"messages/text?student={g['id']}&kind=fee_due&lang=en").json()["data"]["text"]
+    text = client.get(ROOT + f"messages/text?student={b['id']}&kind=fee_due&lang=en").json()[
+        "data"
+    ]["text"]
+    assert (
+        "₹2,400" in text
+        and "15 Aug" in text
+        and "Gyan Study Library" in text
+        and "gyan@upi" in text
+    )
+    soon = client.get(ROOT + f"messages/text?student={g['id']}&kind=fee_due&lang=en").json()[
+        "data"
+    ]["text"]
     assert "is due on 15 Nov" in soon and "₹800" in soon
-    hi = client.get(ROOT + f"messages/text?student={c['id']}&kind=fee_due&lang=hi").json()["data"]["text"]
+    hi = client.get(ROOT + f"messages/text?student={c['id']}&kind=fee_due&lang=hi").json()["data"][
+        "text"
+    ]
     assert "₹2,100" in hi
 
 
@@ -148,8 +224,12 @@ def test_a_back_dated_payment_is_today_s_money_only_on_its_own_day(room):
 def test_a_payment_cannot_be_dated_in_the_future(room):
     client, shifts = room
     s = student(client, shifts, "Future", 10, "Morning", "2026-10-01")
-    r = client.post(ROOT + f"students/{s['id']}/payments", {"amount": "800", "paid_on": "2026-11-13"},
-                    format="json", HTTP_IDEMPOTENCY_KEY=str(uuid4()))
+    r = client.post(
+        ROOT + f"students/{s['id']}/payments",
+        {"amount": "800", "paid_on": "2026-11-13"},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+    )
     assert r.status_code == 400
 
 
@@ -175,7 +255,6 @@ def test_the_morning_bell_names_the_fees_that_became_overdue_today(room, tenant)
     bell = client.get("/api/v1/notifications").json()["data"]
     mine = [b for b in bell if b.get("type_code", b.get("type")) == tasks.OVERDUE_TODAY]
     assert mine and "/library/fees" in str(mine[0])
-
 
 
 @pytest.mark.django_db(transaction=True)

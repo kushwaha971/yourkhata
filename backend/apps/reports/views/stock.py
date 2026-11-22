@@ -40,7 +40,14 @@ from apps.reports.views.export_support import (
 )
 
 SLUG = "stock-summary"
-_STOCK_FILTERS = {"all": None, "in": "in", "low": "low", "out": "out", "negative": "negative", "short": "short"}
+_STOCK_FILTERS = {
+    "all": None,
+    "in": "in",
+    "low": "low",
+    "out": "out",
+    "negative": "negative",
+    "short": "short",
+}
 _COST_COLUMNS = ("avg_cost", "stock_value", "potential_sale_value")
 
 
@@ -163,7 +170,7 @@ def page_and_totals(tenant: Any, params: dict, *, page: int, page_size: int) -> 
             "SELECT COUNT(*), COALESCE(SUM(sub.on_hand), 0), COALESCE(SUM(sub.stock_value), 0), "
             "COALESCE(SUM(ROUND(sub.on_hand * sub.selling_price, 2)), 0), "
             "COUNT(DISTINCT sub.code), MAX(sub.code) "
-            f"FROM ({inner}) sub(id, on_hand, stock_value, selling_price, code)",  # noqa: S608
+            f"FROM ({inner}) sub(id, on_hand, stock_value, selling_price, code)",  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
             sql_params,
         )
         count, on_hand, stock_value, potential, unit_count, one_unit = cursor.fetchone()

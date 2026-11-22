@@ -68,9 +68,7 @@ def short_book(*, tenant: Any) -> dict:
     ]
     stock = {
         item.id: item
-        for item in low_stock_queryset(tenant=tenant, location_id=None).filter(
-            id__in=list(in_book)
-        )
+        for item in low_stock_queryset(tenant=tenant, location_id=None).filter(id__in=list(in_book))
     }
     ids = [entry.item_id for entry in entries] + [item.id for item in low]
     last = _last_purchases(tenant, ids)
@@ -95,7 +93,9 @@ def short_book(*, tenant: Any) -> dict:
                     entry.qty
                     if entry.qty is not None
                     else (
-                        suggested_qty(on_hand=on_hand or Decimal("0"), reorder_point=item.reorder_point)
+                        suggested_qty(
+                            on_hand=on_hand or Decimal("0"), reorder_point=item.reorder_point
+                        )
                         if item.reorder_point is not None
                         else Decimal("1.000")
                     )
@@ -117,7 +117,11 @@ def short_book(*, tenant: Any) -> dict:
     distributors = {row["supplier"]["id"] for row in rows if row["supplier"]}
     return {
         "rows": rows,
-        "counts": {"items": len(rows), "distributors": len(distributors), "asked_today": asked_today},
+        "counts": {
+            "items": len(rows),
+            "distributors": len(distributors),
+            "asked_today": asked_today,
+        },
     }
 
 
@@ -204,7 +208,9 @@ def substitutes(*, tenant: Any, item_id: Any) -> list[Item]:
         return []
     same = [
         other
-        for other in item_list(tenant=tenant, location_id=None).filter(salt__isnull=False).exclude(pk=item.pk)
+        for other in item_list(tenant=tenant, location_id=None)
+        .filter(salt__isnull=False)
+        .exclude(pk=item.pk)
         if " ".join((other.salt or "").split()).lower() == salt
     ]
     same.sort(

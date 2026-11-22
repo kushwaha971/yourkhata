@@ -48,7 +48,12 @@ class Applied:
 
 
 def apply_payment(
-    *, paid_to: dt.date | None, credit: Decimal, amount: Decimal, monthly_fee: Decimal, joined_on: dt.date
+    *,
+    paid_to: dt.date | None,
+    credit: Decimal,
+    amount: Decimal,
+    monthly_fee: Decimal,
+    joined_on: dt.date,
 ) -> Applied:
     """Whole months move `paid_to`; what is left stays as credit (Part paid)."""
     current = paid_to or start_paid_to(joined_on)

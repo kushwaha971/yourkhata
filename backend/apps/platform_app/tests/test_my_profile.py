@@ -17,10 +17,14 @@ URL = "v1:auth-me"
 
 
 @pytest.mark.parametrize("role", ["owner", "admin", "accountant", "staff"])
-def test_every_role_changes_their_own_name_and_language(tenant: Any, api_as: Any, role: str) -> None:
+def test_every_role_changes_their_own_name_and_language(
+    tenant: Any, api_as: Any, role: str
+) -> None:
     """A staff member or an accountant is the owner of their own profile."""
     client, member = api_as(tenant, role=role)
-    response = client.patch(reverse(URL), {"full_name": "  Mohan  Lal ", "locale": "hi"}, format="json")
+    response = client.patch(
+        reverse(URL), {"full_name": "  Mohan  Lal ", "locale": "hi"}, format="json"
+    )
     assert response.status_code == 200, response.content
     member.user.refresh_from_db()
     assert member.user.full_name == "Mohan Lal"
@@ -48,7 +52,9 @@ def test_the_mobile_and_email_cannot_be_changed_here(tenant: Any, api_as: Any) -
     client, member = api_as(tenant)
     email, mobile = member.user.email, member.user.mobile
     response = client.patch(
-        reverse(URL), {"full_name": "Ramesh", "email": "x@y.test", "mobile": "+919999999999"}, format="json"
+        reverse(URL),
+        {"full_name": "Ramesh", "email": "x@y.test", "mobile": "+919999999999"},
+        format="json",
     )
     assert response.status_code == 200
     member.user.refresh_from_db()
@@ -56,4 +62,6 @@ def test_the_mobile_and_email_cannot_be_changed_here(tenant: Any, api_as: Any) -
 
 
 def test_signed_out_cannot_change_a_profile(anonymous_client: Any) -> None:
-    assert anonymous_client.patch(reverse(URL), {"full_name": "X"}, format="json").status_code == 401
+    assert (
+        anonymous_client.patch(reverse(URL), {"full_name": "X"}, format="json").status_code == 401
+    )

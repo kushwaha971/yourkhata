@@ -11,7 +11,11 @@ import { MLSpinner } from 'src/design-system/primitives';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveTenant, selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import {
+  selectActiveTenant,
+  selectAppsAddable,
+  selectSessionTenants,
+} from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { addBusinessPath } from 'src/routes';
 import { cn } from 'src/utils/cn';
@@ -82,7 +86,9 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const addable = useAppSelector(selectAppsAddable);
   const { addApp } = useAddApp(onLeave);
   const [busy, setBusy] = useState<string | null>(null);
-  const [asking, setAsking] = useState<{ readonly tenantId: string; readonly code: string } | null>(null);
+  const [asking, setAsking] = useState<{ readonly tenantId: string; readonly code: string } | null>(
+    null
+  );
   // Which apps each business opens, from its own request; until it answers (or
   // if it cannot), the open business's apps alone, which the session holds.
   const [appsOf, setAppsOf] = useState<Readonly<Record<string, readonly string[]>>>({});
@@ -94,7 +100,10 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
     return () => controller.abort();
   }, [tenants]);
 
-  const usable = useMemo(() => tenants.filter((row) => (row.status ?? 'active') === 'active'), [tenants]);
+  const usable = useMemo(
+    () => tenants.filter((row) => (row.status ?? 'active') === 'active'),
+    [tenants]
+  );
   // Apps across every business; an older session without
   // `apps` on its rows still shows the open business's apps.
   const codes = useMemo(() => {
@@ -103,7 +112,12 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
     const elsewhere = new Set<string>();
     usable.forEach((row) => (appsOf[row.id] ?? []).forEach((code) => elsewhere.add(code)));
     const first = here.map((a) => a.code);
-    const mine = [...first, ...APP_MANIFESTS.map((m) => m.code).filter((code) => elsewhere.has(code) && !first.includes(code))];
+    const mine = [
+      ...first,
+      ...APP_MANIFESTS.map((m) => m.code).filter(
+        (code) => elsewhere.has(code) && !first.includes(code)
+      ),
+    ];
     // Every released app has a card (owner, 18 Nov 2026: Business, Library,
     // Ledger, Money Book), the ones not added yet last, to start one.
     return [...mine, ...HUB_APPS.filter((code) => !mine.includes(code))];
@@ -115,7 +129,11 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
 
   const placesOf = (code: string): Place[] =>
     usable
-      .filter((row) => (appsOf[row.id] ?? []).includes(code) || (row.id === active?.id && here.some((a) => a.code === code)))
+      .filter(
+        (row) =>
+          (appsOf[row.id] ?? []).includes(code) ||
+          (row.id === active?.id && here.some((a) => a.code === code))
+      )
       .map((row) => ({
         tenantId: row.id,
         membershipId: row.membershipId ?? null,
@@ -190,7 +208,8 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
       void openPlace(active?.id ?? '', code);
       return;
     }
-    const target = places.find((p) => p.primary) ?? places.find((p) => p.tenantId === active?.id) ?? places[0];
+    const target =
+      places.find((p) => p.primary) ?? places.find((p) => p.tenantId === active?.id) ?? places[0];
     if (target) void openPlace(target.tenantId, code);
   };
 
@@ -198,8 +217,16 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
     if (!place.membershipId || place.primary || busy) return;
     setBusy(`star:${place.tenantId}`);
     try {
-      await dispatch(setDefaultTenant({ membershipId: place.membershipId, primaryApp: code })).unwrap();
-      dispatch(showSnackbar({ severity: 'success', id: 'tenant.apps.primarySet', params: { name: place.name } }));
+      await dispatch(
+        setDefaultTenant({ membershipId: place.membershipId, primaryApp: code })
+      ).unwrap();
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'tenant.apps.primarySet',
+          params: { name: place.name },
+        })
+      );
     } catch {
       dispatch(showSnackbar({ severity: 'error', id: 'tenant.apps.primaryError' }));
     } finally {
@@ -250,10 +277,18 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                   {t(manifest?.labelId ?? code)}
                 </UbText>
                 <UbText as="span" variant="caption" tone="secondary" className="break-words">
-                  {isOpen ? t('tenant.apps.openNow') : notAdded(code) ? t('tenant.apps.notAdded') : ABOUT.has(code) ? t(`tenant.apps.about.${code}`) : ''}
+                  {isOpen
+                    ? t('tenant.apps.openNow')
+                    : notAdded(code)
+                      ? t('tenant.apps.notAdded')
+                      : ABOUT.has(code)
+                        ? t(`tenant.apps.about.${code}`)
+                        : ''}
                 </UbText>
               </UbStack>
-              {isOpen && <Check aria-hidden className="absolute right-3 top-3 h-4 w-4" strokeWidth={2.5} />}
+              {isOpen && (
+                <Check aria-hidden className="absolute right-3 top-3 h-4 w-4" strokeWidth={2.5} />
+              )}
             </UbPressable>
           );
         })}
@@ -278,7 +313,10 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
           <UbText as="h2" variant="label" tone="tertiary">
             {t(`tenant.apps.places.${wordOf(view)}`)}
           </UbText>
-          <UbBox className="overflow-hidden rounded-card border border-border-hairline bg-surface-card" data-testid="apps-places">
+          <UbBox
+            className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
+            data-testid="apps-places"
+          >
             {places.map((place) => (
               <UbBox
                 key={place.tenantId}
@@ -307,7 +345,11 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                       {place.name}
                     </UbText>
                     <UbText as="span" variant="caption" tone="secondary" className="break-words">
-                      {[place.role, place.open && t('tenant.apps.openNow'), place.primary && t('tenant.apps.primary')]
+                      {[
+                        place.role,
+                        place.open && t('tenant.apps.openNow'),
+                        place.primary && t('tenant.apps.primary'),
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </UbText>
@@ -317,7 +359,10 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                 <UbPressable
                   onClick={() => void star(place, view)}
                   aria-pressed={place.primary}
-                  aria-label={t(place.primary ? 'tenant.apps.primaryLabel' : 'tenant.apps.makePrimary', { name: place.name })}
+                  aria-label={t(
+                    place.primary ? 'tenant.apps.primaryLabel' : 'tenant.apps.makePrimary',
+                    { name: place.name }
+                  )}
                   disabled={!place.membershipId}
                   data-testid="apps-star"
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
@@ -327,7 +372,10 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                   ) : (
                     <Star
                       aria-hidden
-                      className={cn('h-5 w-5', place.primary ? 'fill-warning text-warning' : 'text-text-tertiary')}
+                      className={cn(
+                        'h-5 w-5',
+                        place.primary ? 'fill-warning text-warning' : 'text-text-tertiary'
+                      )}
                       strokeWidth={1.75}
                     />
                   )}

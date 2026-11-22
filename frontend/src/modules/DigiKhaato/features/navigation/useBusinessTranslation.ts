@@ -17,6 +17,9 @@ export function useBusinessTranslation(): { readonly t: TranslateFn } {
   const { t } = useTranslation();
   const locale = useAppSelector(selectLocale);
   const business = useAppSelector(selectActiveTenant)?.words?.[locale];
-  const bt = useCallback<TranslateFn>((id, values) => business?.[id] ?? t(id, values), [t, business]);
+  const bt = useCallback<TranslateFn>(
+    (id, values) => business?.[id] ?? t(id, values),
+    [t, business]
+  );
   return { t: bt };
 }

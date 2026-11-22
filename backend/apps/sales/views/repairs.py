@@ -53,7 +53,9 @@ class RepairJobDetailView(_View):
         from apps.common.dates import tenant_today
 
         tenant = get_effective_tenant(request)
-        return StandardResponse.ok(repairs.view(repairs.get_job(tenant=tenant, job_id=pk), today=tenant_today(tenant)))
+        return StandardResponse.ok(
+            repairs.view(repairs.get_job(tenant=tenant, job_id=pk), today=tenant_today(tenant))
+        )
 
 
 class RepairJobStageView(_View):

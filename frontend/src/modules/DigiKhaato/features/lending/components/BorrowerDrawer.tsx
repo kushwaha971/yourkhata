@@ -6,7 +6,16 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
 import { PhoneContactButton } from 'src/components/contacts/PhoneContactButton';
-import { UbButton, UbDrawer, UbField, UbForm, UbNativeSelect, UbPhoneInput, UbStatusBanner, UbTextInput } from 'src/design-system';
+import {
+  UbButton,
+  UbDrawer,
+  UbField,
+  UbForm,
+  UbNativeSelect,
+  UbPhoneInput,
+  UbStatusBanner,
+  UbTextInput,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -27,7 +36,11 @@ export function BorrowerDrawer({
   borrower,
   onClose,
   onSaved,
-}: Readonly<{ borrower?: Borrower | null; onClose: () => void; onSaved: (b: { id: string; name: string }) => void }>) {
+}: Readonly<{
+  borrower?: Borrower | null;
+  onClose: () => void;
+  onSaved: (b: { id: string; name: string }) => void;
+}>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const formId = useId();
@@ -48,7 +61,9 @@ export function BorrowerDrawer({
   });
   useEffect(() => {
     const c = new AbortController();
-    listRoutes(c.signal).then((r) => setRoutes(r.filter((x) => x.active))).catch(() => undefined);
+    listRoutes(c.signal)
+      .then((r) => setRoutes(r.filter((x) => x.active)))
+      .catch(() => undefined);
     return () => c.abort();
   }, []);
 
@@ -58,14 +73,30 @@ export function BorrowerDrawer({
     try {
       // The mobile rule turns an empty box into null (H70): read it null-safe.
       const mobile = (values.mobile ?? '').replace(/\D/g, '').slice(-10);
-      const saved = await saveBorrower({ ...values, mobile, work: values.work ?? '' }, borrower?.id ?? null, key);
+      const saved = await saveBorrower(
+        { ...values, mobile, work: values.work ?? '' },
+        borrower?.id ?? null,
+        key
+      );
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'lending.borrower.saved', params: { name: saved.name } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'lending.borrower.saved',
+          params: { name: saved.name },
+        })
+      );
       onSaved(saved);
     } catch (e) {
       const err = toApiError(e, 'lending.borrower.saveError');
       if (err.code === 'borrower_exists') setExists(err.message ?? '');
-      else dispatch(showSnackbar({ severity: 'error', message: err.message ?? t('lending.borrower.saveError') }));
+      else
+        dispatch(
+          showSnackbar({
+            severity: 'error',
+            message: err.message ?? t('lending.borrower.saveError'),
+          })
+        );
     } finally {
       setSaving(false);
     }
@@ -79,7 +110,13 @@ export function BorrowerDrawer({
       closeLabel={t('lending.common.close')}
       keyboardAware
       footer={
-        <UbButton type="submit" form={formId} busy={saving} size="lg" data-testid="lending-borrower-save">
+        <UbButton
+          type="submit"
+          form={formId}
+          busy={saving}
+          size="lg"
+          data-testid="lending-borrower-save"
+        >
           {t('lending.common.save')}
         </UbButton>
       }
@@ -99,20 +136,40 @@ export function BorrowerDrawer({
           />
         )}
         <UbField name="name" label={t('lending.borrower.name')} required>
-          {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />}
+          {(field) => (
+            <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />
+          )}
         </UbField>
-        <UbField name="mobile" label={t('lending.borrower.mobile')} hint={t('lending.borrower.mobileHint')}>
+        <UbField
+          name="mobile"
+          label={t('lending.borrower.mobile')}
+          hint={t('lending.borrower.mobileHint')}
+        >
           {(field) => <UbPhoneInput {...field} autoComplete="tel" />}
         </UbField>
-        <UbField name="work" label={t('lending.borrower.work')} optionalLabel={t('lending.common.optional')}>
-          {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" placeholder={t('lending.borrower.workHint')} />}
+        <UbField
+          name="work"
+          label={t('lending.borrower.work')}
+          optionalLabel={t('lending.common.optional')}
+        >
+          {(field) => (
+            <UbTextInput
+              {...field}
+              value={field.value as string}
+              autoComplete="off"
+              placeholder={t('lending.borrower.workHint')}
+            />
+          )}
         </UbField>
         <UbField name="routeId" label={t('lending.newLoan.route')}>
           {(field) => (
             <UbNativeSelect
               {...field}
               value={field.value as string}
-              options={[{ value: '', label: t('lending.newLoan.noRoute') }, ...routes.map((r) => ({ value: r.id, label: r.name }))]}
+              options={[
+                { value: '', label: t('lending.newLoan.noRoute') },
+                ...routes.map((r) => ({ value: r.id, label: r.name })),
+              ]}
             />
           )}
         </UbField>

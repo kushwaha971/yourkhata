@@ -108,7 +108,13 @@ export function CafeOrderDrawer({
   const [errors, setErrors] = useState<readonly string[]>([]);
   const [lines, setLines] = useState<readonly Line[]>(
     () =>
-      order?.lines.map((l) => ({ itemId: l.item_id, name: l.name, qty: l.qty, rate: l.rate, note: l.note })) ?? []
+      order?.lines.map((l) => ({
+        itemId: l.item_id,
+        name: l.name,
+        qty: l.qty,
+        rate: l.rate,
+        note: l.note,
+      })) ?? []
   );
   const [linesError, setLinesError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -147,7 +153,11 @@ export function CafeOrderDrawer({
   }, [q]);
 
   const total = useMemo(
-    () => lines.reduce((sum, l) => sum.plus(toDecimal(l.qty || '0').times(toDecimal(l.rate || '0'))), toDecimal('0')),
+    () =>
+      lines.reduce(
+        (sum, l) => sum.plus(toDecimal(l.qty || '0').times(toDecimal(l.rate || '0'))),
+        toDecimal('0')
+      ),
     [lines]
   );
   const balance = total.minus(toDecimal(advance || '0'));
@@ -157,8 +167,13 @@ export function CafeOrderDrawer({
     setLines((now) => {
       const at = now.findIndex((l) => l.itemId === row.id);
       if (at >= 0)
-        return now.map((l, i) => (i === at ? { ...l, qty: toDecimal(l.qty).plus(1).toString() } : l));
-      return [...now, { itemId: row.id, name: row.name, qty: '1', rate: row.sellingPrice, note: '' }];
+        return now.map((l, i) =>
+          i === at ? { ...l, qty: toDecimal(l.qty).plus(1).toString() } : l
+        );
+      return [
+        ...now,
+        { itemId: row.id, name: row.name, qty: '1', rate: row.sellingPrice, note: '' },
+      ];
     });
     setSearch('');
   };
@@ -169,7 +184,12 @@ export function CafeOrderDrawer({
         setLinesError(t('sales.cafe.needItem'));
         return;
       }
-      const wire = lines.map((l) => ({ item_id: l.itemId, qty: l.qty, rate: l.rate, note: l.note }));
+      const wire = lines.map((l) => ({
+        item_id: l.itemId,
+        qty: l.qty,
+        rate: l.rate,
+        note: l.note,
+      }));
       try {
         if (order) {
           onSaved(await updateCafeOrder(order.id, { lines: wire }), false);
@@ -193,7 +213,8 @@ export function CafeOrderDrawer({
       } catch (thrown) {
         const error = thrown as ApiErrorShape;
         const raw = (error.details ?? {}) as Record<string, unknown>;
-        if (Object.keys(raw).some((k) => k.startsWith('lines'))) setLinesError(t('sales.cafe.linesWrong'));
+        if (Object.keys(raw).some((k) => k.startsWith('lines')))
+          setLinesError(t('sales.cafe.linesWrong'));
         const details = Object.fromEntries(
           Object.entries(raw)
             .filter(([key]) => !key.startsWith('lines'))
@@ -206,7 +227,9 @@ export function CafeOrderDrawer({
   );
   const busy = form.formState.isSubmitting;
   const dirty = form.formState.isDirty || lines.length !== (order?.lines.length ?? 0);
-  const title = order ? t('sales.cafe.addTo', { kind: order.kind, number: order.number }) : t(`sales.cafe.newKind.${kind}`);
+  const title = order
+    ? t('sales.cafe.addTo', { kind: order.kind, number: order.number })
+    : t(`sales.cafe.newKind.${kind}`);
 
   return (
     <UbDrawer
@@ -230,12 +253,27 @@ export function CafeOrderDrawer({
             <UbText variant="inherit" tone="secondary" className="text-[13px]">
               {isAdvance && !adding ? t('sales.cafe.balanceOnDelivery') : t('sales.cafe.total')}
             </UbText>
-            <UbText variant="h3" className="font-semibold tabular-nums" data-testid="cafe-dock-total">
+            <UbText
+              variant="h3"
+              className="font-semibold tabular-nums"
+              data-testid="cafe-dock-total"
+            >
               {formatInr((isAdvance && !adding ? balance : total).toFixed(2))}
             </UbText>
           </UbStack>
-          <UbButton type="submit" form={formId} busy={busy} size="lg" className="w-full" data-testid="cafe-save">
-            {adding ? t('sales.cafe.saveItems') : isAdvance ? t('sales.cafe.saveAdvance') : t('sales.cafe.save')}
+          <UbButton
+            type="submit"
+            form={formId}
+            busy={busy}
+            size="lg"
+            className="w-full"
+            data-testid="cafe-save"
+          >
+            {adding
+              ? t('sales.cafe.saveItems')
+              : isAdvance
+                ? t('sales.cafe.saveAdvance')
+                : t('sales.cafe.save')}
           </UbButton>
         </UbStack>
       }
@@ -255,7 +293,12 @@ export function CafeOrderDrawer({
         {!adding && kind === 'table' && (
           <UbField name="table" label={t('sales.cafe.table')}>
             {(field) => (
-              <UbTextInput {...field} value={field.value as string} maxLength={12} placeholder={t('sales.cafe.tablePlaceholder')} />
+              <UbTextInput
+                {...field}
+                value={field.value as string}
+                maxLength={12}
+                placeholder={t('sales.cafe.tablePlaceholder')}
+              />
             )}
           </UbField>
         )}
@@ -288,7 +331,12 @@ export function CafeOrderDrawer({
             {t('sales.cafe.items')}
           </UbText>
           {lines.map((line, index) => (
-            <UbStack key={line.itemId} gap={1} className="border-b border-border pb-2" data-testid="cafe-line">
+            <UbStack
+              key={line.itemId}
+              gap={1}
+              className="border-b border-border pb-2"
+              data-testid="cafe-line"
+            >
               <UbStack direction="row" gap={2} className="items-start justify-between">
                 <UbStack gap={0} className="min-w-0">
                   <UbText variant="body-sm" className="font-semibold">
@@ -299,12 +347,18 @@ export function CafeOrderDrawer({
                   </UbText>
                 </UbStack>
                 <UbText variant="body-sm" className="shrink-0 font-semibold tabular-nums">
-                  {formatInr(toDecimal(line.qty || '0').times(toDecimal(line.rate)).toFixed(2))}
+                  {formatInr(
+                    toDecimal(line.qty || '0')
+                      .times(toDecimal(line.rate))
+                      .toFixed(2)
+                  )}
                 </UbText>
               </UbStack>
               <UbQuantityStepper
                 value={line.qty}
-                onChange={(qty) => setLines((now) => now.map((l, i) => (i === index ? { ...l, qty } : l)))}
+                onChange={(qty) =>
+                  setLines((now) => now.map((l, i) => (i === index ? { ...l, qty } : l)))
+                }
                 label={t('sales.cafe.qtyOf', { name: line.name })}
                 decreaseLabel={t('sales.cafe.less')}
                 increaseLabel={t('sales.cafe.more')}
@@ -333,7 +387,12 @@ export function CafeOrderDrawer({
           {q && search.trim() && found.length > 0 && (
             <UbStack gap={1} role="list" aria-label={t('sales.cafe.findItem')}>
               {found.map((row) => (
-                <UbPressable key={row.id} onClick={() => pick(row)} className="rounded-md px-3 py-2 hover:bg-surface-subtle" data-testid="cafe-item-option">
+                <UbPressable
+                  key={row.id}
+                  onClick={() => pick(row)}
+                  className="rounded-md px-3 py-2 hover:bg-surface-subtle"
+                  data-testid="cafe-item-option"
+                >
                   <UbStack direction="row" gap={2} className="items-center justify-between">
                     <UbText variant="body-sm">{row.name}</UbText>
                     <UbText variant="body-sm" tone="secondary" className="tabular-nums">
@@ -388,7 +447,10 @@ export function CafeOrderDrawer({
                       id={field.id}
                       aria-label={t('sales.repair.advanceMode')}
                       value={field.value as string}
-                      options={MODES.map((value) => ({ value, label: t(`sales.repair.mode.${value}`) }))}
+                      options={MODES.map((value) => ({
+                        value,
+                        label: t(`sales.repair.mode.${value}`),
+                      }))}
                       onChange={field.onChange}
                     />
                   )}

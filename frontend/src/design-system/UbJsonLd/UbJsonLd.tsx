@@ -35,7 +35,10 @@ export const serializeJsonLd = (data: Readonly<Record<string, unknown>>): string
     .replaceAll(LINE_SEPARATOR, '\\u2028')
     .replaceAll(PARAGRAPH_SEPARATOR, '\\u2029');
 
-export function UbJsonLd({ data, 'data-testid': testId }: Readonly<UbJsonLdProps>): React.JSX.Element {
+export function UbJsonLd({
+  data,
+  'data-testid': testId,
+}: Readonly<UbJsonLdProps>): React.JSX.Element {
   return (
     <script
       type="application/ld+json"

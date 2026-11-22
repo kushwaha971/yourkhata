@@ -91,7 +91,7 @@ function UbDeviceFrameBase({
             <span className="h-2.5 w-2.5 rounded-full bg-border-subtle" />
           </span>
           {url && (
-            <span className="mx-auto flex h-6 min-w-0 max-w-[60%] items-center gap-1.5 rounded-pill border border-border-hairline bg-surface-card px-3 ds-body-xs-regular text-text-tertiary">
+            <span className="ds-body-xs-regular mx-auto flex h-6 min-w-0 max-w-[60%] items-center gap-1.5 rounded-pill border border-border-hairline bg-surface-card px-3 text-text-tertiary">
               <Lock className="h-3 w-3 shrink-0" />
               <span className="truncate">{url}</span>
             </span>

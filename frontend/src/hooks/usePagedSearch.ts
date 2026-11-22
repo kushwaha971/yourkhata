@@ -173,7 +173,7 @@ export function usePagedSearch<T>({
   // Retain rows across query edits, never across a business/module/source change.
   const sameSource = answered === null || answered.split('\u0000', 1)[0] === key;
   const shown = running && sameSource ? results : (EMPTY as readonly T[]);
-  const shownStatus: PagedSearchStatus = running ? sameSource ? status : 'loading' : 'idle';
+  const shownStatus: PagedSearchStatus = running ? (sameSource ? status : 'loading') : 'idle';
   const pending = running && (answered !== signature || status === 'loading');
 
   return useMemo(
@@ -190,7 +190,19 @@ export function usePagedSearch<T>({
       pending,
       clear,
     }),
-    [query, setQuery, shown, shownStatus, running, sameSource, hasMore, loadMore, activate, clear, pending]
+    [
+      query,
+      setQuery,
+      shown,
+      shownStatus,
+      running,
+      sameSource,
+      hasMore,
+      loadMore,
+      activate,
+      clear,
+      pending,
+    ]
   );
 }
 

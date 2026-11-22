@@ -53,14 +53,18 @@ export function HomeStrip(): React.JSX.Element | null {
           href={HREF[tile.key]}
           underline={false}
           data-testid={`home-strip-${tile.key}`}
-          className="bg-surface-card grid min-h-[86px] min-w-0 gap-0.5 rounded-card text-text-primary leading-[1.45] lg:min-h-[95px] border border-border-hairline px-3 py-2.5 lg:px-4 lg:py-3"
+          className="grid min-h-[86px] min-w-0 gap-0.5 rounded-card border border-border-hairline bg-surface-card px-3 py-2.5 leading-[1.45] text-text-primary lg:min-h-[95px] lg:px-4 lg:py-3"
         >
-          <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold [overflow-wrap:anywhere]">
+          <UbText
+            variant="inherit"
+            tone="tertiary"
+            className="text-[12px] font-semibold [overflow-wrap:anywhere]"
+          >
             {t(`reports.home.strip.${tile.key}`)}
           </UbText>
           <UbText
             variant="inherit"
-            className="text-[17px] font-extrabold leading-[1.45] tabular-nums lg:text-[20px]"
+            className="text-[17px] font-extrabold tabular-nums leading-[1.45] lg:text-[20px]"
           >
             {tile.key === 'expiring'
               ? t('reports.home.strip.expiringValue', { count: tile.count })
@@ -79,7 +83,11 @@ export function HomeStrip(): React.JSX.Element | null {
             </UbText>
           )}
           {tile.key !== 'dueWeek' && tile.value !== null && (
-            <UbText variant="inherit" tone="tertiary" className="text-[12.5px] [overflow-wrap:anywhere]">
+            <UbText
+              variant="inherit"
+              tone="tertiary"
+              className="text-[12.5px] [overflow-wrap:anywhere]"
+            >
               {t('reports.home.strip.worth', { amount: formatInr(tile.value) })}
             </UbText>
           )}

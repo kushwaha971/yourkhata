@@ -181,7 +181,8 @@ describe('Business days', () => {
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
     await screen.findByRole('switch', { name: /^Sunday/ });
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    for (const day of days) expect(screen.getByRole('switch', { name: new RegExp(`^${day}`) })).toBeInTheDocument();
+    for (const day of days)
+      expect(screen.getByRole('switch', { name: new RegExp(`^${day}`) })).toBeInTheDocument();
     expect(screen.getAllByText('Open')).toHaveLength(6);
     expect(screen.getAllByText('Closed')).toHaveLength(1);
   });

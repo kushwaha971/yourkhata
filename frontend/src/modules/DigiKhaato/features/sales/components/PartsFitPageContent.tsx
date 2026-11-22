@@ -65,7 +65,8 @@ export function PartsFitPageContent(): React.JSX.Element {
   // The groups are the categories of what fits, never a fixed list.
   const groups = useMemo(() => {
     const seen = new Map<string, string>();
-    for (const part of parts ?? []) if (part.category) seen.set(part.category.id, part.category.name);
+    for (const part of parts ?? [])
+      if (part.category) seen.set(part.category.id, part.category.name);
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [parts]);
   const shown = (parts ?? []).filter((part) => group === ALL || part.category?.id === group);
@@ -76,7 +77,9 @@ export function PartsFitPageContent(): React.JSX.Element {
     body = (
       <UbStack gap={2} className="items-start">
         <UbText>{t('sales.fits.error')}</UbText>
-        <UbButton variant="secondary" onClick={() => setAttempt((n) => n + 1)}>{t('common.action.retry')}</UbButton>
+        <UbButton variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
+          {t('common.action.retry')}
+        </UbButton>
       </UbStack>
     );
   else if (!parts) body = <UbSkeleton className="h-40 w-full" />;
@@ -87,16 +90,37 @@ export function PartsFitPageContent(): React.JSX.Element {
         <UbStack gap={3} data-testid="fits-parts">
           {shown.map((part) => {
             const code = part.part_numbers[0] ?? part.sku;
-            const where = [code, part.rack ? t('sales.fits.rack', { rack: part.rack }) : null].filter(Boolean).join(' · ');
+            const where = [code, part.rack ? t('sales.fits.rack', { rack: part.rack }) : null]
+              .filter(Boolean)
+              .join(' · ');
             return (
-              <UbStack key={part.id} direction="row" gap={2} className="items-center justify-between" data-testid="fits-part">
+              <UbStack
+                key={part.id}
+                direction="row"
+                gap={2}
+                className="items-center justify-between"
+                data-testid="fits-part"
+              >
                 <UbStack gap={0} className="min-w-0">
-                  <UbText variant="body-sm" className="font-semibold">{part.name}</UbText>
-                  {where && <UbText variant="caption" tone="secondary">{where}</UbText>}
+                  <UbText variant="body-sm" className="font-semibold">
+                    {part.name}
+                  </UbText>
+                  {where && (
+                    <UbText variant="caption" tone="secondary">
+                      {where}
+                    </UbText>
+                  )}
                 </UbStack>
                 <UbStack gap={0} className="shrink-0 items-end">
-                  <UbText variant="body-sm" className="font-semibold">{formatInr(part.selling_price)}</UbText>
-                  <UbText variant="caption" tone={part.stock_status === 'out' ? 'error' : 'secondary'}>{stockWords(part, t)}</UbText>
+                  <UbText variant="body-sm" className="font-semibold">
+                    {formatInr(part.selling_price)}
+                  </UbText>
+                  <UbText
+                    variant="caption"
+                    tone={part.stock_status === 'out' ? 'error' : 'secondary'}
+                  >
+                    {stockWords(part, t)}
+                  </UbText>
                 </UbStack>
               </UbStack>
             );
@@ -128,7 +152,14 @@ export function PartsFitPageContent(): React.JSX.Element {
             data-testid="fits-year"
           />
         </UbBox>
-        {fits && <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.fits.search')} aria-label={t('sales.fits.search')} />}
+        {fits && (
+          <UbSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder={t('sales.fits.search')}
+            aria-label={t('sales.fits.search')}
+          />
+        )}
         {groups.length > 1 && (
           <UbChoiceChips
             ariaLabel={t('sales.fits.title')}
@@ -138,7 +169,9 @@ export function PartsFitPageContent(): React.JSX.Element {
           />
         )}
         {body}
-        <UbText variant="caption" tone="secondary">{t('sales.fits.hint')}</UbText>
+        <UbText variant="caption" tone="secondary">
+          {t('sales.fits.hint')}
+        </UbText>
       </UbStack>
     </UbPageShell>
   );

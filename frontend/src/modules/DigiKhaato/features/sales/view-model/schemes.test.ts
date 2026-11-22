@@ -19,8 +19,18 @@ describe('nearestOffer', () => {
     expect(offer?.short).toBe('2000.00');
   });
   it('is quiet once reached or when the item is not on the bill', () => {
-    const rule: SchemeRule = { code: 'SURF', rule: 'percent', item_id: 's', amount: '2', min_bill: '10000' };
-    expect(nearestOffer([{ item_id: 's', qty: '10', unit_price: '1000', unit_code: 'BOX' }], [rule])).toBeNull();
-    expect(nearestOffer([{ item_id: 'x', qty: '1', unit_price: '1', unit_code: 'NOS' }], [rule])).toBeNull();
+    const rule: SchemeRule = {
+      code: 'SURF',
+      rule: 'percent',
+      item_id: 's',
+      amount: '2',
+      min_bill: '10000',
+    };
+    expect(
+      nearestOffer([{ item_id: 's', qty: '10', unit_price: '1000', unit_code: 'BOX' }], [rule])
+    ).toBeNull();
+    expect(
+      nearestOffer([{ item_id: 'x', qty: '1', unit_price: '1', unit_code: 'NOS' }], [rule])
+    ).toBeNull();
   });
 });

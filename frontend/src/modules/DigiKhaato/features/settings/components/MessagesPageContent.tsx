@@ -284,13 +284,15 @@ export function MessagesPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        title={t('settings.title')}
-        subtitle={shop}
-      />
+      <UbPageHeader title={t('settings.title')} subtitle={shop} />
       <UbStack className="gap-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
         {/* Design `dMessages`: only the rows that have a screen of their own. */}
-        <UbStack as="nav" aria-label={t('settings.messages.menu')} gap={1} className="hidden lg:flex">
+        <UbStack
+          as="nav"
+          aria-label={t('settings.messages.menu')}
+          gap={1}
+          className="hidden lg:flex"
+        >
           {SETTINGS_MENU.map((row) => (
             <UbLink
               key={row.key}

@@ -53,7 +53,11 @@ function UbTaskBarBase({
         data-testid={closeTestId}
         className="ub-hit grid h-10 w-10 shrink-0 place-items-center rounded-[10px] text-text-primary focus-visible:shadow-focus focus-visible:outline-none"
       >
-        {back ? <ArrowLeft aria-hidden className="h-5 w-5" /> : <X aria-hidden className="h-5 w-5" />}
+        {back ? (
+          <ArrowLeft aria-hidden className="h-5 w-5" />
+        ) : (
+          <X aria-hidden className="h-5 w-5" />
+        )}
       </button>
       <div className="grid min-w-0 flex-1 leading-[1.25]">
         <h1 className="break-words text-base font-semibold text-text-primary">{title}</h1>

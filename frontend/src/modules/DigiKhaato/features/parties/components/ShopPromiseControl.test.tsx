@@ -120,9 +120,7 @@ it('"Promise kept" closes it once, moves it to history and asks for the payment'
   await userEvent.click(kept);
   await userEvent.click(kept); // a second tap while the first is in flight
   finish(PROMISE({ state: 'kept', version: 2, closedBy: 'Owner', daysLate: null }));
-  await waitFor(() =>
-    expect(store.getState().snackbar.id).toBe('parties.shopPromise.keptDone')
-  );
+  await waitFor(() => expect(store.getState().snackbar.id).toBe('parties.shopPromise.keptDone'));
   expect(service.closePromise).toHaveBeenCalledTimes(1);
   expect(service.closePromise.mock.calls[0]?.[1]).toBe('kept');
   expect(screen.getByTestId('shop-promise-none')).toHaveTextContent('No promise');
@@ -152,8 +150,9 @@ it('a retry after a dropped connection sends the same key', async () => {
 
 it('adds a promise from a quick date, saving the amount and no note', async () => {
   service.listPartyPromises.mockResolvedValue([]);
-  service.createPromise.mockImplementation((_id: string, _role: string, values: { promisedOn: string }) =>
-    Promise.resolve(PROMISE({ promisedOn: values.promisedOn, note: '' }))
+  service.createPromise.mockImplementation(
+    (_id: string, _role: string, values: { promisedOn: string }) =>
+      Promise.resolve(PROMISE({ promisedOn: values.promisedOn, note: '' }))
   );
   show();
   await userEvent.click(await screen.findByTestId('shop-promise-add'));
@@ -171,7 +170,9 @@ it('adds a promise from a quick date, saving the amount and no note', async () =
   expect([partyId, role]).toEqual(['party-1', 'customer']);
   expect(values.promisedOn > TODAY).toBe(true);
   expect(values.amount).toBe('1500.00');
-  expect(await screen.findByTestId('shop-promise-line')).toHaveTextContent(/^Will pay ₹1,500\.00 on /);
+  expect(await screen.findByTestId('shop-promise-line')).toHaveTextContent(
+    /^Will pay ₹1,500\.00 on /
+  );
 });
 
 it('the form refuses a day already past and a zero amount, and allows no amount', async () => {
@@ -187,9 +188,9 @@ it('the form refuses a day already past and a zero amount, and allows no amount'
   renderWithProviders(<Capture />);
   const schema = built.schema;
   if (!schema) throw new Error('schema not built');
-  await expect(
-    schema.validate({ promisedOn: '2026-10-23', amount: '', note: '' })
-  ).rejects.toThrow('Choose today or a later date.');
+  await expect(schema.validate({ promisedOn: '2026-10-23', amount: '', note: '' })).rejects.toThrow(
+    'Choose today or a later date.'
+  );
   await expect(
     schema.validate({ promisedOn: '2026-10-24', amount: '0', note: '' })
   ).rejects.toThrow('The amount must be more than zero.');

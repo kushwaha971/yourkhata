@@ -243,7 +243,13 @@ describe('the Money Book is the person’s own book (owner, 11 Nov 2026)', () =>
        design (I1) heads it "My Money Book"; every other app keeps the business. */
     store.dispatch(
       sessionLoaded({
-        ...after([...APPS, { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 }], 'khata'),
+        ...after(
+          [
+            ...APPS,
+            { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 },
+          ],
+          'khata'
+        ),
         permissions: ['khata.book.read'] as PermissionCode[],
         enabledModules: ['khata', 'platform'],
       } as never)

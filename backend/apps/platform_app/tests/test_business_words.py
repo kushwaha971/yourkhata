@@ -43,11 +43,16 @@ def test_a_medical_store_says_distributors_in_both_languages() -> None:
 
 def test_a_wholesaler_says_retailers_and_companies() -> None:
     """`shop.wholesale` on with labels from the wholesale preset."""
-    rows = {"shop.wholesale": {"value": True}, "parties.labels": {"customer": "Retailer", "supplier": "Company"}}
+    rows = {
+        "shop.wholesale": {"value": True},
+        "parties.labels": {"customer": "Retailer", "supplier": "Company"},
+    }
     words = words_of(_tenant("kirana"), "en", rows)
     assert words["nav.parties"] == "Retailers"
     assert words["nav.suppliers"] == "Companies"
-    assert {"wholesale", "orders"} <= set(features_of(_tenant("kirana"), {**rows, "shop.features.orders": {"value": True}}))
+    assert {"wholesale", "orders"} <= set(
+        features_of(_tenant("kirana"), {**rows, "shop.features.orders": {"value": True}})
+    )
 
 
 def test_owner_typed_words_are_sent_as_typed() -> None:
@@ -59,7 +64,6 @@ def test_owner_typed_words_are_sent_as_typed() -> None:
 def test_a_switch_the_owner_turned_off_wins_over_the_kind() -> None:
     rows = {"shop.features.orders": {"value": False}}
     assert "orders" not in features_of(_tenant("hardware"), rows)
-
 
 
 def test_the_session_carries_both_languages(tenant) -> None:
@@ -75,7 +79,6 @@ def test_the_session_carries_both_languages(tenant) -> None:
     assert words["hi"]["business.kind"] == "मेडिकल"
 
 
-
 def test_the_wholesale_switch_moves_the_starting_words_only() -> None:
     """B3: a kirana that turns on "I also sell wholesale" in Settings says
     Retailers and Companies; turning it off goes back; an owner-typed word
@@ -83,12 +86,33 @@ def test_the_wholesale_switch_moves_the_starting_words_only() -> None:
     plain = {"parties.labels": {"customer": "Customer", "supplier": "Supplier"}}
     on = {**plain, "shop.wholesale": {"value": True}}
     assert words_of(_tenant("kirana"), "en", on)["nav.parties"] == "Retailers"
-    assert "nav.parties" not in words_of(_tenant("kirana"), "en", {**on, "shop.wholesale": {"value": False}})
-    typed = {"parties.labels": {"customer": "Patient", "supplier": "Supplier"}, "shop.wholesale": {"value": True}}
+    assert "nav.parties" not in words_of(
+        _tenant("kirana"), "en", {**on, "shop.wholesale": {"value": False}}
+    )
+    typed = {
+        "parties.labels": {"customer": "Patient", "supplier": "Supplier"},
+        "shop.wholesale": {"value": True},
+    }
     assert words_of(_tenant("medical"), "en", typed)["nav.parties"] == "Patients"
 
 
-@pytest.mark.parametrize("kind", ["kirana", "hardware", "electronics", "medical", "garments", "auto_parts", "jewellery", "food", "stationery", "agri", "furniture", "other"])
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "kirana",
+        "hardware",
+        "electronics",
+        "medical",
+        "garments",
+        "auto_parts",
+        "jewellery",
+        "food",
+        "stationery",
+        "agri",
+        "furniture",
+        "other",
+    ],
+)
 def test_every_kind_keeps_phone_orders_by_default(kind: str) -> None:
     """Owner, 14 Nov 2026: phone and WhatsApp orders are for every shop."""
     assert "phone_orders" in features_of(_tenant(kind), {})

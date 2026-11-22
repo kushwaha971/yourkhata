@@ -41,7 +41,8 @@ export const LENDING_PATHS = {
 } as const;
 
 const str = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
-const strOrNull = (v: unknown): string | null => (v === null || v === undefined || v === '' ? null : String(v));
+const strOrNull = (v: unknown): string | null =>
+  v === null || v === undefined || v === '' ? null : String(v);
 const num = (v: unknown): number => Number(v ?? 0) || 0;
 const data = <T>(r: { data: { data: T } }): T => r.data.data;
 const key = (k?: string) => (k ? { headers: { 'Idempotency-Key': k } } : {});
@@ -104,7 +105,11 @@ const toLoanDetail = (r: Wire): LoanDetail => ({
     status: str(c.status) as 'live' | 'removed',
     by: str(c.by),
   })),
-  visits: ((r.visits as Wire[]) ?? []).map((v) => ({ day: str(v.day), reason: str(v.reason), promisedOn: strOrNull(v.promised_on) })),
+  visits: ((r.visits as Wire[]) ?? []).map((v) => ({
+    day: str(v.day),
+    reason: str(v.reason),
+    promisedOn: strOrNull(v.promised_on),
+  })),
   daysToGo: num(r.days_to_go),
 });
 
@@ -122,7 +127,11 @@ const toBorrower = (r: Wire): Borrower => ({
 });
 
 export async function getToday(route: string, signal?: AbortSignal): Promise<Round> {
-  const r = data<Wire>(await api.get(`${LENDING_PATHS.TODAY}${toQueryString({ route: route || undefined })}`, { signal }));
+  const r = data<Wire>(
+    await api.get(`${LENDING_PATHS.TODAY}${toQueryString({ route: route || undefined })}`, {
+      signal,
+    })
+  );
   const b = (r.book ?? {}) as Wire;
   return {
     day: str(r.day),
@@ -136,14 +145,23 @@ export async function getToday(route: string, signal?: AbortSignal): Promise<Rou
     stopsDone: num(r.stops_done),
     toVisit: num(r.to_visit),
     notPaid: num(r.not_paid),
-    book: { late: str(b.late), lateBorrowers: num(b.late_borrowers), lentMonth: str(b.lent_month), loansMonth: num(b.loans_month) },
+    book: {
+      late: str(b.late),
+      lateBorrowers: num(b.late_borrowers),
+      lentMonth: str(b.lent_month),
+      loansMonth: num(b.loans_month),
+    },
     routes: ((r.routes as Wire[]) ?? []).map((x) => ({ id: str(x.id), name: str(x.name) })),
     name: str(r.name),
   };
 }
 
 export async function listRoutes(signal?: AbortSignal): Promise<Route[]> {
-  return data<Wire[]>(await api.get(LENDING_PATHS.ROUTES, { signal })).map((r) => ({ id: str(r.id), name: str(r.name), active: Boolean(r.active) }));
+  return data<Wire[]>(await api.get(LENDING_PATHS.ROUTES, { signal })).map((r) => ({
+    id: str(r.id),
+    name: str(r.name),
+    active: Boolean(r.active),
+  }));
 }
 
 export async function saveRoute(name: string, id?: string, idempotencyKey?: string): Promise<void> {
@@ -152,7 +170,9 @@ export async function saveRoute(name: string, id?: string, idempotencyKey?: stri
 }
 
 export async function listBorrowers(q: string, signal?: AbortSignal): Promise<Borrower[]> {
-  return data<Wire[]>(await api.get(`${LENDING_PATHS.BORROWERS}${toQueryString({ q: q || undefined })}`, { signal })).map(toBorrower);
+  return data<Wire[]>(
+    await api.get(`${LENDING_PATHS.BORROWERS}${toQueryString({ q: q || undefined })}`, { signal })
+  ).map(toBorrower);
 }
 
 export async function getBorrower(id: string, signal?: AbortSignal): Promise<BorrowerDetail> {
@@ -160,16 +180,28 @@ export async function getBorrower(id: string, signal?: AbortSignal): Promise<Bor
   return { ...toBorrower(r), allLoans: ((r.all_loans as Wire[]) ?? []).map(toLoan) };
 }
 
-export async function saveBorrower(v: BorrowerValues, id: string | null, idempotencyKey: string): Promise<{ id: string; name: string }> {
+export async function saveBorrower(
+  v: BorrowerValues,
+  id: string | null,
+  idempotencyKey: string
+): Promise<{ id: string; name: string }> {
   const body = { name: v.name, mobile: v.mobile, work: v.work, route_id: v.routeId || null };
-  const r = id ? await api.patch(LENDING_PATHS.BORROWER(id), body) : await api.post(LENDING_PATHS.BORROWERS, body, key(idempotencyKey));
+  const r = id
+    ? await api.patch(LENDING_PATHS.BORROWER(id), body)
+    : await api.post(LENDING_PATHS.BORROWERS, body, key(idempotencyKey));
   const d = data<Wire>(r);
   return { id: str(d.id), name: str(d.name) };
 }
 
-export async function listLoans(q: { status?: string; route?: string; q?: string }, signal?: AbortSignal): Promise<Loan[]> {
+export async function listLoans(
+  q: { status?: string; route?: string; q?: string },
+  signal?: AbortSignal
+): Promise<Loan[]> {
   return data<Wire[]>(
-    await api.get(`${LENDING_PATHS.LOANS}${toQueryString({ status: q.status, route: q.route || undefined, q: q.q || undefined })}`, { signal })
+    await api.get(
+      `${LENDING_PATHS.LOANS}${toQueryString({ status: q.status, route: q.route || undefined, q: q.q || undefined })}`,
+      { signal }
+    )
   ).map(toLoan);
 }
 
@@ -189,24 +221,42 @@ const loanBody = (v: NewLoanValues): Wire => ({
 });
 
 export async function previewLoan(v: NewLoanValues, signal?: AbortSignal): Promise<LoanPreview> {
-  const r = data<Wire>(await api.post(`${LENDING_PATHS.LOANS}?preview=true`, loanBody(v), { signal }));
+  const r = data<Wire>(
+    await api.post(`${LENDING_PATHS.LOANS}?preview=true`, loanBody(v), { signal })
+  );
   return {
     toCollect: str(r.to_collect),
     inHand: str(r.in_hand),
     earns: str(r.earns),
     lastDay: str(r.last_day),
-    schedule: ((r.schedule as Wire[]) ?? []).map((s) => ({ seq: num(s.seq), dueOn: str(s.due_on), amount: str(s.amount) })),
+    schedule: ((r.schedule as Wire[]) ?? []).map((s) => ({
+      seq: num(s.seq),
+      dueOn: str(s.due_on),
+      amount: str(s.amount),
+    })),
   };
 }
 
 export async function createLoan(v: NewLoanValues, idempotencyKey: string): Promise<LoanDetail> {
-  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.LOANS, loanBody(v), key(idempotencyKey))));
+  return toLoanDetail(
+    data<Wire>(await api.post(LENDING_PATHS.LOANS, loanBody(v), key(idempotencyKey)))
+  );
 }
 
-const collectBody = (v: CollectValues): Wire => ({ amount: v.amount, mode: v.mode, ...(v.collectedOn ? { collected_on: v.collectedOn } : {}) });
+const collectBody = (v: CollectValues): Wire => ({
+  amount: v.amount,
+  mode: v.mode,
+  ...(v.collectedOn ? { collected_on: v.collectedOn } : {}),
+});
 
-export async function previewCollect(loanId: string, v: CollectValues, signal?: AbortSignal): Promise<CollectPreview> {
-  const r = data<Wire>(await api.post(`${LENDING_PATHS.COLLECT(loanId)}?preview=true`, collectBody(v), { signal }));
+export async function previewCollect(
+  loanId: string,
+  v: CollectValues,
+  signal?: AbortSignal
+): Promise<CollectPreview> {
+  const r = data<Wire>(
+    await api.post(`${LENDING_PATHS.COLLECT(loanId)}?preview=true`, collectBody(v), { signal })
+  );
   return {
     collected: str(r.collected),
     late: str(r.late),
@@ -217,39 +267,84 @@ export async function previewCollect(loanId: string, v: CollectValues, signal?: 
   };
 }
 
-export async function collect(loanId: string, v: CollectValues, idempotencyKey: string): Promise<{ loan: LoanDetail; receipt: string }> {
+export async function collect(
+  loanId: string,
+  v: CollectValues,
+  idempotencyKey: string
+): Promise<{ loan: LoanDetail; receipt: string }> {
   const r = await api.post(LENDING_PATHS.COLLECT(loanId), collectBody(v), key(idempotencyKey));
   const meta = (r.data.meta ?? {}) as Wire;
   return { loan: toLoanDetail(meta.loan as Wire), receipt: str(meta.receipt) };
 }
 
-export async function notPaid(loanId: string, v: { reason: string; promisedOn: string }, idempotencyKey: string): Promise<void> {
-  await api.post(LENDING_PATHS.NOT_PAID(loanId), { reason: v.reason, promised_on: v.promisedOn || undefined }, key(idempotencyKey));
+export async function notPaid(
+  loanId: string,
+  v: { reason: string; promisedOn: string },
+  idempotencyKey: string
+): Promise<void> {
+  await api.post(
+    LENDING_PATHS.NOT_PAID(loanId),
+    { reason: v.reason, promised_on: v.promisedOn || undefined },
+    key(idempotencyKey)
+  );
 }
 
-export async function removeCollection(id: string, reason: string, idempotencyKey: string): Promise<LoanDetail> {
-  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.REMOVE(id), { reason }, key(idempotencyKey))));
+export async function removeCollection(
+  id: string,
+  reason: string,
+  idempotencyKey: string
+): Promise<LoanDetail> {
+  return toLoanDetail(
+    data<Wire>(await api.post(LENDING_PATHS.REMOVE(id), { reason }, key(idempotencyKey)))
+  );
 }
 
-export async function closeLoan(id: string, reason: 'paid' | 'written_off', idempotencyKey: string): Promise<LoanDetail> {
-  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.CLOSE(id), { reason }, key(idempotencyKey))));
+export async function closeLoan(
+  id: string,
+  reason: 'paid' | 'written_off',
+  idempotencyKey: string
+): Promise<LoanDetail> {
+  return toLoanDetail(
+    data<Wire>(await api.post(LENDING_PATHS.CLOSE(id), { reason }, key(idempotencyKey)))
+  );
 }
 
-export async function remindList(kind: RemindKind, signal?: AbortSignal): Promise<{ rows: Loan[]; counts: Record<RemindKind, number> }> {
+export async function remindList(
+  kind: RemindKind,
+  signal?: AbortSignal
+): Promise<{ rows: Loan[]; counts: Record<RemindKind, number> }> {
   const r = await api.get(`${LENDING_PATHS.REMIND}${toQueryString({ kind })}`, { signal });
   const c = ((r.data.meta ?? {}) as Wire).counts as Wire | undefined;
   return {
     rows: (r.data.data as Wire[]).map(toLoan),
-    counts: { late: num(c?.late), due_today: num(c?.due_today), due_tomorrow: num(c?.due_tomorrow) },
+    counts: {
+      late: num(c?.late),
+      due_today: num(c?.due_today),
+      due_tomorrow: num(c?.due_tomorrow),
+    },
   };
 }
 
-export async function messageText(loanId: string, kind: RemindKind, lang: string, signal?: AbortSignal): Promise<{ text: string; mobile: string }> {
-  const r = data<Wire>(await api.get(`${LENDING_PATHS.MESSAGE_TEXT}${toQueryString({ loan: loanId, kind, lang })}`, { signal }));
+export async function messageText(
+  loanId: string,
+  kind: RemindKind,
+  lang: string,
+  signal?: AbortSignal
+): Promise<{ text: string; mobile: string }> {
+  const r = data<Wire>(
+    await api.get(`${LENDING_PATHS.MESSAGE_TEXT}${toQueryString({ loan: loanId, kind, lang })}`, {
+      signal,
+    })
+  );
   return { text: str(r.text), mobile: str(r.mobile) };
 }
 
-export async function recordMessage(loanId: string, kind: string, text: string, idempotencyKey: string): Promise<void> {
+export async function recordMessage(
+  loanId: string,
+  kind: string,
+  text: string,
+  idempotencyKey: string
+): Promise<void> {
   await api.post(LENDING_PATHS.MESSAGES, { loan_id: loanId, kind, text }, key(idempotencyKey));
 }
 

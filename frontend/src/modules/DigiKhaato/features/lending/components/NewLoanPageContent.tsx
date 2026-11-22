@@ -32,7 +32,14 @@ import { toApiError } from 'src/utils/apiError';
 import { todayInTenantTz } from 'src/utils/dates';
 import { REGEX } from 'src/utils/regexConstants';
 
-import { Card, Figure, Figures, KeyValue, OwnerOnly, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
+import {
+  Card,
+  Figure,
+  Figures,
+  KeyValue,
+  OwnerOnly,
+  Table,
+} from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { createLoan, listBorrowers, listRoutes, previewLoan } from '../api/lendingService';
 import { useLendingAccess } from '../hooks/useLendingAccess';
@@ -40,10 +47,20 @@ import { LENDING_ROUTES } from '../routes';
 import { useLendingSchemas } from '../validation/lendingSchemas';
 import { rupees, shortDate } from '../view-model/lendingDisplay';
 
-import type { Borrower, Frequency, LoanPreview, NewLoanValues, Route } from '../types/lending.types';
+import type {
+  Borrower,
+  Frequency,
+  LoanPreview,
+  NewLoanValues,
+  Route,
+} from '../types/lending.types';
 
 /** The plans a small lender uses, as the design's one select ("Daily · 40 days"). */
-const PLANS: readonly { readonly key: string; readonly frequency: Frequency; readonly count: number }[] = [
+const PLANS: readonly {
+  readonly key: string;
+  readonly frequency: Frequency;
+  readonly count: number;
+}[] = [
   { key: 'daily-40', frequency: 'daily', count: 40 },
   { key: 'daily-60', frequency: 'daily', count: 60 },
   { key: 'daily-100', frequency: 'daily', count: 100 },
@@ -66,13 +83,18 @@ const tomorrow = (today: string): string => {
  * can see it too: what will be collected, any charge taken at the start, the
  * last day, and every collection day.
  */
-export function NewLoanPageContent({ borrowerId }: Readonly<{ borrowerId?: string }>): React.JSX.Element {
+export function NewLoanPageContent({
+  borrowerId,
+}: Readonly<{ borrowerId?: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const { canLend } = useLendingAccess();
   if (canLend) return <NewLoanForm borrowerId={borrowerId} />;
   return (
     <UbPageShell>
-      <OwnerOnly title={t('lending.common.ownerOnly.title')} body={t('lending.common.ownerOnly.body')} />
+      <OwnerOnly
+        title={t('lending.common.ownerOnly.title')}
+        body={t('lending.common.ownerOnly.body')}
+      />
     </UbPageShell>
   );
 }
@@ -142,7 +164,7 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
       .catch(() => undefined);
     return () => controller.abort();
     // `asked` carries every value; `v` is read through it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the listed values change
   }, [ready, asked]);
   const preview = ready && answer?.ask === asked ? answer.preview : null;
   const borrower = borrowers.find((b) => b.id === v.borrowerId);
@@ -152,12 +174,20 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
     try {
       const loan = await createLoan(values, key);
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'lending.newLoan.saved', params: { number: loan.number, name: loan.borrower } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'lending.newLoan.saved',
+          params: { number: loan.number, name: loan.borrower },
+        })
+      );
       router.push(LENDING_ROUTES.loan(loan.id));
     } catch (e) {
       const err = toApiError(e, 'lending.newLoan.error');
       if (err.code === 'validation_error') rotate();
-      dispatch(showSnackbar({ severity: 'error', message: err.message ?? t('lending.newLoan.error') }));
+      dispatch(
+        showSnackbar({ severity: 'error', message: err.message ?? t('lending.newLoan.error') })
+      );
     } finally {
       setSaving(false);
     }
@@ -168,30 +198,47 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
     <>
       {/* Started from a borrower: the design names them in the subtitle and asks no more. */}
       {!borrowerId && (
-      <UbField name="borrowerId" label={t('lending.newLoan.borrower')} required>
-        {(field) => (
-          <UbNativeSelect
-            {...field}
-            value={field.value as string}
-            onChange={(id) => {
-              field.onChange(id);
-              const b = borrowers.find((x) => x.id === id);
-              if (b?.routeId) form.setValue('routeId', b.routeId);
-            }}
-            options={[{ value: '', label: t('lending.newLoan.chooseBorrower') }, ...borrowers.map((b) => ({ value: b.id, label: b.name }))]}
-          />
-        )}
-      </UbField>
+        <UbField name="borrowerId" label={t('lending.newLoan.borrower')} required>
+          {(field) => (
+            <UbNativeSelect
+              {...field}
+              value={field.value as string}
+              onChange={(id) => {
+                field.onChange(id);
+                const b = borrowers.find((x) => x.id === id);
+                if (b?.routeId) form.setValue('routeId', b.routeId);
+              }}
+              options={[
+                { value: '', label: t('lending.newLoan.chooseBorrower') },
+                ...borrowers.map((b) => ({ value: b.id, label: b.name })),
+              ]}
+            />
+          )}
+        </UbField>
       )}
       {borrower && (
         <UbText variant="inherit" className="-mt-2 text-[12.5px] text-text-tertiary">
-          {[borrower.mobile ? `+91 ${borrower.mobile.slice(0, 5)} ${borrower.mobile.slice(5)}` : null, borrower.loans ? t('lending.newLoan.running', { count: borrower.loans }) : t('lending.newLoan.noneRunning')]
+          {[
+            borrower.mobile
+              ? `+91 ${borrower.mobile.slice(0, 5)} ${borrower.mobile.slice(5)}`
+              : null,
+            borrower.loans
+              ? t('lending.newLoan.running', { count: borrower.loans })
+              : t('lending.newLoan.noneRunning'),
+          ]
             .filter(Boolean)
             .join(' · ')}
         </UbText>
       )}
       <UbField name="lent" label={t('lending.newLoan.lent')} required>
-        {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+        {(field) => (
+          <UbMoneyInput
+            {...field}
+            value={field.value as string}
+            inputMode="decimal"
+            className="text-right"
+          />
+        )}
       </UbField>
       <UbStack gap={1.5}>
         <UbText variant="inherit" className="text-[13px] font-semibold">
@@ -209,7 +256,10 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
             }
           }}
           options={[
-            ...PLANS.map((p) => ({ value: p.key, label: t(`lending.plan.${p.frequency}`, { count: p.count }) })),
+            ...PLANS.map((p) => ({
+              value: p.key,
+              label: t(`lending.plan.${p.frequency}`, { count: p.count }),
+            })),
             { value: 'other', label: t('lending.newLoan.otherPlan') },
           ]}
         />
@@ -221,21 +271,39 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
               <UbNativeSelect
                 {...field}
                 value={field.value as string}
-                options={(['daily', 'weekly', 'monthly'] as const).map((f) => ({ value: f, label: t(`lending.frequency.${f}`) }))}
+                options={(['daily', 'weekly', 'monthly'] as const).map((f) => ({
+                  value: f,
+                  label: t(`lending.frequency.${f}`),
+                }))}
               />
             )}
           </UbField>
           <UbField name="count" label={t('lending.newLoan.count')}>
-            {(field) => <UbTextInput {...field} value={field.value as string} inputMode="numeric" />}
+            {(field) => (
+              <UbTextInput {...field} value={field.value as string} inputMode="numeric" />
+            )}
           </UbField>
         </UbBox>
       )}
       <UbBox className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
         <UbField name="each" label={each} required>
-          {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+          {(field) => (
+            <UbMoneyInput
+              {...field}
+              value={field.value as string}
+              inputMode="decimal"
+              className="text-right"
+            />
+          )}
         </UbField>
         <UbField name="startsOn" label={t('lending.newLoan.starts')}>
-          {(field) => <UbDateInput {...field} value={field.value as string} onChange={(d) => field.onChange(d ?? today)} />}
+          {(field) => (
+            <UbDateInput
+              {...field}
+              value={field.value as string}
+              onChange={(d) => field.onChange(d ?? today)}
+            />
+          )}
         </UbField>
       </UbBox>
       <UbField name="routeId" label={t('lending.newLoan.route')}>
@@ -243,12 +311,27 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
           <UbNativeSelect
             {...field}
             value={field.value as string}
-            options={[{ value: '', label: t('lending.newLoan.noRoute') }, ...routes.map((r) => ({ value: r.id, label: r.name }))]}
+            options={[
+              { value: '', label: t('lending.newLoan.noRoute') },
+              ...routes.map((r) => ({ value: r.id, label: r.name })),
+            ]}
           />
         )}
       </UbField>
-      <UbField name="charges" label={t('lending.newLoan.charges')} optionalLabel={t('lending.common.optional')} hint={t('lending.newLoan.chargesHint')}>
-        {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+      <UbField
+        name="charges"
+        label={t('lending.newLoan.charges')}
+        optionalLabel={t('lending.common.optional')}
+        hint={t('lending.newLoan.chargesHint')}
+      >
+        {(field) => (
+          <UbMoneyInput
+            {...field}
+            value={field.value as string}
+            inputMode="decimal"
+            className="text-right"
+          />
+        )}
       </UbField>
     </>
   );
@@ -256,21 +339,36 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
   const sched = preview?.schedule ?? [];
   const shown = sched.length > 4 ? [...sched.slice(0, 3), null, sched[sched.length - 1]] : sched;
   const ruleLine = preview
-    ? t(v.frequency === 'daily' ? 'lending.newLoan.ruleDaily' : 'lending.newLoan.rule', { count: sched.length, amount: rupees(v.each) })
+    ? t(v.frequency === 'daily' ? 'lending.newLoan.ruleDaily' : 'lending.newLoan.rule', {
+        count: sched.length,
+        amount: rupees(v.each),
+      })
     : '';
 
   return (
     <UbPageShell>
       <UbStack gap={3} className="pb-32 lg:pb-28">
-        <UbPageHeader title={t('lending.newLoan.title')} subtitle={borrower?.name ?? t('lending.newLoan.subtitle')} />
+        <UbPageHeader
+          title={t('lending.newLoan.title')}
+          subtitle={borrower?.name ?? t('lending.newLoan.subtitle')}
+        />
         {loadFailed && (
           <UbEmptyState
             variant="error"
             title={t('lending.newLoan.loadError')}
-            action={<UbButton onClick={() => setAttempt((n) => n + 1)}>{t('lending.common.tryAgain')}</UbButton>}
+            action={
+              <UbButton onClick={() => setAttempt((n) => n + 1)}>
+                {t('lending.common.tryAgain')}
+              </UbButton>
+            }
           />
         )}
-        <UbForm id={formId} form={form} onSubmit={save} className={loadFailed ? 'hidden' : undefined}>
+        <UbForm
+          id={formId}
+          form={form}
+          onSubmit={save}
+          className={loadFailed ? 'hidden' : undefined}
+        >
           <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:420px_minmax(0,1fr)]">
             <Card className="gap-3.5" testId="lending-new-loan-form">
               {fields}
@@ -283,10 +381,19 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
                 </UbText>
                 {preview ? (
                   <>
-                    <KeyValue label={t('lending.newLoan.toCollect')} value={rupees(preview.toCollect)} />
-                    <KeyValue label={t('lending.newLoan.chargesAtStart')} value={rupees(addCharges(v.charges))} />
+                    <KeyValue
+                      label={t('lending.newLoan.toCollect')}
+                      value={rupees(preview.toCollect)}
+                    />
+                    <KeyValue
+                      label={t('lending.newLoan.chargesAtStart')}
+                      value={rupees(addCharges(v.charges))}
+                    />
                     <KeyValue label={t('lending.newLoan.inHand')} value={rupees(preview.inHand)} />
-                    <KeyValue label={t('lending.newLoan.lastDay')} value={shortDate(preview.lastDay, today)} />
+                    <KeyValue
+                      label={t('lending.newLoan.lastDay')}
+                      value={shortDate(preview.lastDay, today)}
+                    />
                     <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
                       {ruleLine}
                     </UbText>
@@ -301,11 +408,36 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
                 {preview ? (
                   <>
                     <Figures testId="lending-new-loan-figures">
-                      <Figure label={t('lending.newLoan.toCollect')} value={rupees(preview.toCollect)} caption={t('lending.newLoan.collections', { count: sched.length })} />
-                      <Figure label={each} value={rupees(v.each)} caption={v.frequency === 'daily' ? t('lending.newLoan.sundaysSkipped') : t(`lending.frequency.${v.frequency}`)} />
-                      <Figure label={t('lending.newLoan.lastDay')} value={shortDate(preview.lastDay, today)} caption={t(`lending.weekday.${['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date(`${preview.lastDay}T00:00:00`).getDay()]}`)} />
+                      <Figure
+                        label={t('lending.newLoan.toCollect')}
+                        value={rupees(preview.toCollect)}
+                        caption={t('lending.newLoan.collections', { count: sched.length })}
+                      />
+                      <Figure
+                        label={each}
+                        value={rupees(v.each)}
+                        caption={
+                          v.frequency === 'daily'
+                            ? t('lending.newLoan.sundaysSkipped')
+                            : t(`lending.frequency.${v.frequency}`)
+                        }
+                      />
+                      <Figure
+                        label={t('lending.newLoan.lastDay')}
+                        value={shortDate(preview.lastDay, today)}
+                        caption={t(
+                          `lending.weekday.${['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date(`${preview.lastDay}T00:00:00`).getDay()]}`
+                        )}
+                      />
                     </Figures>
-                    <Table testId="lending-new-loan-schedule" head={[{ label: '#' }, { label: t('lending.col.date') }, { label: t('lending.col.due'), align: 'right' }]}>
+                    <Table
+                      testId="lending-new-loan-schedule"
+                      head={[
+                        { label: '#' },
+                        { label: t('lending.col.date') },
+                        { label: t('lending.col.due'), align: 'right' },
+                      ]}
+                    >
                       {shown.map((r, i) =>
                         r ? (
                           <UbBox as="tr" key={r.seq}>
@@ -351,10 +483,22 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
             {rupees(v.lent || '0')}
           </UbText>
         </UbStack>
-        <UbButton variant="secondary" size="lg" className="max-lg:hidden" onClick={() => router.push(LENDING_ROUTES.today)}>
+        <UbButton
+          variant="secondary"
+          size="lg"
+          className="max-lg:hidden"
+          onClick={() => router.push(LENDING_ROUTES.today)}
+        >
           {t('lending.common.cancel')}
         </UbButton>
-        <UbButton type="submit" form={formId} size="lg" busy={saving} className="max-lg:w-full" data-testid="lending-new-loan-save">
+        <UbButton
+          type="submit"
+          form={formId}
+          size="lg"
+          busy={saving}
+          className="max-lg:w-full"
+          data-testid="lending-new-loan-save"
+        >
           {t('lending.newLoan.save')}
         </UbButton>
       </UbBottomBar>

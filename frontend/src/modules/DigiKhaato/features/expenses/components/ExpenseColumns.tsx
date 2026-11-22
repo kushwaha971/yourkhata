@@ -50,7 +50,12 @@ export const createExpenseColumns = ({
     if (cancelled(row)) return <UbStatusBadge tone="neutral" label={t('expenses.void.badge')} />;
     if (row.paid) return null;
     return (
-      <UbText as="span" variant="caption" tone="secondary" className="flex flex-wrap items-center gap-x-2">
+      <UbText
+        as="span"
+        variant="caption"
+        tone="secondary"
+        className="flex flex-wrap items-center gap-x-2"
+      >
         <UbStatusBadge tone="warning" label={t('expenses.status.unpaid')} />
         {row.party && t('expenses.status.owedTo', { name: row.party.name })}
       </UbText>
@@ -127,7 +132,11 @@ export const createExpenseColumns = ({
       cardSlot: 'title',
       widthShare: 34,
       cell: (row) => (
-        <UbText as="span" variant="body-sm" className={cn(cancelled(row) && 'line-through opacity-60')}>
+        <UbText
+          as="span"
+          variant="body-sm"
+          className={cn(cancelled(row) && 'line-through opacity-60')}
+        >
           {categoryLabel(row.category, archived)}
         </UbText>
       ),

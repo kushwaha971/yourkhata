@@ -38,9 +38,17 @@ export interface CounterData {
   customers?: CounterLane;
   suppliers?: CounterLane;
 }
-export async function getCounter(signal: AbortSignal, documents: readonly string[] = []): Promise<CounterData> {
+export async function getCounter(
+  signal: AbortSignal,
+  documents: readonly string[] = []
+): Promise<CounterData> {
   const query = new URLSearchParams();
   if (documents.length) query.set('documents', documents.join(','));
   const suffix = query.size ? `?${query}` : '';
-  return (await api.get<{ data: CounterData }>(`/reports/dashboard/counter${suffix}`, ubConfig({ signal }))).data.data;
+  return (
+    await api.get<{ data: CounterData }>(
+      `/reports/dashboard/counter${suffix}`,
+      ubConfig({ signal })
+    )
+  ).data.data;
 }

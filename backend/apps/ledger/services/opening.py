@@ -190,7 +190,9 @@ def post_opening_balance(
         # The index caught a race the check above lost. Same answer either way —
         # see the docstring. The savepoint is what keeps the outer transaction
         # usable afterwards, the lesson `create_party` wrote down first.
-        if "uq_ledger_one_opening_per_party" in str(exc) or "uq_ledger_one_shop_opening_per_side" in str(exc):
+        if "uq_ledger_one_opening_per_party" in str(
+            exc
+        ) or "uq_ledger_one_shop_opening_per_side" in str(exc):
             raise BusinessRuleViolation(
                 "opening_balance_exists",
                 "This contact already has an opening balance. Correct it from the entry instead.",

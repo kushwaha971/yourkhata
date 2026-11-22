@@ -35,7 +35,11 @@ def apply(lines: list[dict], schemes: list[dict]) -> tuple[list[dict | None], li
     ordered = sorted(schemes, key=lambda s: s["code"])
     for scheme in ordered:
         item = scheme.get("item_id")
-        mine = [i for i, line in enumerate(lines) if item is None or str(line.get("item_id")) == str(item)]
+        mine = [
+            i
+            for i, line in enumerate(lines)
+            if item is None or str(line.get("item_id")) == str(item)
+        ]
         rule = scheme["rule"]
         if rule == "free":
             buy, give = _d(scheme.get("buy_qty")), _d(scheme.get("free_qty"))
@@ -45,7 +49,12 @@ def apply(lines: list[dict], schemes: list[dict]) -> tuple[list[dict | None], li
             qty = (total / buy).to_integral_value(rounding=ROUND_DOWN) * give
             if qty > 0:
                 free.append(
-                    {"item_id": str(item), "qty": _q(qty), "unit_code": lines[mine[0]].get("unit_code"), "scheme": scheme["code"]}
+                    {
+                        "item_id": str(item),
+                        "qty": _q(qty),
+                        "unit_code": lines[mine[0]].get("unit_code"),
+                        "scheme": scheme["code"],
+                    }
                 )
             continue
         open_lines = [i for i in mine if discounts[i] is None and not lines[i].get("discount_type")]
@@ -58,10 +67,17 @@ def apply(lines: list[dict], schemes: list[dict]) -> tuple[list[dict | None], li
                     discounts[i] = {"type": "amount", "value": str(value), "scheme": scheme["code"]}
         elif rule == "percent":
             pct = _d(scheme.get("amount"))
-            base = sum((_d(lines[i].get("qty")) * _d(lines[i].get("unit_price")) for i in open_lines), Decimal("0"))
+            base = sum(
+                (_d(lines[i].get("qty")) * _d(lines[i].get("unit_price")) for i in open_lines),
+                Decimal("0"),
+            )
             if pct > 0 and open_lines and base >= _d(scheme.get("min_bill")):
                 for i in open_lines:
-                    discounts[i] = {"type": "percent", "value": str(pct.quantize(CENT)), "scheme": scheme["code"]}
+                    discounts[i] = {
+                        "type": "percent",
+                        "value": str(pct.quantize(CENT)),
+                        "scheme": scheme["code"],
+                    }
     return discounts, free
 
 
@@ -106,21 +122,40 @@ def expand_lines(*, tenant: Any, on: Any, raw_lines: list[dict]) -> list[dict]:
     if not schemes:
         return own
     # A line without a price takes the item's, as `build_lines` will.
-    missing = {str(l["item_id"]) for l in own if l.get("item_id") and l.get("unit_price") in (None, "")}
+    missing = {
+        str(ln["item_id"]) for ln in own if ln.get("item_id") and ln.get("unit_price") in (None, "")
+    }
     listed = (
-        {str(pk): p for pk, p in Item.objects.filter(tenant=tenant, pk__in=missing).values_list("id", "selling_price")}
+        {
+            str(pk): p
+            for pk, p in Item.objects.filter(tenant=tenant, pk__in=missing).values_list(
+                "id", "selling_price"
+            )
+        }
         if missing
         else {}
     )
     priced = [
-        {**l, "unit_price": listed.get(str(l.get("item_id")), "0")} if l.get("unit_price") in (None, "") else l
-        for l in own
+        (
+            {**ln, "unit_price": listed.get(str(ln.get("item_id")), "0")}
+            if ln.get("unit_price") in (None, "")
+            else ln
+        )
+        for ln in own
     ]
     discounts, free = apply(priced, schemes)
     for line, discount in zip(own, discounts):
         if discount:
-            line.update(discount_type=discount["type"], discount_value=discount["value"], scheme_code=discount["scheme"])
-    names = dict(Item.objects.filter(tenant=tenant, pk__in=[f["item_id"] for f in free]).values_list("id", "name"))
+            line.update(
+                discount_type=discount["type"],
+                discount_value=discount["value"],
+                scheme_code=discount["scheme"],
+            )
+    names = dict(
+        Item.objects.filter(tenant=tenant, pk__in=[f["item_id"] for f in free]).values_list(
+            "id", "name"
+        )
+    )
     for row in free:
         name = names.get(uuid.UUID(row["item_id"]), "")
         own.append(
@@ -143,7 +178,12 @@ def list_prices(tenant: Any, raws: list[dict]) -> dict[str, Decimal]:
     ids = {str(r["item_id"]) for r in raws if r.get("scheme_free") and r.get("item_id")}
     if not ids:
         return {}
-    return {str(pk): Decimal(price) for pk, price in Item.objects.filter(tenant=tenant, pk__in=ids).values_list("id", "selling_price")}
+    return {
+        str(pk): Decimal(price)
+        for pk, price in Item.objects.filter(tenant=tenant, pk__in=ids).values_list(
+            "id", "selling_price"
+        )
+    }
 
 
 def claim_for(raw: dict, line: Any, prices: dict) -> Decimal:
@@ -151,7 +191,9 @@ def claim_for(raw: dict, line: Any, prices: dict) -> Decimal:
     if not raw.get("scheme_code"):
         return Decimal("0.00")
     if raw.get("scheme_free"):
-        return (_d(raw.get("qty")) * prices.get(str(raw.get("item_id")), Decimal("0"))).quantize(CENT)
+        return (_d(raw.get("qty")) * prices.get(str(raw.get("item_id")), Decimal("0"))).quantize(
+            CENT
+        )
     return Decimal(line.discount_amount).quantize(CENT)
 
 
@@ -201,7 +243,11 @@ def create_scheme(*, ctx: Any, data: dict) -> tuple[Any, bool]:
         if value < 0 or str(raw).strip() in ("", "-"):
             errors[name] = ["Enter a number."]
         fields[name] = value
-    need = {"free": ("buy_qty", "free_qty"), "per_unit": ("amount",), "percent": ("amount", "min_bill")}.get(rule, ())
+    need = {
+        "free": ("buy_qty", "free_qty"),
+        "per_unit": ("amount",),
+        "percent": ("amount", "min_bill"),
+    }.get(rule, ())
     for name in need:
         value = fields.get(name)
         if name not in errors and (value is None or (value <= 0 and name != "min_bill")):
@@ -210,8 +256,14 @@ def create_scheme(*, ctx: Any, data: dict) -> tuple[Any, bool]:
         errors["amount"] = ["Enter up to 100 %."]
     from apps.sales.services.payload import _parse_date
 
-    start = _parse_date(data.get("valid_from") or tenant_today(ctx.tenant).isoformat(), "valid_from", errors)
-    end = _parse_date(data.get("valid_till"), "valid_till", errors) if data.get("valid_till") else None
+    start = _parse_date(
+        data.get("valid_from") or tenant_today(ctx.tenant).isoformat(), "valid_from", errors
+    )
+    end = (
+        _parse_date(data.get("valid_till"), "valid_till", errors)
+        if data.get("valid_till")
+        else None
+    )
     if end is None and "valid_till" not in errors:
         errors["valid_till"] = ["Choose the last day."]
     if start and end and end < start:
@@ -219,8 +271,15 @@ def create_scheme(*, ctx: Any, data: dict) -> tuple[Any, bool]:
     if errors:
         raise ValidationFailed(errors)
     scheme = Scheme.objects.create(
-        tenant=ctx.tenant, client_key=key, code=code, company=company, rule=rule, item=item,
-        valid_from=start, valid_till=end, **fields,
+        tenant=ctx.tenant,
+        client_key=key,
+        code=code,
+        company=company,
+        rule=rule,
+        item=item,
+        valid_from=start,
+        valid_till=end,
+        **fields,
     )
     return scheme, True
 
@@ -241,7 +300,9 @@ def _given(tenant: Any) -> dict[str, dict]:
     from apps.sales.models import SalesDocumentLine
 
     rows = (
-        SalesDocumentLine.objects.filter(document__tenant=tenant, document__kind__in=INVOICE_KINDS, scheme_code__isnull=False)
+        SalesDocumentLine.objects.filter(
+            document__tenant=tenant, document__kind__in=INVOICE_KINDS, scheme_code__isnull=False
+        )
         .exclude(document__status__in=[DocumentStatus.DRAFT, DocumentStatus.VOID])
         .values("scheme_code")
         .annotate(
@@ -255,14 +316,26 @@ def _given(tenant: Any) -> dict[str, dict]:
 
 def view(scheme: Any, given: dict, today: Any) -> dict:
     row = given.get(scheme.code.upper(), {})
-    status = "stopped" if not scheme.active else "ended" if scheme.valid_till < today else "waiting" if scheme.valid_from > today else "running"
+    status = (
+        "stopped"
+        if not scheme.active
+        else (
+            "ended"
+            if scheme.valid_till < today
+            else "waiting" if scheme.valid_from > today else "running"
+        )
+    )
     return {
         "id": str(scheme.id),
         "code": scheme.code,
         "company": scheme.company,
         "rule": scheme.rule,
         "item_id": str(scheme.item_id) if scheme.item_id else None,
-        "item": {"id": str(scheme.item_id), "name": scheme.item.name, "unit": scheme.item.unit.code} if scheme.item_id else None,
+        "item": (
+            {"id": str(scheme.item_id), "name": scheme.item.name, "unit": scheme.item.unit.code}
+            if scheme.item_id
+            else None
+        ),
         "buy_qty": _s(scheme.buy_qty),
         "free_qty": _s(scheme.free_qty),
         "amount": _s(scheme.amount),
@@ -295,7 +368,11 @@ def list_schemes(*, tenant: Any, q: str = "") -> dict:
         companies[s["company"]] = companies.get(s["company"], Decimal("0")) + Decimal(s["claim"])
     return {
         "schemes": schemes,
-        "claims": [{"company": name, "claim": str(total)} for name, total in sorted(companies.items(), key=lambda kv: -kv[1]) if total > 0],
+        "claims": [
+            {"company": name, "claim": str(total)}
+            for name, total in sorted(companies.items(), key=lambda kv: -kv[1])
+            if total > 0
+        ],
     }
 
 
@@ -303,6 +380,8 @@ def running_for_bill(*, tenant: Any, on: Any) -> list[dict]:
     """The bill screen's copy of the running schemes, for its preview."""
     from apps.sales.models import Scheme
 
-    rows = Scheme.objects.filter(tenant=tenant, active=True, valid_from__lte=on, valid_till__gte=on).select_related("item__unit")
+    rows = Scheme.objects.filter(
+        tenant=tenant, active=True, valid_from__lte=on, valid_till__gte=on
+    ).select_related("item__unit")
     today = tenant_today(tenant)
     return [view(s, {}, today) for s in rows]

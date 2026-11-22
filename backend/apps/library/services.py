@@ -65,7 +65,9 @@ def clean_mobile(value: Any) -> str:
 
 def clean_amount(value: Any, field: str = "amount", *, allow_zero: bool = False) -> Decimal:
     try:
-        amount = Decimal(str(value if value is not None else "").replace(",", "")).quantize(Decimal("0.01"))
+        amount = Decimal(str(value if value is not None else "").replace(",", "")).quantize(
+            Decimal("0.01")
+        )
     except (InvalidOperation, ValueError):
         amount = None
     if amount is None or not amount.is_finite() or amount < 0 or (amount == 0 and not allow_zero):
@@ -76,7 +78,9 @@ def clean_amount(value: Any, field: str = "amount", *, allow_zero: bool = False)
     return amount
 
 
-def clean_date(value: Any, field: str, *, default: dt.date | None = None, not_after: dt.date | None = None) -> dt.date:
+def clean_date(
+    value: Any, field: str, *, default: dt.date | None = None, not_after: dt.date | None = None
+) -> dt.date:
     if value in (None, ""):
         if default is None:
             raise ValidationFailed(details={field: [_("Choose a date.")]})
@@ -138,14 +142,20 @@ def save_shift(*, tenant: Any, user: Any, data: dict, shift_id: Any = None) -> S
                 raise NotFound(_("This shift is not in your library."))
         else:
             if Shift.objects.filter(tenant=tenant, active=True).count() >= MAX_SHIFTS:
-                raise BusinessRuleViolation("too_many_shifts", _("A library can have up to 6 shifts."))
-            shift = Shift(tenant=tenant, created_by=user, sort=Shift.objects.filter(tenant=tenant).count())
+                raise BusinessRuleViolation(
+                    "too_many_shifts", _("A library can have up to 6 shifts.")
+                )
+            shift = Shift(
+                tenant=tenant, created_by=user, sort=Shift.objects.filter(tenant=tenant).count()
+            )
         if "name" in data or not shift_id:
             shift.name = clean_text(data.get("name"), "name", 40)
             if not shift.name:
                 raise ValidationFailed(details={"name": [_("Enter a name.")]})
         if "monthly_fee" in data or not shift_id:
-            shift.monthly_fee = clean_amount(data.get("monthly_fee"), "monthly_fee", allow_zero=True)
+            shift.monthly_fee = clean_amount(
+                data.get("monthly_fee"), "monthly_fee", allow_zero=True
+            )
         if "is_full_day" in data:
             shift.is_full_day = bool(data["is_full_day"])
         for key in ("starts_at", "ends_at"):
@@ -182,7 +192,11 @@ def set_seat_count(*, tenant: Any, user: Any, count: Any) -> int:
             )
         have = set(Seat.objects.filter(tenant=tenant).values_list("number", flat=True))
         Seat.objects.bulk_create(
-            [Seat(tenant=tenant, created_by=user, number=i) for i in range(1, n + 1) if i not in have]
+            [
+                Seat(tenant=tenant, created_by=user, number=i)
+                for i in range(1, n + 1)
+                if i not in have
+            ]
         )
         Seat.objects.filter(tenant=tenant, number__lte=n).update(active=True)
         Seat.objects.filter(tenant=tenant, number__gt=n).update(active=False)
@@ -203,7 +217,9 @@ def get_student(*, tenant: Any, student_id: Any, lock: bool = False) -> Student:
 
 
 def _shift(tenant: Any, shift_id: Any) -> Shift:
-    shift = Shift.objects.filter(tenant=tenant, pk=shift_id, active=True).first() if shift_id else None
+    shift = (
+        Shift.objects.filter(tenant=tenant, pk=shift_id, active=True).first() if shift_id else None
+    )
     if shift is None:
         raise ValidationFailed(details={"shift_id": [_("Choose a shift.")]})
     return shift
@@ -245,7 +261,10 @@ def _check_mobile_free(tenant: Any, mobile: str, *, exclude: Any = None) -> None
     if not mobile:
         return
     existing = (
-        Student.objects.filter(tenant=tenant, mobile=mobile).exclude(status=StudentStatus.LEFT).exclude(pk=exclude).first()
+        Student.objects.filter(tenant=tenant, mobile=mobile)
+        .exclude(status=StudentStatus.LEFT)
+        .exclude(pk=exclude)
+        .first()
     )
     if existing:
         raise BusinessRuleViolation(
@@ -261,7 +280,9 @@ def enrol_student(*, tenant: Any, user: Any, data: dict) -> Student:
     shift = _shift(tenant, data.get("shift_id"))
     fee = data.get("monthly_fee")
     monthly_fee = clean_amount(fee if fee not in (None, "") else shift.monthly_fee, "monthly_fee")
-    joined_on = clean_date(data.get("joined_on"), "joined_on", default=today(tenant), not_after=today(tenant))
+    joined_on = clean_date(
+        data.get("joined_on"), "joined_on", default=today(tenant), not_after=today(tenant)
+    )
     try:
         with transaction.atomic():
             seat = _seat(tenant, data.get("seat"))
@@ -283,14 +304,22 @@ def enrol_student(*, tenant: Any, user: Any, data: dict) -> Student:
             first = data.get("first_payment")
             if first not in (None, "", "0", 0):
                 collect_fee(
-                    tenant=tenant, user=user, student_id=student.pk,
-                    data={"amount": first, "mode": data.get("mode") or PayMode.CASH, "paid_on": joined_on.isoformat()},
+                    tenant=tenant,
+                    user=user,
+                    student_id=student.pk,
+                    data={
+                        "amount": first,
+                        "mode": data.get("mode") or PayMode.CASH,
+                        "paid_on": joined_on.isoformat(),
+                    },
                 )
                 student.refresh_from_db()
             return student
     except IntegrityError:
         # Two counters enrolled on the same seat at once: the index decided.
-        raise BusinessRuleViolation("seat_taken", _("This seat was just taken. Choose another.")) from None
+        raise BusinessRuleViolation(
+            "seat_taken", _("This seat was just taken. Choose another.")
+        ) from None
 
 
 def update_student(*, tenant: Any, student_id: Any, data: dict) -> Student:
@@ -315,7 +344,9 @@ def move_student(*, tenant: Any, student_id: Any, data: dict) -> Student:
         with transaction.atomic():
             student = get_student(tenant=tenant, student_id=student_id, lock=True)
             if student.status == StudentStatus.LEFT:
-                raise BusinessRuleViolation("student_left", _("%(name)s has left.") % {"name": student.name})
+                raise BusinessRuleViolation(
+                    "student_left", _("%(name)s has left.") % {"name": student.name}
+                )
             shift = _shift(tenant, data.get("shift_id") or student.shift_id)
             seat = _seat(tenant, data.get("seat"))
             _check_seat_free(tenant, seat, shift, exclude=student.pk)
@@ -323,7 +354,9 @@ def move_student(*, tenant: Any, student_id: Any, data: dict) -> Student:
             student.save(update_fields=["seat", "shift", "updated_at"])
             return student
     except IntegrityError:
-        raise BusinessRuleViolation("seat_taken", _("This seat was just taken. Choose another.")) from None
+        raise BusinessRuleViolation(
+            "seat_taken", _("This seat was just taken. Choose another.")
+        ) from None
 
 
 def set_status(*, tenant: Any, student_id: Any, action: str, data: dict) -> Student:
@@ -332,9 +365,12 @@ def set_status(*, tenant: Any, student_id: Any, action: str, data: dict) -> Stud
         if action == "hold":
             if student.status == StudentStatus.LEFT:
                 raise BusinessRuleViolation(
-                    "student_left", _("%(name)s has left. Bring them back first.") % {"name": student.name}
+                    "student_left",
+                    _("%(name)s has left. Bring them back first.") % {"name": student.name},
                 )
-            until = clean_date(data.get("hold_until"), "hold_until") if data.get("hold_until") else None
+            until = (
+                clean_date(data.get("hold_until"), "hold_until") if data.get("hold_until") else None
+            )
             if until and until < today(tenant):
                 raise ValidationFailed(details={"hold_until": [_("Choose today or a later day.")]})
             student.status, student.hold_until = StudentStatus.HOLD, until
@@ -362,7 +398,9 @@ def _clean_payment(tenant: Any, data: dict) -> tuple[Decimal, str, dt.date]:
     mode = data.get("mode") or PayMode.CASH
     if mode not in PayMode.values:
         raise ValidationFailed(details={"mode": [_("Choose Cash or UPI.")]})
-    paid_on = clean_date(data.get("paid_on"), "paid_on", default=today(tenant), not_after=today(tenant))
+    paid_on = clean_date(
+        data.get("paid_on"), "paid_on", default=today(tenant), not_after=today(tenant)
+    )
     return amount, mode, paid_on
 
 
@@ -370,10 +408,17 @@ def preview_fee(*, tenant: Any, student_id: Any, data: dict) -> dict:
     student = get_student(tenant=tenant, student_id=student_id)
     amount, _mode, _day = _clean_payment(tenant, data)
     applied = fees.apply_payment(
-        paid_to=student.paid_to, credit=student.credit, amount=amount,
-        monthly_fee=student.monthly_fee, joined_on=student.joined_on,
+        paid_to=student.paid_to,
+        credit=student.credit,
+        amount=amount,
+        monthly_fee=student.monthly_fee,
+        joined_on=student.joined_on,
     )
-    return {"months": applied.months, "paid_to": applied.paid_to.isoformat(), "credit": f"{applied.credit:.2f}"}
+    return {
+        "months": applied.months,
+        "paid_to": applied.paid_to.isoformat(),
+        "credit": f"{applied.credit:.2f}",
+    }
 
 
 def collect_fee(*, tenant: Any, user: Any, student_id: Any, data: dict) -> tuple[Payment, Student]:
@@ -381,15 +426,28 @@ def collect_fee(*, tenant: Any, user: Any, student_id: Any, data: dict) -> tuple
     with transaction.atomic():
         student = get_student(tenant=tenant, student_id=student_id, lock=True)
         if student.status == StudentStatus.LEFT:
-            raise BusinessRuleViolation("student_left", _("%(name)s has left.") % {"name": student.name})
+            raise BusinessRuleViolation(
+                "student_left", _("%(name)s has left.") % {"name": student.name}
+            )
         applied = fees.apply_payment(
-            paid_to=student.paid_to, credit=student.credit, amount=amount,
-            monthly_fee=student.monthly_fee, joined_on=student.joined_on,
+            paid_to=student.paid_to,
+            credit=student.credit,
+            amount=amount,
+            monthly_fee=student.monthly_fee,
+            joined_on=student.joined_on,
         )
         payment = Payment.objects.create(
-            tenant=tenant, created_by=user, student=student, amount=amount, mode=mode, paid_on=paid_on,
-            months=applied.months, from_date=applied.from_date, to_date=applied.to_date,
-            paid_to_before=student.paid_to, credit_before=student.credit,
+            tenant=tenant,
+            created_by=user,
+            student=student,
+            amount=amount,
+            mode=mode,
+            paid_on=paid_on,
+            months=applied.months,
+            from_date=applied.from_date,
+            to_date=applied.to_date,
+            paid_to_before=student.paid_to,
+            credit_before=student.credit,
         )
         student.paid_to = applied.paid_to if (applied.months or student.paid_to) else None
         student.credit = applied.credit
@@ -423,9 +481,18 @@ def remove_payment(*, tenant: Any, user: Any, payment_id: Any, reason: Any) -> S
                 details={"latest_id": str(latest.pk) if latest else None},
             )
         Payment.objects.create(
-            tenant=tenant, created_by=user, student=student, amount=payment.amount, mode=payment.mode,
-            paid_on=today(tenant), months=-payment.months, paid_to_before=student.paid_to,
-            credit_before=student.credit, status=RowStatus.REMOVED, removes=payment, reason=why,
+            tenant=tenant,
+            created_by=user,
+            student=student,
+            amount=payment.amount,
+            mode=payment.mode,
+            paid_on=today(tenant),
+            months=-payment.months,
+            paid_to_before=student.paid_to,
+            credit_before=student.credit,
+            status=RowStatus.REMOVED,
+            removes=payment,
+            reason=why,
         )
         Payment.objects.filter(pk=payment.pk).update(status=RowStatus.REMOVED)
         student.paid_to = payment.paid_to_before
@@ -437,12 +504,15 @@ def remove_payment(*, tenant: Any, user: Any, payment_id: Any, reason: Any) -> S
 def recalc(student: Student) -> tuple[dt.date | None, Decimal]:
     """Re-derive `paid_to` and `credit` from every live payment, in order."""
     paid_to, credit = None, Decimal("0.00")
-    for p in Payment.objects.filter(student=student, status=RowStatus.LIVE, removes__isnull=True).order_by(
-        "created_at", "id"
-    ):
+    for p in Payment.objects.filter(
+        student=student, status=RowStatus.LIVE, removes__isnull=True
+    ).order_by("created_at", "id"):
         applied = fees.apply_payment(
-            paid_to=paid_to, credit=credit, amount=p.amount,
-            monthly_fee=student.monthly_fee, joined_on=student.joined_on,
+            paid_to=paid_to,
+            credit=credit,
+            amount=p.amount,
+            monthly_fee=student.monthly_fee,
+            joined_on=student.joined_on,
         )
         paid_to = applied.paid_to if (applied.months or paid_to) else None
         credit = applied.credit
@@ -455,10 +525,15 @@ def recalc(student: Student) -> tuple[dt.date | None, Decimal]:
 def mark_in(*, tenant: Any, user: Any, student_id: Any) -> Attendance:
     student = get_student(tenant=tenant, student_id=student_id)
     if student.status == StudentStatus.LEFT:
-        raise BusinessRuleViolation("student_left", _("%(name)s has left.") % {"name": student.name})
+        raise BusinessRuleViolation(
+            "student_left", _("%(name)s has left.") % {"name": student.name}
+        )
     day = today(tenant)
     row, _created = Attendance.objects.get_or_create(
-        tenant=tenant, student=student, day=day, defaults={"in_at": timezone.now(), "created_by": user}
+        tenant=tenant,
+        student=student,
+        day=day,
+        defaults={"in_at": timezone.now(), "created_by": user},
     )
     return row
 
@@ -481,8 +556,13 @@ def add_expense(*, tenant: Any, user: Any, data: dict) -> Expense:
     if head not in ExpenseHead.values:
         raise ValidationFailed(details={"head": [_("Choose what it was for.")]})
     return Expense.objects.create(
-        tenant=tenant, created_by=user, head=head, amount=clean_amount(data.get("amount")),
-        spent_on=clean_date(data.get("spent_on"), "spent_on", default=today(tenant), not_after=today(tenant)),
+        tenant=tenant,
+        created_by=user,
+        head=head,
+        amount=clean_amount(data.get("amount")),
+        spent_on=clean_date(
+            data.get("spent_on"), "spent_on", default=today(tenant), not_after=today(tenant)
+        ),
         note=clean_text(data.get("note"), "note"),
     )
 
@@ -506,8 +586,10 @@ def remove_expense(*, tenant: Any, expense_id: Any, reason: Any) -> Expense:
 
 def add_book(*, tenant: Any, user: Any, data: dict, book_id: Any = None) -> Book:
     with transaction.atomic():
-        book = Book.objects.select_for_update().filter(tenant=tenant, pk=book_id).first() if book_id else Book(
-            tenant=tenant, created_by=user
+        book = (
+            Book.objects.select_for_update().filter(tenant=tenant, pk=book_id).first()
+            if book_id
+            else Book(tenant=tenant, created_by=user)
         )
         if book is None:
             raise NotFound(_("This book is not in your library."))
@@ -517,10 +599,16 @@ def add_book(*, tenant: Any, user: Any, data: dict, book_id: Any = None) -> Book
             code = "".join(str(data.get("code") or "").split())
             if len(code) > 40:
                 raise ValidationFailed(details={"code": [_("Use 40 letters or fewer.")]})
-            other = Book.objects.filter(tenant=tenant, code=code).exclude(pk=book.pk).first() if code else None
+            other = (
+                Book.objects.filter(tenant=tenant, code=code).exclude(pk=book.pk).first()
+                if code
+                else None
+            )
             if other:
                 raise BusinessRuleViolation(
-                    "code_in_use", _("This barcode is on %(t)s.") % {"t": other.title}, details={"id": str(other.pk)}
+                    "code_in_use",
+                    _("This barcode is on %(t)s.") % {"t": other.title},
+                    details={"id": str(other.pk)},
                 )
             book.code = code
         if "author" in data:
@@ -532,10 +620,16 @@ def add_book(*, tenant: Any, user: Any, data: dict, book_id: Any = None) -> Book
                 copies = 0
             if not 1 <= copies <= 999:
                 raise ValidationFailed(details={"copies": [_("Choose 1 to 999 copies.")]})
-            out = BookIssue.objects.filter(book_id=book.pk, back_on__isnull=True).count() if book.pk else 0
+            out = (
+                BookIssue.objects.filter(book_id=book.pk, back_on__isnull=True).count()
+                if book.pk
+                else 0
+            )
             if copies < out:
                 raise BusinessRuleViolation(
-                    "copies_out", _("%(n)s copies are with students now.") % {"n": out}, details={"out": out}
+                    "copies_out",
+                    _("%(n)s copies are with students now.") % {"n": out},
+                    details={"out": out},
                 )
             book.copies = copies
         book.save()
@@ -549,8 +643,12 @@ def give_book(*, tenant: Any, user: Any, book_id: Any, student_id: Any) -> BookI
             raise NotFound(_("This book is not in your library."))
         student = get_student(tenant=tenant, student_id=student_id)
         if student.status == StudentStatus.LEFT:
-            raise BusinessRuleViolation("student_left", _("%(name)s has left.") % {"name": student.name})
-        out = BookIssue.objects.filter(book=book, back_on__isnull=True).aggregate(n=Count("id"))["n"]
+            raise BusinessRuleViolation(
+                "student_left", _("%(name)s has left.") % {"name": student.name}
+            )
+        out = BookIssue.objects.filter(book=book, back_on__isnull=True).aggregate(n=Count("id"))[
+            "n"
+        ]
         if out >= book.copies:
             raise BusinessRuleViolation("no_copy_left", _("Every copy of this book is out."))
         return BookIssue.objects.create(
@@ -579,7 +677,9 @@ def record_message(*, tenant: Any, user: Any, student_id: Any, kind: Any, text: 
     if not body or len(body) > 1000:
         raise ValidationFailed(details={"text": [_("Write the message.")]})
     student = get_student(tenant=tenant, student_id=student_id)
-    return Message.objects.create(tenant=tenant, created_by=user, student=student, kind=kind, text=body)
+    return Message.objects.create(
+        tenant=tenant, created_by=user, student=student, kind=kind, text=body
+    )
 
 
 def seed_library(ctx: Any, tenant: Any) -> None:
@@ -590,8 +690,10 @@ def seed_library(ctx: Any, tenant: Any) -> None:
     """
     settings_for(tenant)
     if not Shift.objects.filter(tenant=tenant).exists():
-        Shift.objects.bulk_create([
-            Shift(tenant=tenant, name=_("Morning"), sort=0),
-            Shift(tenant=tenant, name=_("Evening"), sort=1),
-            Shift(tenant=tenant, name=_("Full day"), sort=2, is_full_day=True),
-        ])
+        Shift.objects.bulk_create(
+            [
+                Shift(tenant=tenant, name=_("Morning"), sort=0),
+                Shift(tenant=tenant, name=_("Evening"), sort=1),
+                Shift(tenant=tenant, name=_("Full day"), sort=2, is_full_day=True),
+            ]
+        )

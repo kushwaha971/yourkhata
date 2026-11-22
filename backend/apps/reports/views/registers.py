@@ -114,7 +114,7 @@ class _RegisterBase(CsvExportMixin, APIView):
         total = queryset.count()
         start = (page - 1) * page_size
         fields = FIELDS[(self.book, self.level)]
-        allowed = lambda codename: request_has(request, codename)  # noqa: E731
+        allowed = lambda codename: request_has(request, codename)  # noqa: E731 — reason: a one-line helper inside the test
         data = [self._row(row, fields, allowed) for row in queryset[start : start + page_size]]
         totals_of = (
             selectors.sales_register_totals

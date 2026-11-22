@@ -2113,7 +2113,5 @@
     "would drag the sharedApp intersection down to whatever those two files happen",
     "to share and quietly weaken every other line in this file."
   ],
-  "ignoreRoutes": [
-    "/_global-error"
-  ]
+  "ignoreRoutes": ["/_global-error"]
 }

@@ -92,44 +92,44 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
             §A4's × · title · ⋯, so the switcher and bell are not one tap from
             leaving a half-made bill. */}
         {!mobileNav.pageOwnsHeader && (
-        <UbStack
-          as="header"
-          direction="row"
-          align="center"
-          gap={2}
-          data-print="hide"
-          className="min-h-14 shrink-0 flex-wrap border-b border-border-hairline bg-surface-card px-4 lg:hidden"
-        >
-          {/* A top-level screen shows the brand; a detail or task screen shows
+          <UbStack
+            as="header"
+            direction="row"
+            align="center"
+            gap={2}
+            data-print="hide"
+            className="min-h-14 shrink-0 flex-wrap border-b border-border-hairline bg-surface-card px-4 lg:hidden"
+          >
+            {/* A top-level screen shows the brand; a detail or task screen shows
               Back in its place. The bottom nav is there on most of them too (all but
               a form and a khata), so Back is the way UP and the tabs the way out. */}
-          {mobileNav.topLevel || mobileNav.pageOwnsBack ? (
-            <UbLink
-              href={landing}
-              tone="inherit"
-              underline={false}
-              aria-label={t('nav.brandHome', { appName })}
-              // A 24 px mark with a 44 px hit area (R-A-3): 10 px of overhang a
-              // side, so `mx-0.5` opens the 8 px gaps to the menu button and the
-              // switcher to exactly 10 — the overhang fills the gap and never
-              // covers a neighbour, at a cost of 4 px of the switcher's width on
-              // a 360 px phone (Sprint 12 sweep).
-              className="ub-hit mx-0.5 flex shrink-0 items-center rounded-control"
-            >
-              <UbLogo size="sm" />
-            </UbLink>
-          ) : (
-            <MobileBackButton upHref={mobileNav.upHref} />
-          )}
-          <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
-          {/* UAT D2 — below `lg` the top bar does not render, and it held the
+            {mobileNav.topLevel || mobileNav.pageOwnsBack ? (
+              <UbLink
+                href={landing}
+                tone="inherit"
+                underline={false}
+                aria-label={t('nav.brandHome', { appName })}
+                // A 24 px mark with a 44 px hit area (R-A-3): 10 px of overhang a
+                // side, so `mx-0.5` opens the 8 px gaps to the menu button and the
+                // switcher to exactly 10 — the overhang fills the gap and never
+                // covers a neighbour, at a cost of 4 px of the switcher's width on
+                // a 360 px phone (Sprint 12 sweep).
+                className="ub-hit mx-0.5 flex shrink-0 items-center rounded-control"
+              >
+                <UbLogo size="sm" />
+              </UbLink>
+            ) : (
+              <MobileBackButton upHref={mobileNav.upHref} />
+            )}
+            <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
+            {/* UAT D2 — below `lg` the top bar does not render, and it held the
               only party search. It is here as a 44 px icon, reusing the same
               component. The account (and Sign out) moved to the More tab with
               the mobile redesign, which also took the ☰ drawer's place. */}
-          <MobileQuickSearch />
-          {/* NTF-01 FR-4 — the bell sits beside search. */}
-          <NotificationBell />
-        </UbStack>
+            <MobileQuickSearch />
+            {/* NTF-01 FR-4 — the bell sits beside search. */}
+            <NotificationBell />
+          </UbStack>
         )}
 
         <UbAppTopBar />

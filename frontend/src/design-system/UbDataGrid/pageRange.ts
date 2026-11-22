@@ -14,10 +14,7 @@
  * every other page number in this product is 1-based and one file translating
  * between the two is one file where an off-by-one can hide.
  */
-export const buildPageRange = (
-  current: number,
-  total: number
-): readonly (number | null)[] => {
+export const buildPageRange = (current: number, total: number): readonly (number | null)[] => {
   const pages = Math.max(1, Math.trunc(total));
   const page = Math.min(Math.max(1, Math.trunc(current)), pages);
 

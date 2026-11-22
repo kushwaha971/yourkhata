@@ -50,7 +50,13 @@ CHALLAN_TYPES: tuple[str, ...] = (
     "sample",
     "other",
 )
-TRANSPORT_FIELDS: tuple[str, ...] = ("transporter", "vehicle_number", "eway_bill_number", "driver", "deliver_to")
+TRANSPORT_FIELDS: tuple[str, ...] = (
+    "transporter",
+    "vehicle_number",
+    "eway_bill_number",
+    "driver",
+    "deliver_to",
+)
 TRANSPORT_MAX = 60
 # D13: an address is longer than a name or a number.
 TRANSPORT_MAX_BY_FIELD = {"deliver_to": 160}

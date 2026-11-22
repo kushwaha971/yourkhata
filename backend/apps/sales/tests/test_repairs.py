@@ -51,19 +51,29 @@ def test_a_walk_in_leaves_a_phone_with_a_mobile_and_no_advance(mobile: Any, owne
     made = owner.post(reverse(URL), _body(walk_in_mobile="+91 99230 18764"), format="json")
     assert made.status_code == 201, made.json()
     job = made.json()["data"]
-    assert (job["number"], job["walk_in_mobile"], job["status"]) == ("JOB-0001", "9923018764", "open")
+    assert (job["number"], job["walk_in_mobile"], job["status"]) == (
+        "JOB-0001",
+        "9923018764",
+        "open",
+    )
     assert job["came_with"] == ["phone", "back_cover"]
     assert job["imei"] == "864211902231905"
 
 
-def test_an_advance_needs_a_saved_customer_and_is_a_held_receipt(mobile: Any, owner: Any, make_party: Any) -> None:
+def test_an_advance_needs_a_saved_customer_and_is_a_held_receipt(
+    mobile: Any, owner: Any, make_party: Any
+) -> None:
     """The advance is real money in the shop book, earmarked so no other bill
     takes it; a walk-in cannot leave one because a payment belongs to someone."""
-    refused = owner.post(reverse(URL), _body(walk_in_mobile="9923018764", advance="500"), format="json")
+    refused = owner.post(
+        reverse(URL), _body(walk_in_mobile="9923018764", advance="500"), format="json"
+    )
     assert refused.status_code == 400 and "advance" in refused.json()["error"]["details"]
 
     party = make_party()
-    job = owner.post(reverse(URL), _body(party_id=str(party.id), advance="500"), format="json").json()["data"]
+    job = owner.post(
+        reverse(URL), _body(party_id=str(party.id), advance="500"), format="json"
+    ).json()["data"]
     payment = _advance_of(job)
     assert payment is not None and payment.amount == Decimal("500.00")
     assert (payment.meta or {}).get("earmark", {}).get("subject_id") == job["id"]
@@ -71,7 +81,9 @@ def test_an_advance_needs_a_saved_customer_and_is_a_held_receipt(mobile: Any, ow
     assert party.shop_balance == Decimal("-500.00")
 
 
-def test_a_double_tapped_save_is_one_job_and_one_receipt(mobile: Any, owner: Any, make_party: Any) -> None:
+def test_a_double_tapped_save_is_one_job_and_one_receipt(
+    mobile: Any, owner: Any, make_party: Any
+) -> None:
     body = _body(party_id=str(make_party().id), advance="500")
     first = owner.post(reverse(URL), body, format="json")
     second = owner.post(reverse(URL), body, format="json")
@@ -80,14 +92,23 @@ def test_a_double_tapped_save_is_one_job_and_one_receipt(mobile: Any, owner: Any
     assert Payment.objects.filter(amount=Decimal("500.00")).count() == 1
 
 
-def test_stages_move_and_cancelling_frees_the_advance(mobile: Any, owner: Any, make_party: Any) -> None:
+def test_stages_move_and_cancelling_frees_the_advance(
+    mobile: Any, owner: Any, make_party: Any
+) -> None:
     from apps.payments.selectors.payments import open_advances
 
     party = make_party()
-    job = owner.post(reverse(URL), _body(party_id=str(party.id), advance="500"), format="json").json()["data"]
+    job = owner.post(
+        reverse(URL), _body(party_id=str(party.id), advance="500"), format="json"
+    ).json()["data"]
     stage = reverse("v1:repair-stage", args=[job["id"]])
-    assert owner.post(stage, {"status": "waiting"}, format="json").json()["data"]["status"] == "waiting"
-    assert owner.post(stage, {"status": "delivered"}, format="json").status_code == 409  # only a bill delivers
+    assert (
+        owner.post(stage, {"status": "waiting"}, format="json").json()["data"]["status"]
+        == "waiting"
+    )
+    assert (
+        owner.post(stage, {"status": "delivered"}, format="json").status_code == 409
+    )  # only a bill delivers
     assert owner.get(reverse(URL), {"stage": "waiting"}).json()["meta"]["counts"]["waiting"] == 1
     assert not open_advances(tenant=mobile, party_id=party.id).exists()
     assert owner.post(stage, {"status": "cancelled"}, format="json").status_code == 200
@@ -103,9 +124,19 @@ def test_a_bill_delivers_the_repair_and_applies_its_advance(
     from apps.sales.tests.conftest import draft, issue, line
 
     party = make_party()
-    job = owner.post(reverse(URL), _body(party_id=str(party.id), advance="500"), format="json").json()["data"]
+    job = owner.post(
+        reverse(URL), _body(party_id=str(party.id), advance="500"), format="json"
+    ).json()["data"]
     part = make_item("Display Redmi Note 12", "600.00", "GST0", stock="5")
-    charge = make_item("Repair charge", "2400.00", "GST0", stock=None, item_type="service", track_stock=False, hsn_sac="998719")
+    charge = make_item(
+        "Repair charge",
+        "2400.00",
+        "GST0",
+        stock=None,
+        item_type="service",
+        track_stock=False,
+        hsn_sac="998719",
+    )
     made = draft(
         owner,
         party_id=str(party.id),
@@ -130,9 +161,21 @@ def test_another_customers_bill_cannot_deliver_the_repair(
 ) -> None:
     from apps.sales.tests.conftest import draft, issue, line
 
-    job = owner.post(reverse(URL), _body(party_id=str(make_party().id), advance="500"), format="json").json()["data"]
+    job = owner.post(
+        reverse(URL), _body(party_id=str(make_party().id), advance="500"), format="json"
+    ).json()["data"]
     other = make_party(name="Someone Else")
-    charge = make_item("Repair charge", "2400.00", "GST0", stock=None, item_type="service", track_stock=False, hsn_sac="998719")
-    made = draft(owner, party_id=str(other.id), lines=[line(charge, "1")], repair_job_id=job["id"]).json()["data"]
+    charge = make_item(
+        "Repair charge",
+        "2400.00",
+        "GST0",
+        stock=None,
+        item_type="service",
+        track_stock=False,
+        hsn_sac="998719",
+    )
+    made = draft(
+        owner, party_id=str(other.id), lines=[line(charge, "1")], repair_job_id=job["id"]
+    ).json()["data"]
     refused = issue(owner, made["id"], version=made["version"])
     assert refused.status_code == 409

@@ -422,7 +422,7 @@ def money_position(
     The Shop's drawer by default (DEC-019): another app's money is not in it.
     `bucket=None` sums every book, for a check that nothing moved anywhere.
     """
-    sql = f"WITH {_cte(sources)} SELECT COALESCE(SUM(cash), 0), COALESCE(SUM(bank), 0) FROM rows"  # noqa: S608
+    sql = f"WITH {_cte(sources)} SELECT COALESCE(SUM(cash), 0), COALESCE(SUM(bank), 0) FROM rows"  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
     params = _base_params(
         tenant, lo=_BEGINNING, hi=before - dt.timedelta(days=1), include_void=False, bucket=bucket
     )
@@ -443,7 +443,7 @@ def first_cash_day(
     first row that drawer counts (WP-06 Finding 4): a UPI receipt or another
     app's cash does not start the Shop's drawer.
     """
-    sql = f"WITH {_cte(sources)} SELECT MIN(bdate) FROM rows WHERE cash <> 0"  # noqa: S608
+    sql = f"WITH {_cte(sources)} SELECT MIN(bdate) FROM rows WHERE cash <> 0"  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
     params = _base_params(
         tenant, lo=_BEGINNING, hi=before - dt.timedelta(days=1), include_void=False, bucket=bucket
     )
@@ -569,7 +569,9 @@ def _query_params(tenant: Any, query: DayBookQuery) -> dict:
 
 def count_rows(*, tenant: Any, query: DayBookQuery) -> int:
     """The filtered row count — the export's sync/async decision (RPT-08 BR-3)."""
-    sql = f"WITH {_cte(query.sources)} SELECT COUNT(*) FROM rows WHERE {_OUTER_FILTERS}"  # noqa: S608
+    sql = (
+        f"WITH {_cte(query.sources)} SELECT COUNT(*) FROM rows WHERE {_OUTER_FILTERS}"  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
+    )
     return int(_fetch(sql, _query_params(tenant, query))[0][0])
 
 
@@ -628,7 +630,7 @@ def day_book(
     """
     opening = money_position(tenant=tenant, before=query.date_from, sources=query.sources)
     net_sql = (
-        f"WITH {_cte(query.sources)} SELECT COALESCE(SUM(cash), 0), COALESCE(SUM(bank), 0) "  # noqa: S608
+        f"WITH {_cte(query.sources)} SELECT COALESCE(SUM(cash), 0), COALESCE(SUM(bank), 0) "  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
         "FROM rows"
     )
     net_cash, net_bank = _fetch(

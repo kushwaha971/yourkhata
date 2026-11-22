@@ -202,7 +202,6 @@ export function LoginPageContent(): React.JSX.Element {
               it does. */}
         </UbStack>
       </AuthPanel>
-
     </UbStack>
   );
 }

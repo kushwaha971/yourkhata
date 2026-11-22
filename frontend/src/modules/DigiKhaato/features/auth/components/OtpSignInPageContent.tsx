@@ -164,11 +164,7 @@ export function OtpSignInPageContent(): React.JSX.Element {
                 required
               >
                 {(field) => (
-                  <UbPhoneInput
-                    {...field}
-                    autoComplete="tel-national"
-                    disabled={disabled}
-                  />
+                  <UbPhoneInput {...field} autoComplete="tel-national" disabled={disabled} />
                 )}
               </UbField>
               <UbButton

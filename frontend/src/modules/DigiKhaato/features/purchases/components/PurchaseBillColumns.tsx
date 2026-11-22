@@ -62,7 +62,11 @@ export const createPurchaseBillColumns = ({
               /* The supplier's own number is free text ("RKE-ELECTRICAL-2026-1043"):
                  it wraps, at its hyphens first, rather than being cut mid-glyph in a
                  12 % column (16 Nov 2026) — the merchant matches it to the paper. */
-              <UbText as="span" variant="body-sm" className="ds-num block whitespace-normal [overflow-wrap:anywhere]">
+              <UbText
+                as="span"
+                variant="body-sm"
+                className="ds-num block whitespace-normal [overflow-wrap:anywhere]"
+              >
                 {row.supplierInvoiceNumber ?? '—'}
               </UbText>
             ),
@@ -164,29 +168,27 @@ export const createPurchaseBillColumns = ({
     },
   ];
   if (isCards)
-    columns.push(
-      {
-        id: 'paper',
-        header: '',
-        priority: 1,
-        cardSlot: 'meta',
-        cell: (row) =>
-          [
-            formatBusinessDate(row.documentDate),
-            row.party?.name,
-            formatInr(row.grandTotal),
-            row.supplierInvoiceNumber,
-            /* What is still open must survive the shorter row. A return's open
+    columns.push({
+      id: 'paper',
+      header: '',
+      priority: 1,
+      cardSlot: 'meta',
+      cell: (row) =>
+        [
+          formatBusinessDate(row.documentDate),
+          row.party?.name,
+          formatInr(row.grandTotal),
+          row.supplierInvoiceNumber,
+          /* What is still open must survive the shorter row. A return's open
                amount is credit the supplier owes back, never "to pay". */
-            !order && due(row)
-              ? t(note ? 'purchases.list.openCredit' : 'purchases.list.amountToPay', {
-                  amount: formatInr(row.amountDue),
-                })
-              : null,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-      },
-    );
+          !order && due(row)
+            ? t(note ? 'purchases.list.openCredit' : 'purchases.list.amountToPay', {
+                amount: formatInr(row.amountDue),
+              })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+    });
   return columns;
 };

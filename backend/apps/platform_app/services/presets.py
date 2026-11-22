@@ -211,7 +211,9 @@ PRESETS: dict[str, Preset] = {
 #: Owner, 14 Nov 2026: every shop takes orders on the phone and WhatsApp, not
 #: only a kirana, so every kind starts with them on. Shop features turns them off.
 EVERY_KIND_FEATURES: frozenset[str] = frozenset({"phone_orders"})
-PRESETS = {kind: replace(p, features=p.features | EVERY_KIND_FEATURES) for kind, p in PRESETS.items()}
+PRESETS = {
+    kind: replace(p, features=p.features | EVERY_KIND_FEATURES) for kind, p in PRESETS.items()
+}
 
 # FR-7: the modules a new tenant asks for, before the partner and plan
 # intersection. `inventory` is added only when the preset enables it.

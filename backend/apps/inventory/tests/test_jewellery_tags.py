@@ -57,7 +57,9 @@ def test_a_tag_puts_one_piece_in_stock_and_reads_back(owner: Any, chain: Any) ->
     res = owner.post(reverse("v1:item-tags", args=[chain.id]), TAG, format="json")
     assert res.status_code == 201, res.content
     rows = owner.get(reverse("v1:item-tags", args=[chain.id])).json()["data"]
-    assert [(r["tag_no"], r["net_g"], r["huid"], r["status"]) for r in rows] == [("GC-1042", "12.340", "7K2P9X", "in_stock")]
+    assert [(r["tag_no"], r["net_g"], r["huid"], r["status"]) for r in rows] == [
+        ("GC-1042", "12.340", "7K2P9X", "in_stock")
+    ]
     assert _stock(chain) == Decimal("1.000")
     assert owner.get(reverse("v1:jewel-tag-summary")).json()["data"]["in_stock"] == 1
 
@@ -79,7 +81,9 @@ def test_net_is_worked_out_when_left_blank(owner: Any, chain: Any) -> None:
         ({"making_type": "flat"}, "making_type"),
     ],
 )
-def test_a_wrong_tag_is_refused_by_name_and_moves_no_stock(owner: Any, chain: Any, change: dict, field: str) -> None:
+def test_a_wrong_tag_is_refused_by_name_and_moves_no_stock(
+    owner: Any, chain: Any, change: dict, field: str
+) -> None:
     res = owner.post(reverse("v1:item-tags", args=[chain.id]), {**TAG, **change}, format="json")
     assert res.status_code == 400
     assert field in res.json()["error"]["details"]
@@ -91,23 +95,31 @@ def test_a_tag_no_is_used_once_in_the_business(owner: Any, chain: Any, make_item
     ring = make_item("Ladies ring 22K")
     ring.tracking = "serial"
     ring.save(update_fields=["tracking"])
-    res = owner.post(reverse("v1:item-tags", args=[ring.id]), {**TAG, "tag_no": "GC-1042"}, format="json")
+    res = owner.post(
+        reverse("v1:item-tags", args=[ring.id]), {**TAG, "tag_no": "GC-1042"}, format="json"
+    )
     assert res.status_code == 400 and "tag_no" in res.json()["error"]["details"]
     assert Serial.objects.filter(serial="GC-1042").count() == 1
 
 
 def test_an_item_without_tags_refuses_one(owner: Any, make_item: Any) -> None:
     plain = make_item("Gift box")
-    assert owner.post(reverse("v1:item-tags", args=[plain.id]), TAG, format="json").status_code == 400
+    assert (
+        owner.post(reverse("v1:item-tags", args=[plain.id]), TAG, format="json").status_code == 400
+    )
 
 
 def test_staff_see_tags_and_cannot_add_one(api_as: Any, jeweller: Any, chain: Any) -> None:
     staff = api_as(jeweller, RoleCode.STAFF.value)[0]
     assert staff.get(reverse("v1:item-tags", args=[chain.id])).status_code == 200
-    assert staff.post(reverse("v1:item-tags", args=[chain.id]), TAG, format="json").status_code == 403
+    assert (
+        staff.post(reverse("v1:item-tags", args=[chain.id]), TAG, format="json").status_code == 403
+    )
 
 
-def test_another_kind_never_sees_tags(api_as: Any, tenant: Any, main: Any, reference: Any, make_item: Any) -> None:
+def test_another_kind_never_sees_tags(
+    api_as: Any, tenant: Any, main: Any, reference: Any, make_item: Any
+) -> None:
     tenant.business_type = "kirana"
     tenant.save(update_fields=["business_type"])
     client = api_as(tenant, RoleCode.OWNER.value)[0]
@@ -116,7 +128,9 @@ def test_another_kind_never_sees_tags(api_as: Any, tenant: Any, main: Any, refer
     assert client.get(reverse("v1:jewel-tag-summary")).status_code == 404
 
 
-def test_a_piece_already_in_the_shop_is_held_at_its_metal_value_today(owner: Any, chain: Any, jeweller: Any) -> None:
+def test_a_piece_already_in_the_shop_is_held_at_its_metal_value_today(
+    owner: Any, chain: Any, jeweller: Any
+) -> None:
     """No cost is asked (design D3): 12.340 g of 22K at today's ₹11,650 is held at ₹1,43,761."""
     owner.put(reverse("v1:metal-rate-today"), {"gold_22k": "11650"}, format="json")
     owner.post(reverse("v1:item-tags", args=[chain.id]), TAG, format="json")
@@ -131,8 +145,15 @@ def _create(client: Any, **fields: Any) -> Any:
 
     from apps.inventory.tests.conftest import unit
 
-    body = {"name": "Gold chain 22K", "unit_id": str(unit("NOS").id), "tracking": "serial", **fields}
-    return client.post(reverse("v1:item-list"), body, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()))
+    body = {
+        "name": "Gold chain 22K",
+        "unit_id": str(unit("NOS").id),
+        "tracking": "serial",
+        **fields,
+    }
+    return client.post(
+        reverse("v1:item-list"), body, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4())
+    )
 
 
 def test_the_add_item_form_saves_the_item_and_its_first_tag_together(owner: Any) -> None:

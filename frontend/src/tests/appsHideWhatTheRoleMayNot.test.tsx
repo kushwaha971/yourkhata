@@ -48,15 +48,38 @@ const library = jest.requireMock('modules/DigiKhaato/features/library/api/librar
 const STAFF_LENDING = ['lending.loan.read', 'lending.loan.create', 'lending.collection.create'];
 const ACCOUNTANT_LENDING = ['lending.loan.read'];
 const STAFF_LIBRARY = ['library.member.read', 'library.member.write', 'library.fee.create'];
-const OWNER = [...STAFF_LENDING, 'lending.settings.manage', ...STAFF_LIBRARY, 'library.settings.manage'];
-const EXPENSE = { id: 'e1', spentOn: '2026-11-10', head: 'electricity', amount: '1200.00', note: 'October', status: 'live', reason: '' };
+const OWNER = [
+  ...STAFF_LENDING,
+  'lending.settings.manage',
+  ...STAFF_LIBRARY,
+  'library.settings.manage',
+];
+const EXPENSE = {
+  id: 'e1',
+  spentOn: '2026-11-10',
+  head: 'electricity',
+  amount: '1200.00',
+  note: 'October',
+  status: 'live',
+  reason: '',
+};
 
 beforeEach(() => {
   lending.listRoutes.mockResolvedValue([{ id: 'r1', name: 'Camp road', active: true }]);
   lending.listBorrowers.mockResolvedValue([]);
-  lending.getSettings.mockResolvedValue({ signAs: 'Gyan Finance', name: 'Gyan Finance', upiId: '' });
+  lending.getSettings.mockResolvedValue({
+    signAs: 'Gyan Finance',
+    name: 'Gyan Finance',
+    upiId: '',
+  });
   library.listExpenses.mockResolvedValue([EXPENSE]);
-  library.getSettings.mockResolvedValue({ signAs: 'Gyan Library', name: 'Gyan Library', upiId: '', dueSoonDays: 3, seats: 20 });
+  library.getSettings.mockResolvedValue({
+    signAs: 'Gyan Library',
+    name: 'Gyan Library',
+    upiId: '',
+    dueSoonDays: 3,
+    seats: 20,
+  });
   library.listShifts.mockResolvedValue([]);
 });
 
@@ -109,7 +132,9 @@ describe('The Library shows a member only what their role may do', () => {
   it('the owner keeps Add expense', async () => {
     granted = OWNER;
     renderWithProviders(<ExpensesPageContent />);
-    expect((await screen.findAllByRole('button', { name: 'Add expense' })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('button', { name: 'Add expense' })).length).toBeGreaterThan(
+      0
+    );
     expect(screen.getByText('Light bill').closest('button')).toBeEnabled();
   });
 

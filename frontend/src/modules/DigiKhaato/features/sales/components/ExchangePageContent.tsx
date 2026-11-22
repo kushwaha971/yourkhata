@@ -114,10 +114,23 @@ export function ExchangePageContent(): React.JSX.Element {
         : {}),
       returns: open
         .filter((row) => ticked.has(row.line.id as string))
-        .map((row) => ({ against_line_id: row.line.id as string, qty: ticked.get(row.line.id as string) ?? '1' })),
+        .map((row) => ({
+          against_line_id: row.line.id as string,
+          qty: ticked.get(row.line.id as string) ?? '1',
+        })),
       lines: out.map((line) => ({ item_id: line.itemId, qty: String(line.qty) })),
     };
-  }, [against, customerMobile, customerName, customerReady, mobileOnBill, open, out, quickSale, ticked]);
+  }, [
+    against,
+    customerMobile,
+    customerName,
+    customerReady,
+    mobileOnBill,
+    open,
+    out,
+    quickSale,
+    ticked,
+  ]);
 
   useEffect(() => {
     if (!request) return undefined;
@@ -145,17 +158,22 @@ export function ExchangePageContent(): React.JSX.Element {
     });
   }, []);
   const howMany = useCallback((id: string, left: number, value: string) => {
-    setTicked((now) => new Map(now).set(id, String(Math.min(left, Math.max(1, Number(value) || 1)))));
+    setTicked((now) =>
+      new Map(now).set(id, String(Math.min(left, Math.max(1, Number(value) || 1))))
+    );
   }, []);
 
-  const addItem = useCallback((row: ItemListRow) => {
-    setOut((lines) =>
-      lines.some((line) => line.itemId === row.id)
-        ? lines.map((line) => (line.itemId === row.id ? { ...line, qty: line.qty + 1 } : line))
-        : [...lines, { itemId: row.id, name: row.name, qty: 1, rate: row.sellingPrice }]
-    );
-    search.setQuery('');
-  }, [search]);
+  const addItem = useCallback(
+    (row: ItemListRow) => {
+      setOut((lines) =>
+        lines.some((line) => line.itemId === row.id)
+          ? lines.map((line) => (line.itemId === row.id ? { ...line, qty: line.qty + 1 } : line))
+          : [...lines, { itemId: row.id, name: row.name, qty: 1, rate: row.sellingPrice }]
+      );
+      search.setQuery('');
+    },
+    [search]
+  );
 
   const done = useCallback(async () => {
     if (!request || busy) return;
@@ -210,7 +228,9 @@ export function ExchangePageContent(): React.JSX.Element {
         <UbStack gap={4}>
           {quickSale && (
             <UbStack gap={2}>
-              <UbText variant="body-sm" className="font-semibold">{t('sales.exchange.customer')}</UbText>
+              <UbText variant="body-sm" className="font-semibold">
+                {t('sales.exchange.customer')}
+              </UbText>
               <UbCard>
                 <UbStack gap={3} data-testid="exchange-customer">
                   <UbTextInput
@@ -227,7 +247,9 @@ export function ExchangePageContent(): React.JSX.Element {
                       onChange={setCustomerMobile}
                     />
                   )}
-                  <UbText variant="caption" tone="secondary">{t('sales.exchange.customerHint')}</UbText>
+                  <UbText variant="caption" tone="secondary">
+                    {t('sales.exchange.customerHint')}
+                  </UbText>
                 </UbStack>
               </UbCard>
             </UbStack>
@@ -237,36 +259,48 @@ export function ExchangePageContent(): React.JSX.Element {
               {t('sales.exchange.back')} · {t('sales.exchange.backHint')}
             </UbText>
             {isPhone ? (
-            <UbCard>
-              <UbStack gap={2} data-testid="exchange-back">
-                {open.length === 0 && <UbText tone="secondary">{t('sales.exchange.noneLeft')}</UbText>}
-                {open.map(({ line, left }) => (
-                  <UbStack key={line.id} direction="row" gap={2} className="items-center justify-between">
-                    <UbCheckbox
-                      checked={ticked.has(line.id as string)}
-                      onChange={(on) => tick(line.id as string, on)}
-                      label={`${line.description} × ${left}`}
-                    />
-                    {left > 1 && ticked.has(line.id as string) && (
-                      <UbQuantityInput
-                        aria-label={t('sales.exchange.howMany', { name: line.description })}
-                        className="w-20 shrink-0"
-                        decimals={0}
-                        value={ticked.get(line.id as string)}
-                        onChange={(value) => howMany(line.id as string, left, value)}
+              <UbCard>
+                <UbStack gap={2} data-testid="exchange-back">
+                  {open.length === 0 && (
+                    <UbText tone="secondary">{t('sales.exchange.noneLeft')}</UbText>
+                  )}
+                  {open.map(({ line, left }) => (
+                    <UbStack
+                      key={line.id}
+                      direction="row"
+                      gap={2}
+                      className="items-center justify-between"
+                    >
+                      <UbCheckbox
+                        checked={ticked.has(line.id as string)}
+                        onChange={(on) => tick(line.id as string, on)}
+                        label={`${line.description} × ${left}`}
                       />
-                    )}
-                  </UbStack>
-                ))}
-              </UbStack>
-            </UbCard>
+                      {left > 1 && ticked.has(line.id as string) && (
+                        <UbQuantityInput
+                          aria-label={t('sales.exchange.howMany', { name: line.description })}
+                          className="w-20 shrink-0"
+                          decimals={0}
+                          value={ticked.get(line.id as string)}
+                          onChange={(value) => howMany(line.id as string, left, value)}
+                        />
+                      )}
+                    </UbStack>
+                  ))}
+                </UbStack>
+              </UbCard>
             ) : (
               <UbEditTable
                 data-testid="exchange-back"
                 columns={[
                   { id: 'item', header: t('sales.exchange.col.item'), wrap: true },
                   { id: 'qty', header: t('sales.exchange.col.qty'), width: 'w-28', tight: true },
-                  { id: 'amount', header: t('sales.exchange.col.amount'), align: 'end', width: 'w-32' },
+                  {
+                    id: 'amount',
+                    header: t('sales.exchange.col.amount'),
+                    align: 'end',
+                    width: 'w-32',
+                  },
                 ]}
                 rows={open.map(({ line, left }) => ({
                   key: line.id as string,
@@ -285,8 +319,10 @@ export function ExchangePageContent(): React.JSX.Element {
                         value={ticked.get(line.id as string)}
                         onChange={(value) => howMany(line.id as string, left, value)}
                       />
+                    ) : ticked.has(line.id as string) ? (
+                      '1'
                     ) : (
-                      ticked.has(line.id as string) ? '1' : ''
+                      ''
                     ),
                     // What this line gives back: only the pieces being returned.
                     formatInr(
@@ -301,7 +337,9 @@ export function ExchangePageContent(): React.JSX.Element {
             )}
           </UbStack>
           <UbStack gap={2}>
-            <UbText variant="body-sm" className="font-semibold">{t('sales.exchange.out')}</UbText>
+            <UbText variant="body-sm" className="font-semibold">
+              {t('sales.exchange.out')}
+            </UbText>
             <UbCard>
               <UbStack gap={3}>
                 <UbAsyncCombobox
@@ -325,7 +363,11 @@ export function ExchangePageContent(): React.JSX.Element {
                       if (row) addItem(row);
                       else
                         dispatch(
-                          showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } })
+                          showSnackbar({
+                            severity: 'warning',
+                            id: 'items.scan.notFound',
+                            params: { code },
+                          })
                         );
                     });
                   }}
@@ -336,8 +378,19 @@ export function ExchangePageContent(): React.JSX.Element {
                     columns={[
                       { id: 'n', header: t('sales.exchange.col.number'), width: 'w-12' },
                       { id: 'item', header: t('sales.exchange.col.item'), wrap: true },
-                      { id: 'amount', header: t('sales.exchange.col.amount'), align: 'end', width: 'w-32' },
-                      { id: 'x', header: t('sales.exchange.cancel'), srOnlyHeader: true, width: 'w-14', tight: true },
+                      {
+                        id: 'amount',
+                        header: t('sales.exchange.col.amount'),
+                        align: 'end',
+                        width: 'w-32',
+                      },
+                      {
+                        id: 'x',
+                        header: t('sales.exchange.cancel'),
+                        srOnlyHeader: true,
+                        width: 'w-14',
+                        tight: true,
+                      },
                     ]}
                     rows={out.map((line, index) => ({
                       key: line.itemId,
@@ -351,7 +404,9 @@ export function ExchangePageContent(): React.JSX.Element {
                           variant="ghost"
                           iconOnly
                           icon={<X className="h-4 w-4" aria-hidden />}
-                          onClick={() => setOut((lines) => lines.filter((one) => one.itemId !== line.itemId))}
+                          onClick={() =>
+                            setOut((lines) => lines.filter((one) => one.itemId !== line.itemId))
+                          }
                         >
                           {t('sales.exchange.remove', { name: line.name })}
                         </UbButton>,
@@ -359,21 +414,30 @@ export function ExchangePageContent(): React.JSX.Element {
                     }))}
                   />
                 )}
-                {isPhone && out.map((line) => (
-                  <UbStack key={line.itemId} direction="row" gap={2} className="items-center justify-between" data-testid="exchange-out-line">
-                    <UbText className="min-w-0 break-words">
-                      {line.name} × {line.qty}
-                    </UbText>
-                    <UbButton
-                      variant="ghost"
-                      iconOnly
-                      icon={<X className="h-4 w-4" aria-hidden />}
-                      onClick={() => setOut((lines) => lines.filter((one) => one.itemId !== line.itemId))}
+                {isPhone &&
+                  out.map((line) => (
+                    <UbStack
+                      key={line.itemId}
+                      direction="row"
+                      gap={2}
+                      className="items-center justify-between"
+                      data-testid="exchange-out-line"
                     >
-                      {t('sales.exchange.remove', { name: line.name })}
-                    </UbButton>
-                  </UbStack>
-                ))}
+                      <UbText className="min-w-0 break-words">
+                        {line.name} × {line.qty}
+                      </UbText>
+                      <UbButton
+                        variant="ghost"
+                        iconOnly
+                        icon={<X className="h-4 w-4" aria-hidden />}
+                        onClick={() =>
+                          setOut((lines) => lines.filter((one) => one.itemId !== line.itemId))
+                        }
+                      >
+                        {t('sales.exchange.remove', { name: line.name })}
+                      </UbButton>
+                    </UbStack>
+                  ))}
               </UbStack>
             </UbCard>
           </UbStack>
@@ -382,7 +446,9 @@ export function ExchangePageContent(): React.JSX.Element {
           <UbStack gap={2} data-testid="exchange-totals">
             <UbStack direction="row" className="justify-between">
               <UbText>{t('sales.exchange.goesOut')}</UbText>
-              <UbText variant="body-sm" className="font-semibold">{figures ? formatInr(figures.goes_out) : '—'}</UbText>
+              <UbText variant="body-sm" className="font-semibold">
+                {figures ? formatInr(figures.goes_out) : '—'}
+              </UbText>
             </UbStack>
             <UbStack direction="row" className="justify-between">
               <UbText>{t('sales.exchange.comesBack')}</UbText>
@@ -402,7 +468,9 @@ export function ExchangePageContent(): React.JSX.Element {
       <UbTotalDock
         data-testid="exchange-dock"
         className="mt-auto"
-        totalLabel={figures && Number(toPay) === 0 ? t('sales.exchange.nothing') : t('sales.exchange.toPay')}
+        totalLabel={
+          figures && Number(toPay) === 0 ? t('sales.exchange.nothing') : t('sales.exchange.toPay')
+        }
         total={formatInr(toPay)}
       >
         <UbButton
@@ -411,7 +479,12 @@ export function ExchangePageContent(): React.JSX.Element {
         >
           {t('sales.exchange.cancel')}
         </UbButton>
-        <UbButton onClick={() => void done()} busy={busy} disabled={!figures} data-testid="exchange-done">
+        <UbButton
+          onClick={() => void done()}
+          busy={busy}
+          disabled={!figures}
+          data-testid="exchange-done"
+        >
           {t('sales.exchange.done')}
         </UbButton>
       </UbTotalDock>

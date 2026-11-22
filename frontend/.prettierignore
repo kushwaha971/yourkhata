@@ -2,3 +2,5 @@
 node_modules
 coverage
 package-lock.json
+# A vendored third-party build, kept byte-for-byte as shipped.
+vendor/

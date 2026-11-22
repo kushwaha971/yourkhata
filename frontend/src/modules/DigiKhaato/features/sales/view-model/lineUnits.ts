@@ -21,7 +21,12 @@ export function lineUnitChoices(
   if (extras.length === 0) return [];
   const base = Number(row.sellingPrice || 0);
   return [
-    { code: row.unit.code, factor: 1, price: row.sellingPrice, allowDecimal: row.unit.allowDecimal },
+    {
+      code: row.unit.code,
+      factor: 1,
+      price: row.sellingPrice,
+      allowDecimal: row.unit.allowDecimal,
+    },
     ...extras.map((unit) => ({
       code: unit.code,
       factor: Number(unit.factor),
@@ -39,7 +44,12 @@ export function lineCostChoices(
   if (extras.length === 0) return [];
   const cost = Number(row.purchasePrice || 0);
   return [
-    { code: row.unit.code, factor: 1, price: row.purchasePrice ?? '', allowDecimal: row.unit.allowDecimal },
+    {
+      code: row.unit.code,
+      factor: 1,
+      price: row.purchasePrice ?? '',
+      allowDecimal: row.unit.allowDecimal,
+    },
     ...extras.map((unit) => ({
       code: unit.code,
       factor: Number(unit.factor),
@@ -53,7 +63,10 @@ export function lineCostChoices(
 export function lineUnitCaption(
   choices: readonly LineUnitChoice[],
   current: string,
-  words: { sold: (base: string, box: string, n: string) => string; one: (box: string, n: string, base: string) => string }
+  words: {
+    sold: (base: string, box: string, n: string) => string;
+    one: (box: string, n: string, base: string) => string;
+  }
 ): string | null {
   const base = choices[0];
   if (!base || choices.length < 2) return null;

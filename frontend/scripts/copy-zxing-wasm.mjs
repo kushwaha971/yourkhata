@@ -7,8 +7,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { version } = JSON.parse(readFileSync(join(root, 'node_modules/zxing-wasm/package.json'), 'utf8'));
+const { version } = JSON.parse(
+  readFileSync(join(root, 'node_modules/zxing-wasm/package.json'), 'utf8')
+);
 const out = join(root, 'public/vendor');
 mkdirSync(out, { recursive: true });
-copyFileSync(join(root, 'node_modules/zxing-wasm/dist/reader/zxing_reader.wasm'), join(out, `zxing_reader-${version}.wasm`));
+copyFileSync(
+  join(root, 'node_modules/zxing-wasm/dist/reader/zxing_reader.wasm'),
+  join(out, `zxing_reader-${version}.wasm`)
+);
 console.log(`zxing_reader-${version}.wasm → public/vendor`);

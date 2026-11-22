@@ -8,7 +8,6 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.common.views import HealthView, ReadinessView, VersionView
-
 from apps.platform_app.views.meta_webhook import meta_webhook
 
 api_v1 = [

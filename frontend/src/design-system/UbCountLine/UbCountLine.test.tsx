@@ -3,8 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { UbCountLine, type UbCountLineItem } from './UbCountLine';
 
 const items: readonly UbCountLineItem[] = [
-  { id: 'c', template: 'To collect {amount}', values: { amount: { text: '₹18,450', tone: 'receivable' as const } } },
-  { id: 's', template: 'Showing {n} of {total} customers', values: { n: { text: '6' }, total: { text: '1,760' } } },
+  {
+    id: 'c',
+    template: 'To collect {amount}',
+    values: { amount: { text: '₹18,450', tone: 'receivable' as const } },
+  },
+  {
+    id: 's',
+    template: 'Showing {n} of {total} customers',
+    values: { n: { text: '6' }, total: { text: '1,760' } },
+  },
 ];
 
 describe('UbCountLine', () => {
@@ -12,12 +20,21 @@ describe('UbCountLine', () => {
     /** Hindi orders the figures differently, so the sentence is split at its slots. */
     render(
       <UbCountLine
-        items={[{ id: 'h', template: '{total} में से {n} ग्राहक', values: { n: { text: '6' }, total: { text: '1,760' } } }]}
+        items={[
+          {
+            id: 'h',
+            template: '{total} में से {n} ग्राहक',
+            values: { n: { text: '6' }, total: { text: '1,760' } },
+          },
+        ]}
       />
     );
     const line = screen.getByTestId('count-line');
     expect(line).toHaveTextContent('1,760 में से 6 ग्राहक');
-    expect([...line.querySelectorAll('[data-part=value]')].map((b) => b.textContent)).toEqual(['1,760', '6']);
+    expect([...line.querySelectorAll('[data-part=value]')].map((b) => b.textContent)).toEqual([
+      '1,760',
+      '6',
+    ]);
   });
 
   it('keeps its words while loading and only greys the figures', () => {

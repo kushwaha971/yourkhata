@@ -20,8 +20,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from apps.common.money import D, q2
 from apps.common.limits import line_limit_errors
+from apps.common.money import D, q2
 from apps.tax.services.tax_engine import EngineLine
 
 ZERO_RATE = Decimal("0.000")

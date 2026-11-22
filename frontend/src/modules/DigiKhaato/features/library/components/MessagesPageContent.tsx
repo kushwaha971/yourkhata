@@ -48,7 +48,10 @@ export function MessagesPageContent(): React.JSX.Element {
   return (
     <UbPageShell>
       <UbStack gap={3} className="pb-24 lg:pb-6">
-        <UbPageHeader title={t('library.messages.title')} subtitle={t('library.messages.subtitle')} />
+        <UbPageHeader
+          title={t('library.messages.title')}
+          subtitle={t('library.messages.subtitle')}
+        />
         {lib.messages.status === 'failed' && !lib.messages.data ? (
           <UbEmptyState
             variant="error"
@@ -62,7 +65,11 @@ export function MessagesPageContent(): React.JSX.Element {
             variant="firstUse"
             title={t('library.messages.none')}
             description={t('library.messages.noneBody')}
-            action={<UbButton onClick={() => router.push(LIBRARY_ROUTES.fees)}>{t('library.messages.goFees')}</UbButton>}
+            action={
+              <UbButton onClick={() => router.push(LIBRARY_ROUTES.fees)}>
+                {t('library.messages.goFees')}
+              </UbButton>
+            }
           />
         ) : (
           <List testId="library-messages-list">
@@ -76,13 +83,21 @@ export function MessagesPageContent(): React.JSX.Element {
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
                       {m.student}
                     </UbText>
-                    <UbStatusBadge label={t(`library.messages.kind.${m.kind}`)} tone={m.kind === 'fee_due' ? 'warning' : 'success'} />
+                    <UbStatusBadge
+                      label={t(`library.messages.kind.${m.kind}`)}
+                      tone={m.kind === 'fee_due' ? 'warning' : 'success'}
+                    />
                   </UbStack>
-                  <UbText variant="inherit" className="line-clamp-2 text-[12.5px] text-text-secondary">
+                  <UbText
+                    variant="inherit"
+                    className="line-clamp-2 text-[12.5px] text-text-secondary"
+                  >
                     {m.text}
                   </UbText>
                   <UbText variant="inherit" className="text-[12px] text-text-tertiary">
-                    {t('library.messages.opened', { date: shortDate(m.openedAt.slice(0, 10), today) })}
+                    {t('library.messages.opened', {
+                      date: shortDate(m.openedAt.slice(0, 10), today),
+                    })}
                   </UbText>
                 </UbPressable>
               </UbBox>

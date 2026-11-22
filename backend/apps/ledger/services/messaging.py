@@ -111,9 +111,7 @@ def compose_source_reminder(
         render,
         resolve_template,
     )
-    from apps.notifications.services.whatsapp_text import (
-        message_locale as _locale,
-    )
+    from apps.notifications.services.whatsapp_text import message_locale as _locale
     from apps.notifications.services.whatsapp_text import sms_url, tel_url, wa_url
 
     locale = _locale(tenant)

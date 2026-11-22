@@ -50,44 +50,48 @@ export function AppTiles({
   return (
     <UbBox className="flex flex-col gap-4">
       {!addableOnly && (
-      <UbBox>
-        {caption && (
-          <UbText as="h2" variant="label" tone="tertiary" className="pb-2">
-            {t('nav.apps.yours')}
-          </UbText>
-        )}
-        <UbGrid columns={{ base: 2, sm: 4 }} gap={2} data-testid="app-sheet-tiles">
-          {apps.map((item) => {
-            const Icon = item.icon;
-            const active = item.code === current;
-            return (
-              <UbPressable
-                key={item.code}
-                selected={active}
-                onClick={() => {
-                  if (active) return;
-                  onLeave?.();
-                  openApp(item);
-                }}
-                className={cn(
-                  TILE,
-                  active
-                    ? 'border-action bg-action text-text-inverse'
-                    : 'border-border-hairline bg-surface-card text-text-primary active:bg-surface-active'
-                )}
-              >
-                <Icon aria-hidden className="h-6 w-6" strokeWidth={active ? 2 : 1.75} />
-                <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
-                  {t(item.labelId)}
-                </UbText>
-                {active && (
-                  <Check aria-hidden className="absolute right-3 top-3 h-5 w-5" strokeWidth={2.5} />
-                )}
-              </UbPressable>
-            );
-          })}
-        </UbGrid>
-      </UbBox>
+        <UbBox>
+          {caption && (
+            <UbText as="h2" variant="label" tone="tertiary" className="pb-2">
+              {t('nav.apps.yours')}
+            </UbText>
+          )}
+          <UbGrid columns={{ base: 2, sm: 4 }} gap={2} data-testid="app-sheet-tiles">
+            {apps.map((item) => {
+              const Icon = item.icon;
+              const active = item.code === current;
+              return (
+                <UbPressable
+                  key={item.code}
+                  selected={active}
+                  onClick={() => {
+                    if (active) return;
+                    onLeave?.();
+                    openApp(item);
+                  }}
+                  className={cn(
+                    TILE,
+                    active
+                      ? 'border-action bg-action text-text-inverse'
+                      : 'border-border-hairline bg-surface-card text-text-primary active:bg-surface-active'
+                  )}
+                >
+                  <Icon aria-hidden className="h-6 w-6" strokeWidth={active ? 2 : 1.75} />
+                  <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
+                    {t(item.labelId)}
+                  </UbText>
+                  {active && (
+                    <Check
+                      aria-hidden
+                      className="absolute right-3 top-3 h-5 w-5"
+                      strokeWidth={2.5}
+                    />
+                  )}
+                </UbPressable>
+              );
+            })}
+          </UbGrid>
+        </UbBox>
       )}
       {addable.length > 0 && (
         <UbBox>
@@ -112,7 +116,9 @@ export function AppTiles({
                 >
                   <Icon aria-hidden className="h-6 w-6" strokeWidth={1.75} />
                   <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
-                    {t(adding ? 'tenant.switcher.apps.adding' : 'tenant.switcher.apps.add', { app: name })}
+                    {t(adding ? 'tenant.switcher.apps.adding' : 'tenant.switcher.apps.add', {
+                      app: name,
+                    })}
                   </UbText>
                   {adding ? (
                     <UbBox as="span" className="absolute right-3 top-3">

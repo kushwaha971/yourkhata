@@ -191,7 +191,7 @@ def test_every_tile_equals_a_naive_recount_of_a_fuzzed_book(tenant: Any) -> None
 
     tiles = _tiles(tenant)
     active = list(Party.objects.filter(tenant=tenant, status="active"))
-    money = lambda value: str(Decimal(value).quantize(Decimal("0.01")))  # noqa: E731
+    money = lambda value: str(Decimal(value).quantize(Decimal("0.01")))  # noqa: E731 — reason: a one-line helper inside the test
     # DEC-019 — the Shop's own figure: what is due on bills, never the udhaar book's.
     # BP-09: independent source replay, never the combined cache or SQL selector.
     from apps.payments.models import Payment

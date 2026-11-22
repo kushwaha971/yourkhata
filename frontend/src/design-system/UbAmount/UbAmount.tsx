@@ -107,11 +107,7 @@ function UbAmountBase({
         lang="en-IN"
         dir="ltr"
         aria-hidden
-        className={cn(
-          'whitespace-nowrap',
-          SIZE[size],
-          TONE[effectiveTone]
-        )}
+        className={cn('whitespace-nowrap', SIZE[size], TONE[effectiveTone])}
       >
         {/* fixed slot so signed and unsigned rows keep one decimal column */}
         {!(inline && effectiveSign === 'none') && (

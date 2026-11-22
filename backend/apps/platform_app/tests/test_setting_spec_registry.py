@@ -75,7 +75,9 @@ def test_registration_is_idempotent_and_refuses_a_conflict() -> None:
     schema.register_setting_spec(SPEC)
     schema.register_setting_spec(SettingSpec("probe.fine_rounding", "probe", _default, _rounding))
     with pytest.raises(ImproperlyConfigured):
-        schema.register_setting_spec(SettingSpec("probe.fine_rounding", "probe", _default, _rounding, 2))
+        schema.register_setting_spec(
+            SettingSpec("probe.fine_rounding", "probe", _default, _rounding, 2)
+        )
 
 
 @pytest.mark.parametrize(

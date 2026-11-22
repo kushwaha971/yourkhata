@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 
-import { UbButton, UbDialog, UbFieldError, UbStack, UbStatusBanner, UbText, UbTextInput } from 'src/design-system';
+import {
+  UbButton,
+  UbDialog,
+  UbFieldError,
+  UbStack,
+  UbStatusBanner,
+  UbText,
+  UbTextInput,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
@@ -32,7 +40,9 @@ export function SeatCountDialog({
     setError(null);
     try {
       await setSeatCount(n);
-      dispatch(showSnackbar({ severity: 'success', id: 'library.seats.saved', params: { count: n } }));
+      dispatch(
+        showSnackbar({ severity: 'success', id: 'library.seats.saved', params: { count: n } })
+      );
       onSaved();
     } catch (e) {
       setError(toApiError(e, 'library.seats.saveError').message ?? t('library.seats.saveError'));
@@ -48,7 +58,12 @@ export function SeatCountDialog({
       title={t('library.seats.edit')}
       closeLabel={t('library.common.close')}
       footer={
-        <UbButton busy={saving} disabled={!valid} onClick={() => void save()} data-testid="library-seats-save">
+        <UbButton
+          busy={saving}
+          disabled={!valid}
+          onClick={() => void save()}
+          data-testid="library-seats-save"
+        >
           {t('library.common.save')}
         </UbButton>
       }

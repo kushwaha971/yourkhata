@@ -28,7 +28,11 @@ export interface UbRotatingTextProps {
   readonly className?: string;
 }
 
-function UbRotatingTextBase({ words, intervalMs = 2400, className }: Readonly<UbRotatingTextProps>) {
+function UbRotatingTextBase({
+  words,
+  intervalMs = 2400,
+  className,
+}: Readonly<UbRotatingTextProps>) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const reduced = usePrefersReducedMotion();
   const inView = useInView(ref);

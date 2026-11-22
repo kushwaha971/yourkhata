@@ -144,7 +144,10 @@ export const BUSINESS_TYPE_CONFIG: Readonly<Record<BusinessType, BusinessTypeCon
     inventoryEnabled: true,
     defaultDueDays: 7,
     favouriteUnits: ['GMS', 'NOS', 'PCS'],
-    extraExpenseCategoryIds: ['onboarding.expense.makingCharges', 'onboarding.expense.shopMaintenance'],
+    extraExpenseCategoryIds: [
+      'onboarding.expense.makingCharges',
+      'onboarding.expense.shopMaintenance',
+    ],
   },
   stationery: {
     value: 'stationery',
@@ -299,16 +302,66 @@ export const SHOP_KIND_TILES: readonly {
   readonly labelId: string;
   readonly hintId: string;
 }[] = [
-  { value: 'kirana', picture: 'kirana', labelId: 'onboarding.tile.kirana', hintId: 'onboarding.tile.kirana.hint' },
-  { value: 'medical', picture: 'medical', labelId: 'onboarding.tile.medical', hintId: 'onboarding.tile.medical.hint' },
-  { value: 'electronics', picture: 'mobile', labelId: 'onboarding.tile.electronics', hintId: 'onboarding.tile.electronics.hint' },
-  { value: 'garments', picture: 'garments', labelId: 'onboarding.tile.garments', hintId: 'onboarding.tile.garments.hint' },
-  { value: 'hardware', picture: 'hardware', labelId: 'onboarding.tile.hardware', hintId: 'onboarding.tile.hardware.hint' },
-  { value: 'auto_parts', picture: 'auto', labelId: 'onboarding.tile.auto_parts', hintId: 'onboarding.tile.auto_parts.hint' },
-  { value: 'wholesale', picture: 'wholesale', labelId: 'onboarding.tile.wholesale', hintId: 'onboarding.tile.wholesale.hint' },
-  { value: 'food', picture: 'cafe', labelId: 'onboarding.tile.food', hintId: 'onboarding.tile.food.hint' },
-  { value: 'jewellery', picture: 'jewel', labelId: 'onboarding.tile.jewellery', hintId: 'onboarding.tile.jewellery.hint' },
-  { value: 'other', picture: 'other', labelId: 'onboarding.tile.other', hintId: 'onboarding.tile.other.hint' },
+  {
+    value: 'kirana',
+    picture: 'kirana',
+    labelId: 'onboarding.tile.kirana',
+    hintId: 'onboarding.tile.kirana.hint',
+  },
+  {
+    value: 'medical',
+    picture: 'medical',
+    labelId: 'onboarding.tile.medical',
+    hintId: 'onboarding.tile.medical.hint',
+  },
+  {
+    value: 'electronics',
+    picture: 'mobile',
+    labelId: 'onboarding.tile.electronics',
+    hintId: 'onboarding.tile.electronics.hint',
+  },
+  {
+    value: 'garments',
+    picture: 'garments',
+    labelId: 'onboarding.tile.garments',
+    hintId: 'onboarding.tile.garments.hint',
+  },
+  {
+    value: 'hardware',
+    picture: 'hardware',
+    labelId: 'onboarding.tile.hardware',
+    hintId: 'onboarding.tile.hardware.hint',
+  },
+  {
+    value: 'auto_parts',
+    picture: 'auto',
+    labelId: 'onboarding.tile.auto_parts',
+    hintId: 'onboarding.tile.auto_parts.hint',
+  },
+  {
+    value: 'wholesale',
+    picture: 'wholesale',
+    labelId: 'onboarding.tile.wholesale',
+    hintId: 'onboarding.tile.wholesale.hint',
+  },
+  {
+    value: 'food',
+    picture: 'cafe',
+    labelId: 'onboarding.tile.food',
+    hintId: 'onboarding.tile.food.hint',
+  },
+  {
+    value: 'jewellery',
+    picture: 'jewel',
+    labelId: 'onboarding.tile.jewellery',
+    hintId: 'onboarding.tile.jewellery.hint',
+  },
+  {
+    value: 'other',
+    picture: 'other',
+    labelId: 'onboarding.tile.other',
+    hintId: 'onboarding.tile.other.hint',
+  },
 ];
 
 /**

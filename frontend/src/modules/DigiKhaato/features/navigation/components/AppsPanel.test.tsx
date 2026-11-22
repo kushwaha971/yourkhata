@@ -23,16 +23,43 @@ jest.mock('../../tenant-switcher/api/tenantSwitcherService', () => ({
   fetchAppsPerBusiness: jest.fn(() => Promise.resolve({ t1: ['shop'], t2: ['shop'] })),
 }));
 
-const APPS: SessionApp[] = [{ code: 'shop', labelId: 'nav.workspace.shop', homePath: '/dashboard', order: 90 }];
+const APPS: SessionApp[] = [
+  { code: 'shop', labelId: 'nav.workspace.shop', homePath: '/dashboard', order: 90 },
+];
 
 const load = (roles: readonly [string, string]) =>
   store.dispatch(
     sessionLoaded({
-      user: { id: 'u1', name: 'Mohan', email: 'm@x.test', mobile: null, locale: 'en', mustChangePassword: false, passwordExpiresAt: null },
-      activeTenant: { id: 't1', name: 'Shree Ganesh Kirana', timezone: 'Asia/Kolkata', role: roles[0] },
+      user: {
+        id: 'u1',
+        name: 'Mohan',
+        email: 'm@x.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: {
+        id: 't1',
+        name: 'Shree Ganesh Kirana',
+        timezone: 'Asia/Kolkata',
+        role: roles[0],
+      },
       tenants: [
-        { id: 't1', name: 'Shree Ganesh Kirana', timezone: 'Asia/Kolkata', role: roles[0], status: 'active' },
-        { id: 't2', name: 'Mohan Mobile Shop', timezone: 'Asia/Kolkata', role: roles[1], status: 'active' },
+        {
+          id: 't1',
+          name: 'Shree Ganesh Kirana',
+          timezone: 'Asia/Kolkata',
+          role: roles[0],
+          status: 'active',
+        },
+        {
+          id: 't2',
+          name: 'Mohan Mobile Shop',
+          timezone: 'Asia/Kolkata',
+          role: roles[1],
+          status: 'active',
+        },
       ],
       permissions: [],
       enabledModules: [],

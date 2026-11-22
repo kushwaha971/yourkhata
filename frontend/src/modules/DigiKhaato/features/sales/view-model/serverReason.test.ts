@@ -2,7 +2,6 @@ import type { ApiErrorShape } from 'src/types/api.types';
 
 import { serverReason } from './serverReason';
 
-
 const t = (id: string, v?: Record<string, string | number>) => `${id}|${v?.n}|${v?.reason}`;
 const refusal = (details: Record<string, unknown>): ApiErrorShape =>
   ({

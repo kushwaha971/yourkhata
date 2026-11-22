@@ -7,18 +7,17 @@ loan `lending.settings.manage`.
 
 from __future__ import annotations
 
-import datetime as dt
 from typing import Any
 
 from django.utils.translation import gettext as _
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.common.plain_requests import PlainBodyMixin, date_of as _date
-
 from apps.common.exceptions import ValidationFailed
 from apps.common.idempotency import idempotent
 from apps.common.permissions import HasPermission, ModuleEnabled
+from apps.common.plain_requests import PlainBodyMixin
+from apps.common.plain_requests import date_of as _date
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
 from apps.lending import book, messages, selectors, services
@@ -33,8 +32,12 @@ MANAGE = "lending.settings.manage"
 
 def position_json(p: book.Position) -> dict:
     return {
-        "collected": selectors.money(p.collected), "late": selectors.money(p.late), "late_days": p.late_days,
-        "due_today": selectors.money(p.due_today), "left": selectors.money(p.left), "paid_count": p.paid_count,
+        "collected": selectors.money(p.collected),
+        "late": selectors.money(p.late),
+        "late_days": p.late_days,
+        "due_today": selectors.money(p.due_today),
+        "left": selectors.money(p.left),
+        "paid_count": p.paid_count,
         "next_due": p.next_due.isoformat() if p.next_due else None,
     }
 
@@ -63,9 +66,14 @@ class LendingView(PlainBodyMixin, APIView):
 class TodayView(LendingView):
     def get(self, request: Any) -> Any:
         day = _date(request.query_params.get("day"), "day")
-        data = selectors.round_for(self.tenant, route=request.query_params.get("route", ""), day=day)
+        data = selectors.round_for(
+            self.tenant, route=request.query_params.get("route", ""), day=day
+        )
         data["book"] = selectors.book_figures(self.tenant, services.today(self.tenant))
-        data["routes"] = [{"id": str(r.pk), "name": r.name} for r in Route.objects.filter(tenant=self.tenant, active=True)]
+        data["routes"] = [
+            {"id": str(r.pk), "name": r.name}
+            for r in Route.objects.filter(tenant=self.tenant, active=True)
+        ]
         name = messages.lender_name(self.tenant, services.settings_for(self.tenant))
         data["name"] = name
         return StandardResponse.ok(data)
@@ -76,7 +84,9 @@ class RoutesView(LendingView):
 
     def get(self, request: Any) -> Any:
         rows = Route.objects.filter(tenant=self.tenant).order_by("sort", "name")
-        return StandardResponse.ok([{"id": str(r.pk), "name": r.name, "active": r.active} for r in rows])
+        return StandardResponse.ok(
+            [{"id": str(r.pk), "name": r.name, "active": r.active} for r in rows]
+        )
 
     @idempotent("lending.route.create")
     def post(self, request: Any) -> Any:
@@ -88,7 +98,9 @@ class RouteView(LendingView):
     write = MANAGE
 
     def patch(self, request: Any, pk: Any) -> Any:
-        r = services.save_route(tenant=self.tenant, user=request.user, data=request.data, route_id=pk)
+        r = services.save_route(
+            tenant=self.tenant, user=request.user, data=request.data, route_id=pk
+        )
         return StandardResponse.ok({"id": str(r.pk), "name": r.name, "active": r.active})
 
 
@@ -96,7 +108,9 @@ class BorrowersView(LendingView):
     write = LEND
 
     def get(self, request: Any) -> Any:
-        return StandardResponse.ok(selectors.borrowers_list(self.tenant, request.query_params.get("q", "")))
+        return StandardResponse.ok(
+            selectors.borrowers_list(self.tenant, request.query_params.get("q", ""))
+        )
 
     @idempotent("lending.borrower.create")
     def post(self, request: Any) -> Any:
@@ -109,16 +123,31 @@ class BorrowerView(LendingView):
 
     def get(self, request: Any, pk: Any) -> Any:
         b = services.get_borrower(tenant=self.tenant, borrower_id=pk)
-        row = next((x for x in selectors.borrowers_list(self.tenant) if x["id"] == str(b.pk)), None) or {
-            "id": str(b.pk), "name": b.name, "mobile": b.mobile, "work": b.work, "note": b.note,
-            "route_id": str(b.route_id) if b.route_id else None, "route": b.route.name if b.route_id else "",
-            "loans": 0, "left": "0.00", "late": "0.00",
+        row = next(
+            (x for x in selectors.borrowers_list(self.tenant) if x["id"] == str(b.pk)), None
+        ) or {
+            "id": str(b.pk),
+            "name": b.name,
+            "mobile": b.mobile,
+            "work": b.work,
+            "note": b.note,
+            "route_id": str(b.route_id) if b.route_id else None,
+            "route": b.route.name if b.route_id else "",
+            "loans": 0,
+            "left": "0.00",
+            "late": "0.00",
         }
-        row["all_loans"] = [x for x in selectors.loans_list(self.tenant, status="all") if x["borrower_id"] == str(b.pk)]
+        row["all_loans"] = [
+            x
+            for x in selectors.loans_list(self.tenant, status="all")
+            if x["borrower_id"] == str(b.pk)
+        ]
         return StandardResponse.ok(row)
 
     def patch(self, request: Any, pk: Any) -> Any:
-        b = services.save_borrower(tenant=self.tenant, user=request.user, data=request.data, borrower_id=pk)
+        b = services.save_borrower(
+            tenant=self.tenant, user=request.user, data=request.data, borrower_id=pk
+        )
         return StandardResponse.ok({"id": str(b.pk), "name": b.name})
 
 
@@ -128,7 +157,12 @@ class LoansView(LendingView):
     def get(self, request: Any) -> Any:
         p = request.query_params
         return StandardResponse.ok(
-            selectors.loans_list(self.tenant, status=p.get("status", "active"), route=p.get("route", ""), q=p.get("q", ""))
+            selectors.loans_list(
+                self.tenant,
+                status=p.get("status", "active"),
+                route=p.get("route", ""),
+                q=p.get("q", ""),
+            )
         )
 
     @idempotent("lending.loan.create")
@@ -141,7 +175,9 @@ class LoansView(LendingView):
 
 class LoanView(LendingView):
     def get(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(selectors.loan_detail(self.tenant, services.get_loan(tenant=self.tenant, loan_id=pk)))
+        return StandardResponse.ok(
+            selectors.loan_detail(self.tenant, services.get_loan(tenant=self.tenant, loan_id=pk))
+        )
 
 
 class CollectView(LendingView):
@@ -151,7 +187,9 @@ class CollectView(LendingView):
             pos = services.preview_collection(tenant=self.tenant, loan_id=pk, data=request.data)
             loan = services.get_loan(tenant=self.tenant, loan_id=pk)
             data = position_json(pos)
-            data["days_to_go"] = book.days_to_go(dues=services.dues_of(loan), day=services.today(self.tenant))
+            data["days_to_go"] = book.days_to_go(
+                dues=services.dues_of(loan), day=services.today(self.tenant)
+            )
             return StandardResponse.ok(data)
         row = services.collect(tenant=self.tenant, user=request.user, loan_id=pk, data=request.data)
         loan = services.get_loan(tenant=self.tenant, loan_id=pk)
@@ -162,18 +200,35 @@ class CollectView(LendingView):
                 meta={"loan": selectors.loan_detail(self.tenant, loan), "receipt": ""},
             )
         detail = selectors.loan_detail(self.tenant, loan)
-        pos = book.position(dues=services.dues_of(loan), collected=services.collected_on_loan(loan), day=services.today(self.tenant))
-        receipt = messages.receipt_text(
-            tenant=self.tenant, loan=loan, amount=row.amount, mode=row.mode, on=row.collected_on, pos=pos,
-            settings=services.settings_for(self.tenant), locale=self.locale,
+        pos = book.position(
+            dues=services.dues_of(loan),
+            collected=services.collected_on_loan(loan),
+            day=services.today(self.tenant),
         )
-        return StandardResponse.created({"id": str(row.pk)}, meta={"loan": detail, "receipt": receipt})
+        receipt = messages.receipt_text(
+            tenant=self.tenant,
+            loan=loan,
+            amount=row.amount,
+            mode=row.mode,
+            on=row.collected_on,
+            pos=pos,
+            settings=services.settings_for(self.tenant),
+            locale=self.locale,
+        )
+        return StandardResponse.created(
+            {"id": str(row.pk)}, meta={"loan": detail, "receipt": receipt}
+        )
 
 
 class RemoveCollectionView(LendingView):
     @idempotent("lending.collection.remove")
     def post(self, request: Any, pk: Any) -> Any:
-        loan = services.remove_collection(tenant=self.tenant, user=request.user, collection_id=pk, reason=request.data.get("reason"))
+        loan = services.remove_collection(
+            tenant=self.tenant,
+            user=request.user,
+            collection_id=pk,
+            reason=request.data.get("reason"),
+        )
         return StandardResponse.ok(selectors.loan_detail(self.tenant, loan))
 
 
@@ -181,8 +236,13 @@ class NotPaidView(LendingView):
     @idempotent("lending.visit.not_paid")
     def post(self, request: Any, pk: Any) -> Any:
         v = services.not_paid(tenant=self.tenant, user=request.user, loan_id=pk, data=request.data)
-        return StandardResponse.ok({"day": v.day.isoformat(), "reason": v.reason,
-                                    "promised_on": v.promised_on.isoformat() if v.promised_on else None})
+        return StandardResponse.ok(
+            {
+                "day": v.day.isoformat(),
+                "reason": v.reason,
+                "promised_on": v.promised_on.isoformat() if v.promised_on else None,
+            }
+        )
 
 
 class CloseView(LendingView):
@@ -199,7 +259,10 @@ class RemindView(LendingView):
         kind = request.query_params.get("kind", MessageKind.LATE)
         if kind not in (MessageKind.LATE, MessageKind.DUE_TODAY, MessageKind.DUE_TOMORROW):
             raise ValidationFailed(details={"kind": [_("Choose Late, Due today or Due tomorrow.")]})
-        return StandardResponse.ok(selectors.remind_list(self.tenant, kind), meta={"counts": selectors.remind_counts(self.tenant)})
+        return StandardResponse.ok(
+            selectors.remind_list(self.tenant, kind),
+            meta={"counts": selectors.remind_counts(self.tenant)},
+        )
 
 
 class MessageTextView(LendingView):
@@ -208,25 +271,53 @@ class MessageTextView(LendingView):
         kind = request.query_params.get("kind", MessageKind.LATE)
         if kind not in (MessageKind.LATE, MessageKind.DUE_TODAY, MessageKind.DUE_TOMORROW):
             raise ValidationFailed(details={"kind": [_("Choose a message.")]})
-        pos = book.position(dues=services.dues_of(loan), collected=services.collected_on_loan(loan), day=services.today(self.tenant))
-        text = messages.remind_text(tenant=self.tenant, loan=loan, pos=pos, kind=kind,
-                                    settings=services.settings_for(self.tenant), locale=self.locale)
+        pos = book.position(
+            dues=services.dues_of(loan),
+            collected=services.collected_on_loan(loan),
+            day=services.today(self.tenant),
+        )
+        text = messages.remind_text(
+            tenant=self.tenant,
+            loan=loan,
+            pos=pos,
+            kind=kind,
+            settings=services.settings_for(self.tenant),
+            locale=self.locale,
+        )
         return StandardResponse.ok({"text": text, "mobile": loan.borrower.mobile})
 
 
 class MessagesView(LendingView):
     def get(self, request: Any) -> Any:
-        rows = Message.objects.filter(tenant=self.tenant).select_related("loan__borrower").order_by("-created_at")[:100]
-        return StandardResponse.ok([
-            {"id": str(m.pk), "loan_id": str(m.loan_id), "number": m.loan.number, "borrower": m.loan.borrower.name,
-             "kind": m.kind, "text": m.text, "opened_at": m.created_at.isoformat()}
-            for m in rows
-        ])
+        rows = (
+            Message.objects.filter(tenant=self.tenant)
+            .select_related("loan__borrower")
+            .order_by("-created_at")[:100]
+        )
+        return StandardResponse.ok(
+            [
+                {
+                    "id": str(m.pk),
+                    "loan_id": str(m.loan_id),
+                    "number": m.loan.number,
+                    "borrower": m.loan.borrower.name,
+                    "kind": m.kind,
+                    "text": m.text,
+                    "opened_at": m.created_at.isoformat(),
+                }
+                for m in rows
+            ]
+        )
 
     @idempotent("lending.message.open")
     def post(self, request: Any) -> Any:
-        m = services.record_message(tenant=self.tenant, user=request.user, loan_id=request.data.get("loan_id"),
-                                    kind=request.data.get("kind"), text=request.data.get("text"))
+        m = services.record_message(
+            tenant=self.tenant,
+            user=request.user,
+            loan_id=request.data.get("loan_id"),
+            kind=request.data.get("kind"),
+            text=request.data.get("text"),
+        )
         return StandardResponse.created({"id": str(m.pk)})
 
 
@@ -235,7 +326,11 @@ class SettingsView(LendingView):
 
     def _json(self) -> dict:
         s = services.settings_for(self.tenant)
-        return {"sign_as": s.sign_as, "name": messages.lender_name(self.tenant, s), "upi_id": s.upi_id}
+        return {
+            "sign_as": s.sign_as,
+            "name": messages.lender_name(self.tenant, s),
+            "upi_id": s.upi_id,
+        }
 
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(self._json())

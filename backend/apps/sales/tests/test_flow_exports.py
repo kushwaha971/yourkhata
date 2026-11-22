@@ -41,6 +41,9 @@ def test_the_credit_notes_export_names_the_bill_it_returns(
     owner: Any, make_item: Any, make_party: Any
 ) -> None:
     invoice = issued_invoice(owner, make_party(), [line(make_item(), "2")])
-    assert note_draft(owner, against_id=invoice["id"], lines=returning(invoice, "1")).status_code == 201
+    assert (
+        note_draft(owner, against_id=invoice["id"], lines=returning(invoice, "1")).status_code
+        == 201
+    )
     rows = _rows(owner.get(reverse(CREDIT_NOTES), {"format": "csv", "tab": "draft"}))
     assert len(rows) == 2 and invoice["number"] in rows[1]

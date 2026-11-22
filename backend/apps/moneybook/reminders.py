@@ -6,7 +6,6 @@ opens WhatsApp or SMS with this text and the owner presses send."""
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from apps.moneybook.constants import ReminderTone
 from apps.moneybook.models import Person, Settings
@@ -53,4 +52,3 @@ def reminder_text(*, person: Person, tone: str, settings: Settings, locale: str)
         name=person.name.split(" ")[0], amount=rupees(person.balance), since=since, upi=upi
     )
     return f"{text}\n— {settings.sign_as}" if settings.sign_as else text
-

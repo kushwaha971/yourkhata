@@ -57,7 +57,9 @@ def lang_of(locale: str | None) -> str:
     return "hi" if (locale or "").startswith("hi") else "en"
 
 
-def remind_text(*, tenant: Any, loan: Loan, pos: Any, kind: str, settings: Settings, locale: str) -> str:
+def remind_text(
+    *, tenant: Any, loan: Loan, pos: Any, kind: str, settings: Settings, locale: str
+) -> str:
     lang = lang_of(locale)
     return TEXT[lang][kind].format(
         first=loan.borrower.name.split(" ")[0],
@@ -71,7 +73,17 @@ def remind_text(*, tenant: Any, loan: Loan, pos: Any, kind: str, settings: Setti
     )
 
 
-def receipt_text(*, tenant: Any, loan: Loan, amount: Decimal, mode: str, on: dt.date, pos: Any, settings: Settings, locale: str) -> str:
+def receipt_text(
+    *,
+    tenant: Any,
+    loan: Loan,
+    amount: Decimal,
+    mode: str,
+    on: dt.date,
+    pos: Any,
+    settings: Settings,
+    locale: str,
+) -> str:
     lang = lang_of(locale)
     return TEXT[lang][MessageKind.RECEIPT].format(
         first=loan.borrower.name.split(" ")[0],

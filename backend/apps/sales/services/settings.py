@@ -51,7 +51,9 @@ def require_hsn_b2b(tenant: Any) -> bool:
 
 
 #: Design E5's terms line for a jeweller, until the shop writes its own.
-JEWELLERY_TERMS = "Rates as on the bill date. BIS hallmarked; HUID per piece. Buy-back as per shop policy."
+JEWELLERY_TERMS = (
+    "Rates as on the bill date. BIS hallmarked; HUID per piece. Buy-back as per shop policy."
+)
 
 
 def default_terms(tenant: Any) -> str:

@@ -30,11 +30,7 @@ from apps.platform_app.views.admin import (
     AdminTenantListView,
 )
 from apps.platform_app.views.auth import AppSetupHideView, AppSetupView, BusinessAppsView
-from apps.platform_app.views.calendar import (
-    ClosedDayDetailView,
-    ClosedDayListView,
-    WeekdaysView,
-)
+from apps.platform_app.views.calendar import ClosedDayDetailView, ClosedDayListView, WeekdaysView
 from apps.platform_app.views.data import (
     DeleteCancelView,
     DeleteCodeView,
@@ -58,20 +54,20 @@ from apps.platform_app.views.settings import (
 from apps.platform_app.views.tenant import (
     AccessGroupListView,
     AccessGroupView,
-    MemberAccessView,
-    OnboardingAppsView,
     InvitationAcceptView,
     InvitationDetailView,
     InvitationListCreateView,
+    MemberAccessView,
     MemberAppsView,
     MemberBlockView,
     MemberCredentialsView,
     MemberDetailView,
     MemberListCreateView,
     MemberRemoveView,
-    MemberUnblockView,
     MembershipAppsView,
     MembershipDetailView,
+    MemberUnblockView,
+    OnboardingAppsView,
     RoleListView,
     TenantCreateView,
     TenantCurrentView,

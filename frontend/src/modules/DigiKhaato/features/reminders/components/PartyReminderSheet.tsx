@@ -1,6 +1,14 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef, useState, type RefObject, type ReactNode } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type ReactNode,
+} from 'react';
 
 import {
   UbButton,
@@ -201,7 +209,10 @@ function PartyReminderSheetBase({
           : undefined
       }
       description={description}
-      message={chosenText ?? (ready ? onlyChannel === 'sms' ? preview.smsText ?? preview.text : preview.text : '')}
+      message={
+        chosenText ??
+        (ready ? (onlyChannel === 'sms' ? (preview.smsText ?? preview.text) : preview.text) : '')
+      }
       smsMessage={!chosenText && ready && onlyChannel !== 'sms' ? preview.smsText : undefined}
       notice={
         chips ? (

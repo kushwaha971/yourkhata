@@ -92,12 +92,12 @@ class Entry(models.Model):
     class Meta:
         db_table = "moneybook_entry"
         constraints = [
-            models.CheckConstraint(condition=Q(amount__gt=0), name="ck_moneybook_entry_amount_positive"),
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="ck_moneybook_entry_amount_positive"
+            ),
         ]
         indexes = [
-            models.Index(
-                "person", "entry_date", "sort_at", "id", name="ix_moneybook_entry_order"
-            ),
+            models.Index("person", "entry_date", "sort_at", "id", name="ix_moneybook_entry_order"),
             models.Index("owner", "entry_date", name="ix_moneybook_entry_owner_date"),
         ]
 
@@ -125,7 +125,9 @@ class Reminder(models.Model):
 
     class Meta:
         db_table = "moneybook_reminder"
-        indexes = [models.Index(fields=["owner", "-opened_at"], name="ix_moneybook_reminder_recent")]
+        indexes = [
+            models.Index(fields=["owner", "-opened_at"], name="ix_moneybook_reminder_recent")
+        ]
 
 
 class Settings(models.Model):

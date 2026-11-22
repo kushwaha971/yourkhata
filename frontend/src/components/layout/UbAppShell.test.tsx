@@ -87,7 +87,8 @@ const signIn = (
       },
       tenants: [{ id: 't1', name: 'Kumar Kirana Store', timezone: 'Asia/Kolkata', role: 'owner' }],
       permissions: [...permissions] as never,
-      enabledModules: activeApp === 'khata' ? ['parties', 'ledger', 'khata'] : ['parties', 'ledger'],
+      enabledModules:
+        activeApp === 'khata' ? ['parties', 'ledger', 'khata'] : ['parties', 'ledger'],
       activeApp,
       version: 1,
     })

@@ -64,7 +64,9 @@ def lang_of(locale: str | None) -> str:
     return "hi" if (locale or "").startswith("hi") else "en"
 
 
-def fee_text(*, tenant: Any, student: Student, state: FeeState, settings: Settings, locale: str) -> str:
+def fee_text(
+    *, tenant: Any, student: Student, state: FeeState, settings: Settings, locale: str
+) -> str:
     lang = lang_of(locale)
     key = MessageKind.FEE_DUE if state.days_late > 0 else "fee_soon"
     due = state.due if state.due > 0 else student.monthly_fee
@@ -78,7 +80,9 @@ def fee_text(*, tenant: Any, student: Student, state: FeeState, settings: Settin
     )
 
 
-def receipt_text(*, tenant: Any, payment: Payment, student: Student, settings: Settings, locale: str) -> str:
+def receipt_text(
+    *, tenant: Any, payment: Payment, student: Student, settings: Settings, locale: str
+) -> str:
     lang = lang_of(locale)
     left = student.monthly_fee - student.credit if student.credit > 0 else Decimal("0")
     return TEXT[lang][MessageKind.RECEIPT].format(
@@ -92,12 +96,18 @@ def receipt_text(*, tenant: Any, payment: Payment, student: Student, settings: S
     )
 
 
-def welcome_text(*, tenant: Any, student: Student, state: FeeState, settings: Settings, locale: str) -> str:
+def welcome_text(
+    *, tenant: Any, student: Student, state: FeeState, settings: Settings, locale: str
+) -> str:
     lang = lang_of(locale)
     return TEXT[lang][MessageKind.WELCOME].format(
         first=student.name.split(" ")[0],
         library=library_name(tenant, settings),
-        seat_line=SEAT_LINE[lang].format(n=student.seat.number, shift=student.shift.name) if student.seat_id else "",
+        seat_line=(
+            SEAT_LINE[lang].format(n=student.seat.number, shift=student.shift.name)
+            if student.seat_id
+            else ""
+        ),
         fee=rupees(student.monthly_fee),
         paid_to=day_text(state.paid_to),
     )

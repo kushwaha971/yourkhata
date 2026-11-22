@@ -81,9 +81,7 @@ DEFAULT_TEMPLATES: dict[tuple[str, str, str], str] = {
     (TEMPLATE_REMINDER_D0, SMS, "en"): (
         "{{shop}}: Rs {{balance}} is due today. {{pay_line}}-{{shop}}"
     ),
-    (TEMPLATE_REMINDER_D0, SMS, "hi"): (
-        "{{shop}}: Rs {{balance}} आज देना है। {{pay_line}}-{{shop}}"
-    ),
+    (TEMPLATE_REMINDER_D0, SMS, "hi"): ("{{shop}}: Rs {{balance}} आज देना है। {{pay_line}}-{{shop}}"),
     # LED-08 — the transaction SMS.
     (TEMPLATE_LEDGER_ENTRY_GAVE, SMS, "en"): (
         "{{shop}}: Rs {{amount}} udhaar added on {{date}}. "

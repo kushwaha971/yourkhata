@@ -86,7 +86,6 @@ it('falls back to the shared word where the app declares none', () => {
   expect(words().w('parties.detail.badge.supplier')).toBe('Supplier');
 });
 
-
 it("B2: the business's own words win, and its kind is offered for the rail", () => {
   /** Prevents: a medical store's menu saying "Suppliers" when the server sent
    * "Distributors", or the kind missing under the business name. */
@@ -100,12 +99,13 @@ it("B2: the business's own words win, and its kind is offered for the rail", () 
   expect(kindLabel).toBe('Medical');
 });
 
-
 it("a hardware or electrical shop's sales screens say Quotation (owner, 14 Nov 2026)", () => {
   /** Prevents: the menu saying "Quotations" while the page it opens, its empty
    * state and its New button still say "Estimate" — the page used `t()` and
    * never saw the business's words. */
-  load('shop', { en: { 'sales.estimate.listTitle': 'Quotations', 'sales.estimate.new': 'New quotation' } });
+  load('shop', {
+    en: { 'sales.estimate.listTitle': 'Quotations', 'sales.estimate.new': 'New quotation' },
+  });
   const { t } = renderHook(() => useBusinessTranslation(), {
     wrapper: ({ children }: { children: ReactNode }) => (
       <Provider store={store}>

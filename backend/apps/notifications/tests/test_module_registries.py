@@ -104,7 +104,10 @@ def test_reset_restores_the_core_types() -> None:
 
 BODIES = {
     "inventory_probe_notice": {
-        "whatsapp": {"en": "Namaste {{party_name}}, probe due. — {{shop}}", "hi": "नमस्ते {{party_name}} — {{shop}}"},
+        "whatsapp": {
+            "en": "Namaste {{party_name}}, probe due. — {{shop}}",
+            "hi": "नमस्ते {{party_name}} — {{shop}}",
+        },
         "sms": {"en": "{{shop}}: probe due. -{{shop}}"},
     }
 }
@@ -115,9 +118,13 @@ def test_registered_templates_resolve_like_core_defaults(tenant: Any) -> None:
     through the same tenant → partner → global → code-default chain, with
     `hi` falling back to `en` where a channel has no Hindi."""
     register_default_templates(BODIES)
-    hi = resolve_template(tenant=tenant, code="inventory_probe_notice", channel="whatsapp", locale="hi")
+    hi = resolve_template(
+        tenant=tenant, code="inventory_probe_notice", channel="whatsapp", locale="hi"
+    )
     assert hi.body.startswith("नमस्ते")
-    sms_hi = resolve_template(tenant=tenant, code="inventory_probe_notice", channel="sms", locale="hi")
+    sms_hi = resolve_template(
+        tenant=tenant, code="inventory_probe_notice", channel="sms", locale="hi"
+    )
     assert sms_hi.body == "{{shop}}: probe due. -{{shop}}"
 
 

@@ -34,7 +34,12 @@ export function LineSerialsField({
         upper
         testId="line-serial"
       />
-      <UbText as="span" variant="caption" tone={short ? 'warning' : 'tertiary'} data-testid="line-serials-count">
+      <UbText
+        as="span"
+        variant="caption"
+        tone={short ? 'warning' : 'tertiary'}
+        data-testid="line-serials-count"
+      >
         {t('items.picker.serials.count', { entered: serials.length, total: qty })}
       </UbText>
     </UbStack>

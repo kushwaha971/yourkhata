@@ -44,10 +44,16 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
     value: {
-      getUserMedia: jest.fn(async () => ({ getTracks: () => [{ stop }], getVideoTracks: () => [] })),
+      getUserMedia: jest.fn(async () => ({
+        getTracks: () => [{ stop }],
+        getVideoTracks: () => [],
+      })),
     },
   });
-  Object.defineProperty(HTMLMediaElement.prototype, 'play', { configurable: true, value: () => Promise.resolve() });
+  Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+    configurable: true,
+    value: () => Promise.resolve(),
+  });
 });
 afterEach(() => {
   jest.useRealTimers();
@@ -58,7 +64,14 @@ it('reads a code once while it is held, again after the repeat window, and stops
   const onCode = jest.fn();
   const onClose = jest.fn();
   const { rerender } = render(
-    <UbScanSheet open onClose={onClose} onCode={onCode} title="Scanning for bill" hint="Point at the barcode." labels={labels} />
+    <UbScanSheet
+      open
+      onClose={onClose}
+      onCode={onCode}
+      title="Scanning for bill"
+      hint="Point at the barcode."
+      labels={labels}
+    />
   );
   codes.push('8901234567890');
   for (let i = 0; i < 6; i += 1) {
@@ -72,7 +85,14 @@ it('reads a code once while it is held, again after the repeat window, and stops
   });
   expect(onCode).toHaveBeenCalledTimes(2);
   rerender(
-    <UbScanSheet open={false} onClose={onClose} onCode={onCode} title="Scanning for bill" hint="Point at the barcode." labels={labels} />
+    <UbScanSheet
+      open={false}
+      onClose={onClose}
+      onCode={onCode}
+      title="Scanning for bill"
+      hint="Point at the barcode."
+      labels={labels}
+    />
   );
   expect(stop).toHaveBeenCalled();
 });
@@ -80,21 +100,29 @@ it('reads a code once while it is held, again after the repeat window, and stops
 it('without a built-in reader, reads with the ponyfill and serves its .wasm from /vendor', async () => {
   delete (globalThis as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
   const onCode = jest.fn();
-  render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);
+  render(
+    <UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />
+  );
   for (let i = 0; i < 4; i += 1) {
     await act(async () => {
       jest.advanceTimersByTime(160);
     });
   }
   expect(onCode).toHaveBeenCalledWith('8901030875021');
-  const { overrides } = prepare.mock.calls[0][0] as { overrides: { locateFile: (p: string, x: string) => string } };
-  expect(overrides.locateFile('zxing_reader.wasm', 'https://cdn.example/')).toBe('/vendor/zxing_reader-3.1.3.wasm');
+  const { overrides } = prepare.mock.calls[0][0] as {
+    overrides: { locateFile: (p: string, x: string) => string };
+  };
+  expect(overrides.locateFile('zxing_reader.wasm', 'https://cdn.example/')).toBe(
+    '/vendor/zxing_reader-3.1.3.wasm'
+  );
 });
 
 it('draws the frame as four corner brackets, as the design does', () => {
   /* Prevents the full white border coming back in place of the design's
      brackets (.cam .box::before); the brackets are cut by a CSS polygon. */
-  render(<UbScanSheet open onClose={jest.fn()} onCode={jest.fn()} title="t" hint="h" labels={labels} />);
+  render(
+    <UbScanSheet open onClose={jest.fn()} onCode={jest.fn()} title="t" hint="h" labels={labels} />
+  );
   expect(document.querySelector('[data-scan-corners]')).not.toBeNull();
 });
 
@@ -102,7 +130,9 @@ it('without a camera, shows the blocked view and adds a typed code', async () =>
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   jest.useRealTimers();
   const onCode = jest.fn();
-  render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);
+  render(
+    <UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />
+  );
   expect(screen.getByText('Camera is blocked')).toBeInTheDocument();
   // Design pCamBlocked draws the box focused: the keypad is already up.
   expect(screen.getByLabelText('Barcode')).toHaveFocus();

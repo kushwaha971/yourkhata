@@ -471,15 +471,22 @@ describe('the credit limit', () => {
   });
 });
 
- it('personal Udhaar saves amount with an empty optional note and no payment method', async () => {
+it('personal Udhaar saves amount with an empty optional note and no payment method', async () => {
   /** Personal money between friends must not require hidden business fields or invent Cash. */
   const user = userEvent.setup();
-  openDrawer('credit'); renderWithProviders(<Harness simple />);
+  openDrawer('credit');
+  renderWithProviders(<Harness simple />);
   const amount = await screen.findByLabelText('Amount');
   expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
   expect(screen.queryByText('Payment mode')).not.toBeInTheDocument();
   await user.type(amount, '500');
-  await user.click(screen.getByRole('button', {name:'Save'}));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(ledgerService.postLedgerEntry).toHaveBeenCalled());
-  expect(ledgerService.postLedgerEntry.mock.calls[0][1]).toMatchObject({simple:true,amount:'500.00',note:'',paymentMode:'',reference:''});
- });
+  expect(ledgerService.postLedgerEntry.mock.calls[0][1]).toMatchObject({
+    simple: true,
+    amount: '500.00',
+    note: '',
+    paymentMode: '',
+    reference: '',
+  });
+});

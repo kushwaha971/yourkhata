@@ -19,8 +19,16 @@ const order = (party: CafeOrder['party']): CafeOrder => ({
 });
 
 it('says one of a thing by its name and more with × count (design "Cold coffee × 2, sandwich")', () => {
-  const line = (name: string, qty: string) => ({ item_id: name, name, qty, rate: '1.00', note: '' });
-  expect(linesSummary([line('Cold coffee', '2'), line('Sandwich', '1')])).toBe('Cold coffee × 2, Sandwich');
+  const line = (name: string, qty: string) => ({
+    item_id: name,
+    name,
+    qty,
+    rate: '1.00',
+    note: '',
+  });
+  expect(linesSummary([line('Cold coffee', '2'), line('Sandwich', '1')])).toBe(
+    'Cold coffee × 2, Sandwich'
+  );
 });
 
 it('opens the bill for the order, with its customer when it has one', () => {
@@ -35,6 +43,9 @@ it('names a phone order’s items in full, not by a brand word (G11)', async () 
   const { itemsSummary } = await import('./phoneOrderService');
   const line = (name: string) => ({ item_id: name, name, qty: '1', rate: '1.00' });
   expect(
-    itemsSummary([line('Aashirvaad Atta'), line('Fortune Oil'), line('Toor Dal'), line('Salt')], (n) => `${n} items`)
+    itemsSummary(
+      [line('Aashirvaad Atta'), line('Fortune Oil'), line('Toor Dal'), line('Salt')],
+      (n) => `${n} items`
+    )
   ).toBe('4 items · aashirvaad atta, fortune oil, toor dal…');
 });

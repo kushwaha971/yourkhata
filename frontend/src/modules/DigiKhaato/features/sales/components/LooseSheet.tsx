@@ -58,7 +58,12 @@ export function LooseSheet({
           <UbButton variant="secondary" onClick={onClose}>
             {t('common.action.cancel')}
           </UbButton>
-          <UbButton variant="primary" disabled={!qty} onClick={() => qty && onAdd(qty)} data-testid="loose-add">
+          <UbButton
+            variant="primary"
+            disabled={!qty}
+            onClick={() => qty && onAdd(qty)}
+            data-testid="loose-add"
+          >
             {t('sales.loose.add', { amount: formatInr(lineAmount ?? '0') })}
           </UbButton>
         </>
@@ -79,22 +84,41 @@ export function LooseSheet({
             <UbText as="label" variant="label" htmlFor="loose-amount">
               {t('sales.loose.amount')}
             </UbText>
-            <UbMoneyInput id="loose-amount" value={amount} onChange={setAmount} autoFocus data-testid="loose-amount" />
+            <UbMoneyInput
+              id="loose-amount"
+              value={amount}
+              onChange={setAmount}
+              autoFocus
+              data-testid="loose-amount"
+            />
           </UbStack>
         ) : (
           <UbStack gap={1}>
             <UbText as="label" variant="label" htmlFor="loose-weight">
               {t('sales.loose.weight')}
             </UbText>
-            <UbQuantityInput id="loose-weight" value={weight} onChange={setWeight} decimals={3} unit={unit} />
+            <UbQuantityInput
+              id="loose-weight"
+              value={weight}
+              onChange={setWeight}
+              decimals={3}
+              unit={unit}
+            />
           </UbStack>
         )}
         <UbStack gap={1}>
-          <UbInfoRow label={t('sales.loose.rate')} value={t('sales.loose.ratePer', { rate: formatInr(rate), unit })} />
+          <UbInfoRow
+            label={t('sales.loose.rate')}
+            value={t('sales.loose.ratePer', { rate: formatInr(rate), unit })}
+          />
           <UbInfoRow
             label={mode === 'amount' ? t('sales.loose.weight') : t('sales.loose.amount')}
             value={
-              <UbText variant="body" className="font-semibold tabular-nums" data-testid="loose-result">
+              <UbText
+                variant="body"
+                className="font-semibold tabular-nums"
+                data-testid="loose-result"
+              >
                 {qty ? (mode === 'amount' ? `${qty} ${unit}` : formatInr(lineAmount)) : '—'}
               </UbText>
             }
@@ -111,7 +135,12 @@ export function LooseSheet({
         )}
         <UbText variant="caption" tone="secondary">
           {qty
-            ? t('sales.loose.note', { name: item.name, weight: `${qty} ${unit}`, rate: formatInr(rate), amount: formatInr(lineAmount) })
+            ? t('sales.loose.note', {
+                name: item.name,
+                weight: `${qty} ${unit}`,
+                rate: formatInr(rate),
+                amount: formatInr(lineAmount),
+              })
             : t('sales.loose.needAmount')}
         </UbText>
       </UbStack>

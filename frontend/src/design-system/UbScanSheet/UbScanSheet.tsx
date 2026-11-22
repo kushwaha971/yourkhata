@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Camera, Flashlight, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-
 import { cn } from 'src/utils/cn';
 
 /**
@@ -65,7 +64,9 @@ const loadDetector = async (): Promise<DetectorCtor> => {
   ponyfill.prepareZXingModule({
     overrides: {
       locateFile: (path: string, prefix: string) =>
-        path.endsWith('.wasm') ? `/vendor/zxing_reader-${ponyfill.ZXING_WASM_VERSION}.wasm` : prefix + path,
+        path.endsWith('.wasm')
+          ? `/vendor/zxing_reader-${ponyfill.ZXING_WASM_VERSION}.wasm`
+          : prefix + path,
     },
   });
   return ponyfill.BarcodeDetector as unknown as DetectorCtor;
@@ -192,8 +193,12 @@ export function UbScanSheet({
           over the tray, so Done looked disabled and "Last scanned" vanished. */}
       <div className="relative flex flex-1 flex-col overflow-hidden">
         {!blocked && (
-           
-          <video ref={video} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
+          <video
+            ref={video}
+            playsInline
+            muted
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         )}
         <div className="relative z-[1] flex items-center justify-between px-3.5 py-3">
           <button
@@ -211,7 +216,10 @@ export function UbScanSheet({
               onClick={toggleTorch}
               aria-label={labels.torch}
               aria-pressed={torchOn}
-              className={cn('grid h-11 w-11 place-items-center rounded-full bg-white/15', torchOn && 'bg-white/35')}
+              className={cn(
+                'grid h-11 w-11 place-items-center rounded-full bg-white/15',
+                torchOn && 'bg-white/35'
+              )}
             >
               <Flashlight aria-hidden className="h-5 w-5" />
             </button>
@@ -227,7 +235,10 @@ export function UbScanSheet({
             >
               {/* Design `.cam .box::before`: four white corner brackets, not a
                   full border, cut from one 3 px ring by the design's polygon. */}
-              <span data-scan-corners className="absolute inset-0 rounded-[14px] border-[3px] border-white" />
+              <span
+                data-scan-corners
+                className="absolute inset-0 rounded-[14px] border-[3px] border-white"
+              />
               <span className="absolute left-3 right-3 top-1/2 h-0.5 bg-[#F59E1B] shadow-[0_0_12px_#F59E1B]" />
             </div>
             <p className="absolute left-0 right-0 top-[calc(42%+92px)] text-center text-sm text-[#e6e6e6]">

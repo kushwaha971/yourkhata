@@ -124,7 +124,11 @@ export const createMemberColumns = ({
             return (
               <MemberRoleCell
                 label={label}
-                caption={access && access.canUse && access.changes > 0 ? t('team.access.changes', { count: access.changes }) : null}
+                caption={
+                  access && access.canUse && access.changes > 0
+                    ? t('team.access.changes', { count: access.changes })
+                    : null
+                }
                 inactive={Boolean(access && !access.canUse)}
               />
             );

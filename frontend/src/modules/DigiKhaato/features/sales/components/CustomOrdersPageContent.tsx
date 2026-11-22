@@ -627,23 +627,25 @@ export function CustomOrdersPageContent(): React.JSX.Element {
       {karigars && (
         <UbBox className="mt-4">
           <UbBox id="karigars" className="scroll-mt-20">
-<KarigarsPanel
-            data={karigars}
-            canWrite={canWrite}
-            onAdd={() => setDialog('add')}
-            onReceive={setDialog}
-            onMakeTag={setTagging}
-            onCorrect={setCorrecting}
-            onEdit={setEditing}
-            onTagsDone={(lot) =>
-              void finishLotTags(lot.id)
-                .then(dialogDone)
-                .catch(() =>
-                  dispatch(showSnackbar({ severity: 'error', id: 'sales.customOrder.moveFailed' }))
-                )
-            }
-          />
-</UbBox>
+            <KarigarsPanel
+              data={karigars}
+              canWrite={canWrite}
+              onAdd={() => setDialog('add')}
+              onReceive={setDialog}
+              onMakeTag={setTagging}
+              onCorrect={setCorrecting}
+              onEdit={setEditing}
+              onTagsDone={(lot) =>
+                void finishLotTags(lot.id)
+                  .then(dialogDone)
+                  .catch(() =>
+                    dispatch(
+                      showSnackbar({ severity: 'error', id: 'sales.customOrder.moveFailed' })
+                    )
+                  )
+              }
+            />
+          </UbBox>
         </UbBox>
       )}
       {correcting && (

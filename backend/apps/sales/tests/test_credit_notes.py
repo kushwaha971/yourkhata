@@ -16,12 +16,12 @@ from apps.reports.selectors.day_book import DayBookQuery, day_book, summarise
 from apps.reports.selectors.gst_checks import gst_exceptions
 from apps.sales.models import SalesCreditApplication, SalesDocument, SalesDocumentLine
 from apps.sales.tests.conftest import (
-    cash,
-    draft,
-    issue,
     CREDIT_NOTES,
+    cash,
     credit_note_url,
+    draft,
     invoice_url,
+    issue,
     issue_note,
     issued_invoice,
     line,
@@ -389,9 +389,7 @@ def test_the_reports_read_real_credit_notes_as_their_track_assumed(
     assert not any(number == applied["number"] for number, _ in flagged)
 
 
-def test_a_quick_sale_return_refunds_from_the_till_and_restocks(
-    owner: Any, make_item: Any
-) -> None:
+def test_a_quick_sale_return_refunds_from_the_till_and_restocks(owner: Any, make_item: Any) -> None:
     """Shop round, 11 Nov 2026 (owner, relaxing EC-7): a walk-in brings back one
     of two packets. The bill offered only "cancel the whole bill". Now the note
     keeps the bill's walk-in name, restocks the packet, and the money leaves
@@ -410,11 +408,15 @@ def test_a_quick_sale_return_refunds_from_the_till_and_restocks(
     assert note.get("party") is None
     half = note["grand_total"]
 
-    short = issue_note(owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": "1.00"}]})
+    short = issue_note(
+        owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": "1.00"}]}
+    )
     assert short.status_code == 400
     assert "refund" in short.json()["error"]["details"]
 
-    done = issue_note(owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": half}]})
+    done = issue_note(
+        owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": half}]}
+    )
     assert done.status_code == 200, done.json()
     issued = done.json()["data"]
     assert issued["status"] == "applied"
@@ -454,14 +456,18 @@ def test_a_quick_sale_return_made_by_mistake_can_be_undone(owner: Any, make_item
     after_sale = ItemStock.objects.get(item=item).on_hand
     note = note_draft(owner, against_id=paid["id"], lines=returning(paid, "1")).json()["data"]
     issued = issue_note(
-        owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": note["grand_total"]}]}
+        owner,
+        note["id"],
+        refund={"mode_breakup": [{"mode": "cash", "amount": note["grand_total"]}]},
     ).json()["data"]
     refund = Payment.objects.get(meta__credit_note_id=issued["id"])
 
     alone = void_payment(owner, refund.id, reason="Wrong bill")
     assert alone.status_code == 409
     assert alone.json()["error"]["code"] == "cancel_the_return"
-    cancelled = owner.post(credit_note_url(issued["id"], "void"), {"reason": "Wrong bill"}, format="json")
+    cancelled = owner.post(
+        credit_note_url(issued["id"], "void"), {"reason": "Wrong bill"}, format="json"
+    )
     assert cancelled.status_code == 200, cancelled.json()
     assert ItemStock.objects.get(item=item).on_hand == after_sale
     refund.refresh_from_db()

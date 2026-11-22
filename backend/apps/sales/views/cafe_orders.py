@@ -38,7 +38,9 @@ class CafeOrdersView(_View):
         result = cafe_orders.list_orders(
             tenant=get_effective_tenant(request), scope=request.query_params.get("scope", "open")
         )
-        return StandardResponse.ok(result["rows"], meta={"counts": result["counts"], "soon": result["soon"]})
+        return StandardResponse.ok(
+            result["rows"], meta={"counts": result["counts"], "soon": result["soon"]}
+        )
 
     def post(self, request: Any) -> Any:
         order, created = cafe_orders.create_order(ctx=Ctx.from_request(request), data=request.data)
@@ -48,8 +50,14 @@ class CafeOrdersView(_View):
 
 class CafeOrderDetailView(_View):
     def get(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(cafe_orders.view(cafe_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)))
+        return StandardResponse.ok(
+            cafe_orders.view(
+                cafe_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)
+            )
+        )
 
     def patch(self, request: Any, pk: Any) -> Any:
-        order = cafe_orders.update_order(ctx=Ctx.from_request(request), order_id=pk, data=request.data)
+        order = cafe_orders.update_order(
+            ctx=Ctx.from_request(request), order_id=pk, data=request.data
+        )
         return StandardResponse.ok(cafe_orders.view(order))

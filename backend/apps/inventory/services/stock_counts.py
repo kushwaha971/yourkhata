@@ -151,17 +151,15 @@ def set_counted(
         message="Enter the quantity on the shelf.",
     )
     if value is not None and validate_qty_for_unit(value, allow_decimal=item.unit.allow_decimal):
-        errors.add("qty", f"Quantity must be a whole number for {item.unit.code}.", "qty_must_be_whole")
+        errors.add(
+            "qty", f"Quantity must be a whole number for {item.unit.code}.", "qty_must_be_whole"
+        )
     if errors:
         raise ValidationFailed(errors.payload())
 
     now = timezone.now()
     actor = ctx.actor if ctx.actor_type == "user" else None
-    line = (
-        StockCountLine.objects.select_for_update()
-        .filter(count=count, item=item)
-        .first()
-    )
+    line = StockCountLine.objects.select_for_update().filter(count=count, item=item).first()
     if line is None:
         counted = q3(value)
         if counted < 0:
@@ -210,9 +208,7 @@ def save_count(*, ctx: Ctx, count: StockCount) -> StockCount:
     """
     count = StockCount.objects.select_for_update().get(pk=count.pk)
     _require_open(count)
-    lines = list(
-        StockCountLine.objects.filter(count=count).select_related("item", "item__unit")
-    )
+    lines = list(StockCountLine.objects.filter(count=count).select_related("item", "item__unit"))
     if not lines:
         raise BusinessRuleViolation("count_empty", "Count at least one item before saving.")
     differing = [line for line in lines if line.counted_qty != line.books_qty]
@@ -230,7 +226,9 @@ def save_count(*, ctx: Ctx, count: StockCount) -> StockCount:
                 location=count.location,
                 qty=delta,
                 unit_cost=q4(avg) if delta > 0 else None,
-                movement_type=MovementType.STOCKTAKE_IN if delta > 0 else MovementType.STOCKTAKE_OUT,
+                movement_type=(
+                    MovementType.STOCKTAKE_IN if delta > 0 else MovementType.STOCKTAKE_OUT
+                ),
                 movement_date=today,
                 source_type=MovementSource.STOCK_COUNT,
                 source_id=count.id,

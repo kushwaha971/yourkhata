@@ -27,7 +27,14 @@ import { Card, Figure, Figures, KeyValue } from './LibraryParts';
 import type { ExpenseHead } from '../types/library.types';
 
 type Period = 'month' | 'last' | 'year';
-const HEADS: readonly ExpenseHead[] = ['rent', 'electricity', 'internet', 'salary', 'cleaning', 'other'];
+const HEADS: readonly ExpenseHead[] = [
+  'rent',
+  'electricity',
+  'internet',
+  'salary',
+  'cleaning',
+  'other',
+];
 
 const rangeOf = (period: Period, today: string): { from: string; to: string } => {
   const y = Number(today.slice(0, 4));
@@ -80,7 +87,10 @@ export function MoneyPageContent(): React.JSX.Element {
           ariaLabel={t('library.money.period')}
           value={period}
           onChange={(v) => setPeriod(v as Period)}
-          options={(['month', 'last', 'year'] as const).map((p) => ({ value: p, label: t(`library.money.${p}`) }))}
+          options={(['month', 'last', 'year'] as const).map((p) => ({
+            value: p,
+            label: t(`library.money.${p}`),
+          }))}
         />
         {lib.money.status === 'failed' && !m ? (
           <UbEmptyState
@@ -93,14 +103,26 @@ export function MoneyPageContent(): React.JSX.Element {
         ) : (
           <>
             <Figures testId="library-money-figures">
-              <Figure label={t('library.money.fees')} value={rupees(m.fees)} caption={t('library.home.payments', { count: m.payments })} tone="get" />
+              <Figure
+                label={t('library.money.fees')}
+                value={rupees(m.fees)}
+                caption={t('library.home.payments', { count: m.payments })}
+                tone="get"
+              />
               <Figure label={t('library.money.spent')} value={rupees(m.expenses)} tone="give" />
               <UbBox className="max-lg:hidden lg:contents">
-                <Figure label={t('library.money.left')} value={`${net < 0 ? '−' : ''}${rupees(m.net)}`} tone={net < 0 ? 'give' : 'get'} />
+                <Figure
+                  label={t('library.money.left')}
+                  value={`${net < 0 ? '−' : ''}${rupees(m.net)}`}
+                  tone={net < 0 ? 'give' : 'get'}
+                />
               </UbBox>
             </Figures>
             <Card className="lg:hidden">
-              <KeyValue label={t('library.money.left')} value={`${net < 0 ? '−' : ''}${rupees(m.net)}`} />
+              <KeyValue
+                label={t('library.money.left')}
+                value={`${net < 0 ? '−' : ''}${rupees(m.net)}`}
+              />
             </Card>
             <Card testId="library-money-heads">
               {HEADS.filter((h) => m.heads[h]).length === 0 ? (
@@ -109,7 +131,11 @@ export function MoneyPageContent(): React.JSX.Element {
                 </UbStack>
               ) : (
                 HEADS.filter((h) => m.heads[h]).map((h) => (
-                  <KeyValue key={h} label={t(`library.expense.head.${h}`)} value={rupees(m.heads[h])} />
+                  <KeyValue
+                    key={h}
+                    label={t(`library.expense.head.${h}`)}
+                    value={rupees(m.heads[h])}
+                  />
                 ))
               )}
             </Card>

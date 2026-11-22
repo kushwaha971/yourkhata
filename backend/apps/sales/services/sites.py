@@ -17,8 +17,8 @@ from django.db import transaction
 from django.db.models import Count, Max, Min, Q, Sum
 
 from apps.common.context import Ctx
-from apps.common.exceptions import NotFound, ValidationFailed
 from apps.common.dates import tenant_today
+from apps.common.exceptions import NotFound, ValidationFailed
 from apps.sales.constants import INVOICE_KINDS, DocumentStatus
 from apps.sales.models import ContractorSite, SalesDocument
 
@@ -107,7 +107,10 @@ def create_site(*, ctx: Ctx, data: dict) -> tuple[Any, bool]:
         return same, False
     if ContractorSite.objects.filter(tenant=ctx.tenant, party=party, name__iexact=name).exists():
         raise ValidationFailed({"name": ["This contractor already has a site with this name."]})
-    return ContractorSite.objects.create(tenant=ctx.tenant, party=party, name=name, client_key=key), True
+    return (
+        ContractorSite.objects.create(tenant=ctx.tenant, party=party, name=name, client_key=key),
+        True,
+    )
 
 
 def get_site(*, tenant: Any, site_id: Any) -> Any:
@@ -209,7 +212,11 @@ def split_payment(*, ctx: Ctx, data: dict) -> dict:
                 break
             part = min(left, bill.amount_due)
             allocations.append(
-                {"document_type": "sales_document", "document_id": str(bill.id), "amount": str(part)}
+                {
+                    "document_type": "sales_document",
+                    "document_id": str(bill.id),
+                    "amount": str(part),
+                }
             )
             left -= part
         if left > 0:
@@ -229,5 +236,7 @@ def split_payment(*, ctx: Ctx, data: dict) -> dict:
             "allocations": allocations,
         },
     )
-    payment = recorded["payment"] if isinstance(recorded, dict) and "payment" in recorded else recorded
+    payment = (
+        recorded["payment"] if isinstance(recorded, dict) and "payment" in recorded else recorded
+    )
     return {"payment_id": str(getattr(payment, "id", "")), "amount": str(total)}

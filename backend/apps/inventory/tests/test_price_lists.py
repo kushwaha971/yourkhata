@@ -9,7 +9,6 @@ what: reading is the item read right, pricing is the item write right.
 
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import Any
 
 import pytest

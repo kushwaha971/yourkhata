@@ -8,7 +8,6 @@ import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { store } from 'src/redux/store';
 import { ALL_MESSAGES } from 'src/tests/allMessages';
 
-
 const wrapper = ({ children }: { children: ReactNode }) => (
   <Provider store={store}>
     <IntlProvider locale="en" messages={ALL_MESSAGES.en}>

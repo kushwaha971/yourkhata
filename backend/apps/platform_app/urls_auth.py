@@ -27,6 +27,7 @@ from django.urls import path
 from apps.platform_app.views.auth import (
     EmailVerifyConfirmView,
     EmailVerifyRequestView,
+    LeaveAppView,
     LogoutView,
     MeView,
     MyMobileConfirmView,
@@ -37,7 +38,6 @@ from apps.platform_app.views.auth import (
     PasswordSetView,
     RefreshView,
     RegisterView,
-    LeaveAppView,
     SwitchAppView,
     SwitchTenantView,
 )

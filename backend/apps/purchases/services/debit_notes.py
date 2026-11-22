@@ -168,7 +168,12 @@ def _line_payload(line: Any, qty: Decimal, serials: list[str] | None = None) -> 
         # A phone's line names the IMEIs going back (picked by `_pick_serials`).
         **({"serials": serials} if serials else {}),
         **(
-            {"batches": [{k: v for k, v in b.items() if k in ("batch_no", "expiry", "mrp")} for b in line.batches[:1]]}
+            {
+                "batches": [
+                    {k: v for k, v in b.items() if k in ("batch_no", "expiry", "mrp")}
+                    for b in line.batches[:1]
+                ]
+            }
             if line.batches
             else {}
         ),
@@ -249,7 +254,9 @@ def _return_batches(ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]]) -> N
             batch.qty -= take
             batch.save(update_fields=["qty"])
             wanted -= take
-            taken_all.append({"item_id": str(item.id), "batch_no": batch.batch_no, "qty": str(take)})
+            taken_all.append(
+                {"item_id": str(item.id), "batch_no": batch.batch_no, "qty": str(take)}
+            )
     if taken_all:
         note.meta = {**(note.meta or {}), "batches": taken_all}
         note.save(update_fields=["meta"])
@@ -434,9 +441,7 @@ def issue_debit_note(*, ctx: Ctx, payload: dict) -> dict:
             # Not the supplier's bill number: that column is unique per supplier across
             # every recorded purchase document, so it stays on the bill (and in
             # `meta.against`), never on the note.
-            "lines": [
-                _line_payload(line, qty, phones.get(line.line_no)) for line, qty in picked
-            ],
+            "lines": [_line_payload(line, qty, phones.get(line.line_no)) for line, qty in picked],
         },
         strict=True,
     )

@@ -79,10 +79,12 @@ export function SeatsPageContent(): React.JSX.Element {
   const shift = map?.shifts.find((s) => s.id === map.shiftId);
   const cell: SeatCell | null = map?.seats.find((c) => c.number === picked) ?? null;
   // The desktop panel shows the first seat with a student until one is tapped.
-  const shown = cell ?? (desktop ? map?.seats.find((c) => c.student) ?? null : null);
+  const shown = cell ?? (desktop ? (map?.seats.find((c) => c.student) ?? null) : null);
   const s = shown?.student ?? null;
 
-  const panelTitle = shown ? t('library.seats.seatTitle', { seat: shown.number, shift: shift?.name ?? '' }) : '';
+  const panelTitle = shown
+    ? t('library.seats.seatTitle', { seat: shown.number, shift: shift?.name ?? '' })
+    : '';
   const occupant = s && (
     <UbStack direction="row" align="center" gap={2.5}>
       <UbAvatar name={s.name} size="sm" />
@@ -95,13 +97,18 @@ export function SeatsPageContent(): React.JSX.Element {
             ? s.mobile
               ? `+91 ${s.mobile.slice(0, 5)} ${s.mobile.slice(5)}`
               : t('library.student.noMobile')
-            : t('library.seats.paidToFee', { date: shortDate(s.paidTo, today), fee: rupees(s.monthlyFee) })}
+            : t('library.seats.paidToFee', {
+                date: shortDate(s.paidTo, today),
+                fee: rupees(s.monthlyFee),
+              })}
         </UbText>
       </UbStack>
       <FeeBadge fee={s.fee} t={t} />
     </UbStack>
   );
-  const collectLabel = s ? t('library.seats.collect', { amount: rupees(Number(s.due) > 0 ? s.due : s.monthlyFee) }) : '';
+  const collectLabel = s
+    ? t('library.seats.collect', { amount: rupees(Number(s.due) > 0 ? s.due : s.monthlyFee) })
+    : '';
 
   const body = (() => {
     if (lib.seats.status === 'failed' && !map)
@@ -119,7 +126,11 @@ export function SeatsPageContent(): React.JSX.Element {
           variant="firstUse"
           title={t('library.seats.none.title')}
           description={t('library.seats.none.body')}
-          action={canManage ? <UbButton onClick={() => setEditing(true)}>{t('library.seats.edit')}</UbButton> : undefined}
+          action={
+            canManage ? (
+              <UbButton onClick={() => setEditing(true)}>{t('library.seats.edit')}</UbButton>
+            ) : undefined
+          }
         />
       );
     return (
@@ -165,7 +176,10 @@ export function SeatsPageContent(): React.JSX.Element {
                   {occupant}
                   <KeyValue label={t('library.seats.paidTo')} value={shortDate(s.paidTo, today)} />
                   <KeyValue label={t('library.seats.monthlyFee')} value={rupees(s.monthlyFee)} />
-                  <KeyValue label={t('library.seats.joined')} value={shortDate(s.joinedOn, today)} />
+                  <KeyValue
+                    label={t('library.seats.joined')}
+                    value={shortDate(s.joinedOn, today)}
+                  />
                   <UbBox className="grid grid-cols-2 gap-2">
                     {canWrite && (
                       <UbButton variant="outlineNeutral" onClick={() => setMoving(s)}>
@@ -207,12 +221,20 @@ export function SeatsPageContent(): React.JSX.Element {
             desktop
               ? t('library.seats.subtitle')
               : map
-                ? t('library.seats.count', { filled: map.filled, seats: map.seats.length, empty: map.empty })
+                ? t('library.seats.count', {
+                    filled: map.filled,
+                    seats: map.seats.length,
+                    empty: map.empty,
+                  })
                 : undefined
           }
           actions={
             canManage && (
-              <UbButton variant="outlineNeutral" onClick={() => setEditing(true)} className="max-lg:hidden">
+              <UbButton
+                variant="outlineNeutral"
+                onClick={() => setEditing(true)}
+                className="max-lg:hidden"
+              >
                 {t('library.seats.edit')}
               </UbButton>
             )
@@ -231,7 +253,12 @@ export function SeatsPageContent(): React.JSX.Element {
             !canWrite && !canCollect ? null : s ? (
               <UbBox className="grid grid-cols-2 gap-2">
                 {canWrite && (
-                  <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
+                  <UbButton
+                    variant="secondary"
+                    size="lg"
+                    busy={busy === s.id}
+                    onClick={() => void remind(s)}
+                  >
                     {t('library.seats.remind')}
                   </UbButton>
                 )}
@@ -242,7 +269,12 @@ export function SeatsPageContent(): React.JSX.Element {
                 )}
               </UbBox>
             ) : cell && canWrite ? (
-              <UbButton variant="primary" size="lg" fullWidth onClick={() => setEnrolSeat(cell.number)}>
+              <UbButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                onClick={() => setEnrolSeat(cell.number)}
+              >
                 {t('library.seats.enrolHere')}
               </UbButton>
             ) : null
@@ -258,7 +290,10 @@ export function SeatsPageContent(): React.JSX.Element {
                       {t('library.seats.move')}
                     </UbButton>
                   )}
-                  <UbButton variant="outlineNeutral" onClick={() => router.push(LIBRARY_ROUTES.student(s.id))}>
+                  <UbButton
+                    variant="outlineNeutral"
+                    onClick={() => router.push(LIBRARY_ROUTES.student(s.id))}
+                  >
                     {t('library.seats.open')}
                   </UbButton>
                 </UbBox>

@@ -2,7 +2,11 @@ import { absoluteUrl } from 'src/utils/seo';
 
 import en from 'locales/catalogues/landing.en.json';
 
-import { faqAnswerKey, faqIds, faqQuestionKey } from 'modules/DigiKhaato/features/landing/config/faq';
+import {
+  faqAnswerKey,
+  faqIds,
+  faqQuestionKey,
+} from 'modules/DigiKhaato/features/landing/config/faq';
 import { ALL_MODULES_VISIBLE } from 'modules/DigiKhaato/features/landing/config/modules';
 import { SHOW_PRICING } from 'modules/DigiKhaato/features/landing/config/pricing';
 import {
@@ -24,13 +28,11 @@ export const dynamic = 'force-static';
 const words = en as Record<string, string>;
 
 export function GET(): Response {
-  const pages = SOLUTIONS.map(
-    (s) => {
-      const terms = searchTermsFor(s.slug);
-      const also = terms.length ? ` Also searched as: ${terms.join(', ')}.` : '';
-      return `- [${s.name}](${absoluteUrl(`/solutions/${s.slug}`)}): ${s.summary ?? s.description}${also}`;
-    }
-  );
+  const pages = SOLUTIONS.map((s) => {
+    const terms = searchTermsFor(s.slug);
+    const also = terms.length ? ` Also searched as: ${terms.join(', ')}.` : '';
+    return `- [${s.name}](${absoluteUrl(`/solutions/${s.slug}`)}): ${s.summary ?? s.description}${also}`;
+  });
   const faq = faqIds(SHOW_PRICING).flatMap((id) => {
     const q = words[faqQuestionKey(id)];
     const a = words[faqAnswerKey(id, ALL_MODULES_VISIBLE)] ?? words[faqAnswerKey(id)];

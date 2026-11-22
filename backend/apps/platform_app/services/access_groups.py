@@ -57,7 +57,12 @@ PARTS: dict[str, tuple[Part, ...]] = {
         Part(
             "sales",
             ("sales.invoice.read", "sales.estimate.read"),
-            ("sales.invoice.write", "sales.estimate.write", "sales.credit_note.write", "sales.invoice.void"),
+            (
+                "sales.invoice.write",
+                "sales.estimate.write",
+                "sales.credit_note.write",
+                "sales.invoice.void",
+            ),
         ),
         Part(
             "purchases",
@@ -70,7 +75,11 @@ PARTS: dict[str, tuple[Part, ...]] = {
             ("payments.payment.read",),
             ("payments.payment.write", "payments.request.write", "payments.payment.void"),
         ),
-        Part("expenses", ("expenses.expense.read",), ("expenses.expense.write", "expenses.expense.void")),
+        Part(
+            "expenses",
+            ("expenses.expense.read",),
+            ("expenses.expense.write", "expenses.expense.void"),
+        ),
     ),
     "library": (
         Part("library_students", (), ("library.member.write",)),
@@ -84,7 +93,10 @@ PARTS: dict[str, tuple[Part, ...]] = {
 
 #: The ready-made group the empty tab offers, per app (owner's answer to the design).
 SUGGESTED: dict[str, tuple[str, dict[str, str]]] = {
-    "shop": ("Counter staff", {"sales": FULL, "purchases": OFF, "stock": VIEW, "payments": FULL, "expenses": OFF}),
+    "shop": (
+        "Counter staff",
+        {"sales": FULL, "purchases": OFF, "stock": VIEW, "payments": FULL, "expenses": OFF},
+    ),
     "library": ("Library desk", {"library_students": FULL, "library_fees": OFF}),
     "lending": ("Collection agent", {"lending_lend": OFF, "lending_collect": FULL}),
 }
@@ -212,7 +224,10 @@ def groups_payload(tenant: Any, app: Any) -> dict:
         "app": code,
         "parts": parts_json(code),
         "groups": [group_json(g, g.member_count) for g in groups],
-        "suggested": {"name": name, "levels": {p.code: levels.get(p.code, FULL) for p in PARTS[code]}},
+        "suggested": {
+            "name": name,
+            "levels": {p.code: levels.get(p.code, FULL) for p in PARTS[code]},
+        },
     }
 
 
@@ -251,14 +266,18 @@ def create_group(*, tenant: Any, data: Any, ctx: Ctx) -> dict:
     levels = _clean_levels(code, data.get("levels"), field="levels")
     is_default = bool(data.get("is_default") is True)
     if is_default:
-        AccessGroup.objects.filter(tenant=tenant, app=code, is_default=True).update(is_default=False)
+        AccessGroup.objects.filter(tenant=tenant, app=code, is_default=True).update(
+            is_default=False
+        )
     try:
         with transaction.atomic():
             group = AccessGroup.objects.create(
                 tenant=tenant, app=code, name=name, levels=levels, is_default=is_default
             )
     except IntegrityError:
-        raise ValidationFailed({"name": ["There is already a group with this name here."]}) from None
+        raise ValidationFailed(
+            {"name": ["There is already a group with this name here."]}
+        ) from None
     write_audit(
         ctx=ctx,
         action=AuditAction.ACCESS_GROUP_CHANGED,
@@ -283,13 +302,17 @@ def update_group(*, tenant: Any, group_id: Any, data: Any, ctx: Ctx) -> dict:
         group.levels = _clean_levels(group.app, data.get("levels"), field="levels")
     if "is_default" in data:
         if data.get("is_default") is True and not group.is_default:
-            AccessGroup.objects.filter(tenant=tenant, app=group.app, is_default=True).update(is_default=False)
+            AccessGroup.objects.filter(tenant=tenant, app=group.app, is_default=True).update(
+                is_default=False
+            )
         group.is_default = data.get("is_default") is True
     try:
         with transaction.atomic():
             group.save()
     except IntegrityError:
-        raise ValidationFailed({"name": ["There is already a group with this name here."]}) from None
+        raise ValidationFailed(
+            {"name": ["There is already a group with this name here."]}
+        ) from None
     members = _member_ids(group)
     if before["levels"] != group.levels:
         _bump(members)
@@ -357,7 +380,11 @@ def member_access_json(membership: Any, app: str) -> dict:
     from apps.platform_app import apps_registry
     from apps.platform_app.models import MemberAppAccess
 
-    row = MemberAppAccess.objects.filter(membership=membership, app=app).select_related("group").first()
+    row = (
+        MemberAppAccess.objects.filter(membership=membership, app=app)
+        .select_related("group")
+        .first()
+    )
     grants = apps_registry.grants_of(membership)
     role = grants.get(app) or membership.role
     held = _role_codenames(role) | set((membership.permissions_override or {}).get("allow", []))
@@ -388,8 +415,8 @@ def member_access_json(membership: Any, app: str) -> dict:
 
 def _set_can_use(target: Any, app: str, can_use: bool, *, actor: Any, ctx: Ctx) -> None:
     """Add or remove ONE app for this member, leaving their other apps as they are."""
-    from apps.platform_app import apps_registry
     from apps.common.permissions_registry import module_role
+    from apps.platform_app import apps_registry
     from apps.platform_app.services.memberships import set_app_grants
 
     now = _opens(target)
@@ -398,7 +425,9 @@ def _set_can_use(target: Any, app: str, can_use: bool, *, actor: Any, ctx: Ctx) 
     wanted = [c for c in now if c != app] + ([app] if can_use else [])
     shared = [c for c in wanted if c not in {"khata"}]
     if not shared:
-        raise ValidationFailed({"can_use": ["Keep at least one app on. To stop them working here, use Block instead."]})
+        raise ValidationFailed(
+            {"can_use": ["Keep at least one app on. To stop them working here, use Block instead."]}
+        )
     grants = apps_registry.grants_of(target)
 
     def role_for(code: str) -> str:
@@ -417,7 +446,9 @@ def _set_can_use(target: Any, app: str, can_use: bool, *, actor: Any, ctx: Ctx) 
 
 
 @transaction.atomic
-def set_member_access(*, tenant: Any, membership_id: Any, app: Any, data: Any, actor: Any, ctx: Ctx) -> Any:
+def set_member_access(
+    *, tenant: Any, membership_id: Any, app: Any, data: Any, actor: Any, ctx: Ctx
+) -> Any:
     """`PUT /members/{id}/access?app=` — can_use, group, exceptions, for this app only."""
     from apps.platform_app.models import MemberAppAccess
 
@@ -425,7 +456,9 @@ def set_member_access(*, tenant: Any, membership_id: Any, app: Any, data: Any, a
     code = _running_app(tenant, app)
     target = _target(tenant, membership_id)
     if target.role.code in NOT_NARROWED:
-        raise ValidationFailed({"group_id": ["The owner and admins can use every part. Groups are for other members."]})
+        raise ValidationFailed(
+            {"group_id": ["The owner and admins can use every part. Groups are for other members."]}
+        )
     if "can_use" in data:
         if not isinstance(data["can_use"], bool):
             raise ValidationFailed({"can_use": ["Send true or false."]})
@@ -447,7 +480,9 @@ def set_member_access(*, tenant: Any, membership_id: Any, app: Any, data: Any, a
         group_levels = dict(row.group.levels) if row.group_id else {}
         row.levels = {
             k: v
-            for k, v in _clean_levels(code, data.get("exceptions"), field="exceptions", keep_full=True).items()
+            for k, v in _clean_levels(
+                code, data.get("exceptions"), field="exceptions", keep_full=True
+            ).items()
             if group_levels.get(k, FULL) != v
         }
     row.save()
@@ -479,7 +514,9 @@ def list_access(memberships: list[Any], app: str) -> dict[str, dict]:
 
     rows = {
         r.membership_id: r
-        for r in MemberAppAccess.objects.filter(membership__in=memberships, app=app).select_related("group")
+        for r in MemberAppAccess.objects.filter(membership__in=memberships, app=app).select_related(
+            "group"
+        )
     }
     out: dict[str, dict] = {}
     for m in memberships:
@@ -509,7 +546,9 @@ def member_by_mobile(tenant: Any, mobile: Any) -> Any:
     )
 
 
-def start_in_app(*, tenant: Any, membership: Any, app: str, group_id: Any, actor: Any, ctx: Ctx) -> None:
+def start_in_app(
+    *, tenant: Any, membership: Any, app: str, group_id: Any, actor: Any, ctx: Ctx
+) -> None:
     """A member added from inside `app`: that app and their own Money book, in a group."""
     from apps.platform_app import apps_registry
     from apps.platform_app.models import MemberAppAccess

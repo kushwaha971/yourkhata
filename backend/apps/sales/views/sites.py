@@ -10,12 +10,12 @@ from rest_framework.views import APIView
 
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
+from apps.common.dates import tenant_today
 from apps.common.exceptions import NotFound
 from apps.common.idempotency import idempotent
 from apps.common.permissions import HasPermission, ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
-from apps.common.dates import tenant_today
 from apps.sales.services import sites
 
 
@@ -57,7 +57,10 @@ class SiteDetailView(_View):
         tenant = get_effective_tenant(request)
         site = sites.get_site(tenant=tenant, site_id=pk)
         return StandardResponse.ok(
-            {**sites.view(site, today=tenant_today(tenant)), "bill_rows": sites.site_bills(site=site)}
+            {
+                **sites.view(site, today=tenant_today(tenant)),
+                "bill_rows": sites.site_bills(site=site),
+            }
         )
 
 
@@ -66,4 +69,6 @@ class SitePaymentView(_View):
 
     @idempotent("sales_site_payment")
     def post(self, request: Any) -> Any:
-        return StandardResponse.created(sites.split_payment(ctx=Ctx.from_request(request), data=request.data))
+        return StandardResponse.created(
+            sites.split_payment(ctx=Ctx.from_request(request), data=request.data)
+        )

@@ -6,7 +6,14 @@ import { UbAvatar, UbBox, UbPressable, UbStack, UbStatusBadge, UbText } from 'sr
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
-import { Card, Figure, Figures as SharedFigures, KeyValue, List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
+import {
+  Card,
+  Figure,
+  Figures as SharedFigures,
+  KeyValue,
+  List,
+  Table,
+} from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { FEE_TONE, FEE_WORD, SEAT_WASH, feeLine } from '../view-model/libraryDisplay';
 
@@ -107,7 +114,11 @@ export function SeatGrid({
       {seats.map((cell) => {
         const s = cell.student;
         const label = s
-          ? t('library.seats.seatTaken', { seat: cell.number, name: s.name, fee: t(FEE_WORD[s.fee]) })
+          ? t('library.seats.seatTaken', {
+              seat: cell.number,
+              name: s.name,
+              fee: t(FEE_WORD[s.fee]),
+            })
           : t('library.seats.seatEmpty', { seat: cell.number });
         return (
           <UbPressable
@@ -117,7 +128,9 @@ export function SeatGrid({
             disabled={!onSeat}
             className={cn(
               'ds-num grid h-[var(--seat-p)] w-full place-items-center rounded-[8px] text-[12px] font-bold lg:h-[var(--seat-d)]',
-              s ? cn(SEAT_WASH[s.fee], 'text-text-primary') : 'border-[1.5px] border-dashed border-border-strong text-text-tertiary',
+              s
+                ? cn(SEAT_WASH[s.fee], 'text-text-primary')
+                : 'border-[1.5px] border-dashed border-border-strong text-text-tertiary',
               selected === cell.number && 'outline outline-2 outline-offset-1 outline-primary'
             )}
             data-testid="library-seat"

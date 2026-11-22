@@ -66,6 +66,8 @@ def overdue_today(job: Any, ctx: Any) -> dict:
     )
     notified = 0
     for tenant in tenants:
-        if "library" in effective_modules(tenant) and notify_overdue_today(tenant, tenant_today(tenant)):
+        if "library" in effective_modules(tenant) and notify_overdue_today(
+            tenant, tenant_today(tenant)
+        ):
             notified += 1
     return {"tenants": notified}

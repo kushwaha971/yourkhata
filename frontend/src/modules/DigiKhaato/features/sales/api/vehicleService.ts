@@ -50,9 +50,16 @@ export interface FitPart {
   readonly category: { readonly id: string; readonly name: string } | null;
 }
 
-export const listVehicles = async (q: string, signal?: AbortSignal): Promise<readonly VehicleRow[]> =>
-  (await api.get<{ data: { vehicles: VehicleRow[] } }>('/sales/vehicles', ubConfig({ signal, params: { q } }))).data.data
-    .vehicles;
+export const listVehicles = async (
+  q: string,
+  signal?: AbortSignal
+): Promise<readonly VehicleRow[]> =>
+  (
+    await api.get<{ data: { vehicles: VehicleRow[] } }>(
+      '/sales/vehicles',
+      ubConfig({ signal, params: { q } })
+    )
+  ).data.data.vehicles;
 
 export const getVehicle = async (number: string, signal?: AbortSignal): Promise<VehicleDetail> =>
   (

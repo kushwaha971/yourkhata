@@ -281,7 +281,11 @@ def _jewel(value: Any, _tenant: Any) -> dict:
             except InvalidOperation:
                 raise SettingError(["Enter a number."]) from None
             if not number.is_finite() or number < 0 or (ceiling is not None and number > ceiling):
-                raise SettingError(["Enter a percentage up to 100."] if ceiling else ["Enter an amount above zero."])
+                raise SettingError(
+                    ["Enter a percentage up to 100."]
+                    if ceiling
+                    else ["Enter an amount above zero."]
+                )
             raw = f"{number:.2f}"
         out[field] = raw
     if not out["pan_limit"] or Decimal(out["pan_limit"]) <= 0:
@@ -385,7 +389,21 @@ SETTINGS: dict[str, SettingSpec] = {
                 (lambda k: lambda bt: {"value": k in _preset(bt).features})(key),
                 _bool_value,
             )
-            for key in (*presets.SIGNUP_FEATURES, "orders", "part_numbers", "godowns", "addons", "serials", "rates", "jewellery", "sites", "schemes", "cafe_orders", "phone_orders", "loose_amount")
+            for key in (
+                *presets.SIGNUP_FEATURES,
+                "orders",
+                "part_numbers",
+                "godowns",
+                "addons",
+                "serials",
+                "rates",
+                "jewellery",
+                "sites",
+                "schemes",
+                "cafe_orders",
+                "phone_orders",
+                "loose_amount",
+            )
         ),
         SettingSpec(
             "parties.labels",
@@ -463,11 +481,7 @@ def specs_for(tenant: Any) -> dict[str, SettingSpec]:
     modules = _enabled_modules(tenant)
     return {
         **SETTINGS,
-        **{
-            key: spec
-            for key, spec in _MODULE_SETTINGS.items()
-            if key.split(".", 1)[0] in modules
-        },
+        **{key: spec for key, spec in _MODULE_SETTINGS.items() if key.split(".", 1)[0] in modules},
     }
 
 

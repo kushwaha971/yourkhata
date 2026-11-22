@@ -53,13 +53,13 @@ def _run(ctx: Any, clock: Any, day: dt.date) -> Any:
 
 
 @pytest.fixture
-def member(shop: Any) -> Any:  # noqa: F811
+def member(shop: Any) -> Any:  # noqa: F811 — reason: a pytest fixture named as a parameter
     """A customer of the GST shop with a tiny credit limit the dues invoice will cross."""
     return PartyFactory(tenant=shop, credit_limit=D("100.00"))
 
 
 @pytest.fixture
-def doc_plan(make_plan: Any, shop: Any) -> Any:  # noqa: F811
+def doc_plan(make_plan: Any, shop: Any) -> Any:  # noqa: F811 — reason: a pytest fixture named as a parameter
     """₹1,000 a month plus 18% GST (GST18, SAC 999723), invoiced through sales."""
 
     def _make(**overrides: Any) -> Any:

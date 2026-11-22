@@ -64,21 +64,38 @@ export function BorrowersPageContent(): React.JSX.Element {
           title={t('lending.borrowers.title')}
           actions={
             !canLend ? undefined : (
-            <UbStack direction="row" gap={2} className="max-lg:hidden">
-              <UbButton variant="outlineNeutral" icon={<FileUp className="h-4 w-4" aria-hidden />} onClick={() => router.push(`${ROUTES.IMPORTS}?kind=loans`)}>
-                {t('lending.borrowers.import')}
-              </UbButton>
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setAdding(true)}>
-                {t('lending.borrower.add')}
-              </UbButton>
-            </UbStack>
+              <UbStack direction="row" gap={2} className="max-lg:hidden">
+                <UbButton
+                  variant="outlineNeutral"
+                  icon={<FileUp className="h-4 w-4" aria-hidden />}
+                  onClick={() => router.push(`${ROUTES.IMPORTS}?kind=loans`)}
+                >
+                  {t('lending.borrowers.import')}
+                </UbButton>
+                <UbButton
+                  variant="primary"
+                  icon={<Plus className="h-4 w-4" aria-hidden />}
+                  onClick={() => setAdding(true)}
+                >
+                  {t('lending.borrower.add')}
+                </UbButton>
+              </UbStack>
             )
           }
           renderMobileActions={() => null}
         />
-        <UbSearchInput value={search} onChange={setSearch} placeholder={t('lending.borrowers.search')} aria-label={t('lending.borrowers.search')} />
+        <UbSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('lending.borrowers.search')}
+          aria-label={t('lending.borrowers.search')}
+        />
         {lend.borrowers.status === 'failed' && !lend.borrowers.data ? (
-          <UbEmptyState variant="error" title={t('lending.borrowers.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />
+          <UbEmptyState
+            variant="error"
+            title={t('lending.borrowers.error')}
+            action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>}
+          />
         ) : !lend.borrowers.data ? (
           <UbSkeleton variant="list" count={6} label={t('lending.common.loading')} />
         ) : rows.length === 0 ? (
@@ -89,21 +106,30 @@ export function BorrowersPageContent(): React.JSX.Element {
               variant="firstUse"
               title={t('lending.borrowers.none')}
               description={t('lending.borrowers.noneBody')}
-              action={canLend ? <UbButton onClick={() => setAdding(true)}>{t('lending.borrower.add')}</UbButton> : undefined}
+              action={
+                canLend ? (
+                  <UbButton onClick={() => setAdding(true)}>{t('lending.borrower.add')}</UbButton>
+                ) : undefined
+              }
             />
           )
         ) : (
           <List testId="lending-borrowers-list">
             {rows.map((b) => (
               <UbBox as="li" key={b.id}>
-                <UbPressable onClick={() => router.push(LENDING_ROUTES.borrower(b.id))} className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left">
+                <UbPressable
+                  onClick={() => router.push(LENDING_ROUTES.borrower(b.id))}
+                  className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left"
+                >
                   <UbAvatar name={b.name} size="sm" />
                   <UbStack gap={0} className="min-w-0 flex-1">
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
                       {b.name}
                     </UbText>
                     <UbText variant="inherit" truncate className="text-[12.5px] text-text-tertiary">
-                      {[b.work, b.route, t('lending.borrowers.loans', { count: b.loans })].filter(Boolean).join(' · ')}
+                      {[b.work, b.route, t('lending.borrowers.loans', { count: b.loans })]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </UbText>
                   </UbStack>
                   <UbStack gap={0} align="end" className="leading-[1.2]">
@@ -122,7 +148,15 @@ export function BorrowersPageContent(): React.JSX.Element {
           </List>
         )}
       </UbStack>
-      {canLend && <UbFab label={t('lending.borrower.add')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setAdding(true)} />}
+      {canLend && (
+        <UbFab
+          label={t('lending.borrower.add')}
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          mobileOnly
+          extended
+          onClick={() => setAdding(true)}
+        />
+      )}
       {adding && (
         <BorrowerDrawer
           onClose={() => setAdding(false)}

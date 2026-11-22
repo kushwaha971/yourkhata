@@ -88,11 +88,14 @@ function strategyFor(request, origin) {
 function pageFrom(network, saved) {
   return network.catch(function () {
     return saved().then(function (hit) {
-      return hit || new Response(
-        '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' +
-          '<title>No signal</title><p style="font-family:sans-serif;padding:24px">No signal. ' +
-          'Open the app again when you are back online.</p>',
-        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      return (
+        hit ||
+        new Response(
+          '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' +
+            '<title>No signal</title><p style="font-family:sans-serif;padding:24px">No signal. ' +
+            'Open the app again when you are back online.</p>',
+          { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        )
       );
     });
   });
@@ -102,19 +105,26 @@ if (typeof module !== 'undefined') {
   module.exports = { strategyFor: strategyFor, pageFrom: pageFrom, API_READS: API_READS };
 }
 
-if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' && typeof module === 'undefined') {
+if (
+  typeof self !== 'undefined' &&
+  typeof self.addEventListener === 'function' &&
+  typeof module === 'undefined'
+) {
   var tenant;
 
   var readTenant = function () {
     if (tenant !== undefined) return Promise.resolve(tenant);
-    return caches.open(META_CACHE).then(function (cache) {
-      return cache.match(TENANT_KEY).then(function (hit) {
-        return hit ? hit.text() : '';
+    return caches
+      .open(META_CACHE)
+      .then(function (cache) {
+        return cache.match(TENANT_KEY).then(function (hit) {
+          return hit ? hit.text() : '';
+        });
+      })
+      .then(function (id) {
+        tenant = id || null;
+        return tenant;
       });
-    }).then(function (id) {
-      tenant = id || null;
-      return tenant;
-    });
   };
 
   var writeTenant = function (id) {
@@ -128,7 +138,11 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
     return caches.open(cacheName).then(function (cache) {
       return cache.keys().then(function (keys) {
         if (keys.length <= limit) return undefined;
-        return Promise.all(keys.slice(0, keys.length - limit).map(function (k) { return cache.delete(k); }));
+        return Promise.all(
+          keys.slice(0, keys.length - limit).map(function (k) {
+            return cache.delete(k);
+          })
+        );
       });
     });
   };
@@ -137,26 +151,41 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
     return caches.keys().then(function (names) {
       return Promise.all(
         names
-          .filter(function (n) { return n.indexOf(API_PREFIX) === 0 && n !== keep; })
-          .map(function (n) { return caches.delete(n); })
+          .filter(function (n) {
+            return n.indexOf(API_PREFIX) === 0 && n !== keep;
+          })
+          .map(function (n) {
+            return caches.delete(n);
+          })
       );
     });
   };
 
-  self.addEventListener('install', function () { self.skipWaiting(); });
+  self.addEventListener('install', function () {
+    self.skipWaiting();
+  });
 
   self.addEventListener('activate', function (event) {
     event.waitUntil(
-      caches.keys().then(function (names) {
-        return Promise.all(
-          names
-            .filter(function (n) {
-              return (n.indexOf('ub-static-') === 0 && n !== STATIC_CACHE) ||
-                (n.indexOf('ub-pages-') === 0 && n !== PAGE_CACHE);
-            })
-            .map(function (n) { return caches.delete(n); })
-        );
-      }).then(function () { return self.clients.claim(); })
+      caches
+        .keys()
+        .then(function (names) {
+          return Promise.all(
+            names
+              .filter(function (n) {
+                return (
+                  (n.indexOf('ub-static-') === 0 && n !== STATIC_CACHE) ||
+                  (n.indexOf('ub-pages-') === 0 && n !== PAGE_CACHE)
+                );
+              })
+              .map(function (n) {
+                return caches.delete(n);
+              })
+          );
+        })
+        .then(function () {
+          return self.clients.claim();
+        })
     );
   });
 
@@ -175,8 +204,12 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
     } else if (data.type === 'signed-out') {
       event.waitUntil(
         writeTenant(null)
-          .then(function () { return clearApi(null); })
-          .then(function () { return caches.delete(PAGE_CACHE); })
+          .then(function () {
+            return clearApi(null);
+          })
+          .then(function () {
+            return caches.delete(PAGE_CACHE);
+          })
       );
     }
   });
@@ -202,7 +235,9 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
     var network = fetch(request).then(function (response) {
       if (response.ok && response.type === 'basic') {
         var copy = response.clone();
-        caches.open(PAGE_CACHE).then(function (cache) { cache.put(key, copy); });
+        caches.open(PAGE_CACHE).then(function (cache) {
+          cache.put(key, copy);
+        });
       }
       return response;
     });
@@ -230,7 +265,9 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
       .then(function (response) {
         if (response.ok) {
           var copy = response.clone();
-          caches.open(name).then(function (cache) { cache.put(request, copy); });
+          caches.open(name).then(function (cache) {
+            cache.put(request, copy);
+          });
         }
         return response;
       })

@@ -17,7 +17,11 @@ export interface CafeOrder {
   readonly id: string;
   readonly kind: CafeOrderKind;
   readonly number: string;
-  readonly party: { readonly id: string; readonly name: string; readonly mobile: string | null } | null;
+  readonly party: {
+    readonly id: string;
+    readonly name: string;
+    readonly mobile: string | null;
+  } | null;
   readonly lines: readonly CafeOrderLine[];
   readonly total: string;
   readonly status: CafeOrderStatus;
@@ -68,16 +72,26 @@ export interface CafeOrderList {
   readonly soon: readonly CafeOrder[];
 }
 
-export const listCafeOrders = async (scope: CafeOrderScope, signal?: AbortSignal): Promise<CafeOrderList> => {
-  const res = await api.get<{ data: Wire[]; meta: { counts: CafeOrderList['counts']; soon: Wire[] } }>(
-    '/sales/cafe-orders',
-    ubConfig({ params: { scope }, signal, suppressErrorSnackbar: true })
-  );
-  return { rows: res.data.data.map(toOrder), counts: res.data.meta.counts, soon: res.data.meta.soon.map(toOrder) };
+export const listCafeOrders = async (
+  scope: CafeOrderScope,
+  signal?: AbortSignal
+): Promise<CafeOrderList> => {
+  const res = await api.get<{
+    data: Wire[];
+    meta: { counts: CafeOrderList['counts']; soon: Wire[] };
+  }>('/sales/cafe-orders', ubConfig({ params: { scope }, signal, suppressErrorSnackbar: true }));
+  return {
+    rows: res.data.data.map(toOrder),
+    counts: res.data.meta.counts,
+    soon: res.data.meta.soon.map(toOrder),
+  };
 };
 
 export const getCafeOrder = async (id: string, signal?: AbortSignal): Promise<CafeOrder> => {
-  const res = await api.get<{ data: Wire }>(`/sales/cafe-orders/${id}`, ubConfig({ signal, suppressErrorSnackbar: true }));
+  const res = await api.get<{ data: Wire }>(
+    `/sales/cafe-orders/${id}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
   return toOrder(res.data.data);
 };
 
@@ -85,7 +99,12 @@ export interface CafeOrderDraft {
   readonly kind: CafeOrderKind;
   readonly table: string;
   readonly partyId: string;
-  readonly lines: readonly { readonly item_id: string; readonly qty: string; readonly rate?: string; readonly note?: string }[];
+  readonly lines: readonly {
+    readonly item_id: string;
+    readonly qty: string;
+    readonly rate?: string;
+    readonly note?: string;
+  }[];
   /** `YYYY-MM-DDTHH:mm`, the shop's wall clock. */
   readonly readyAt: string;
   readonly fulfil: 'pickup' | 'deliver';
@@ -119,7 +138,9 @@ export const updateCafeOrder = async (
 };
 
 /** "Token 12", "Table 2", "ADV-0001" — what the counter calls the order. */
-export const orderLabelParams = (o: Pick<CafeOrder, 'kind' | 'number'>): { kind: CafeOrderKind; number: string } => ({
+export const orderLabelParams = (
+  o: Pick<CafeOrder, 'kind' | 'number'>
+): { kind: CafeOrderKind; number: string } => ({
   kind: o.kind,
   number: o.number,
 });

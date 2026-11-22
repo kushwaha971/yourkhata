@@ -322,7 +322,10 @@ export function ReportPageContent(): React.JSX.Element {
           />
         )}
         {s && !badRange && (
-          <UbBox className="grid grid-cols-2 gap-2.5 lg:grid-cols-4" data-testid="moneybook-report-figures">
+          <UbBox
+            className="grid grid-cols-2 gap-2.5 lg:grid-cols-4"
+            data-testid="moneybook-report-figures"
+          >
             <Figure
               label={t('moneybook.report.youGave')}
               value={rupees(s.youGave)}

@@ -29,6 +29,6 @@ def test_variant_line_comes_from_the_row():
 
 
 def test_quantity_has_no_trailing_zeros():
-    """"12.000" in a cell would read as twelve thousand to a shopkeeper."""
+    """ "12.000" in a cell would read as twelve thousand to a shopkeeper."""
     assert kind_column._qty(Decimal("12.000")) == "12"
     assert kind_column._qty(Decimal("1.500")) == "1.5"

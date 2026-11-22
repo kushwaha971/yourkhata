@@ -21,7 +21,12 @@ class LendingConfig(AppConfig):
         from apps.lending.services import seed_lending
         from apps.notifications.constants import NotificationCategory, NotificationSeverity
         from apps.notifications.services.notify import NotificationType, register_notification_type
-        from apps.platform_app.apps_registry import AppSpec, SetupStep, register_app, register_app_setup
+        from apps.platform_app.apps_registry import (
+            AppSpec,
+            SetupStep,
+            register_app,
+            register_app_setup,
+        )
         from apps.platform_app.services.guards import register_module_enable_hook
 
         register_module_enable_hook("lending", seed_lending)
@@ -47,12 +52,27 @@ class LendingConfig(AppConfig):
             from apps.lending.models import Borrower, Loan, Route
 
             return [
-                SetupStep(key="loan", label_id="lending.setup.loan", path="/lending/loans/new",
-                          done=Loan.objects.filter(tenant=tenant).exists(), permission="lending.loan.create"),
-                SetupStep(key="routes", label_id="lending.setup.routes", path="/lending/routes",
-                          done=Route.objects.filter(tenant=tenant).exists(), permission="lending.settings.manage"),
-                SetupStep(key="borrower", label_id="lending.setup.borrower", path="/lending/borrowers",
-                          done=Borrower.objects.filter(tenant=tenant).exists(), permission="lending.loan.create"),
+                SetupStep(
+                    key="loan",
+                    label_id="lending.setup.loan",
+                    path="/lending/loans/new",
+                    done=Loan.objects.filter(tenant=tenant).exists(),
+                    permission="lending.loan.create",
+                ),
+                SetupStep(
+                    key="routes",
+                    label_id="lending.setup.routes",
+                    path="/lending/routes",
+                    done=Route.objects.filter(tenant=tenant).exists(),
+                    permission="lending.settings.manage",
+                ),
+                SetupStep(
+                    key="borrower",
+                    label_id="lending.setup.borrower",
+                    path="/lending/borrowers",
+                    done=Borrower.objects.filter(tenant=tenant).exists(),
+                    permission="lending.loan.create",
+                ),
             ]
 
         register_app_setup("lending", lending_setup)

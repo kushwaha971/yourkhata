@@ -7,7 +7,11 @@ import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { UbLink, UbStack, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveTenant, selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import {
+  selectActiveTenant,
+  selectAppsAddable,
+  selectSessionTenants,
+} from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 
@@ -24,7 +28,9 @@ import { useNavigation } from '../useNavigation';
  * only when there is somewhere to go — a second app, or an app to add — so a
  * one-app member's rail is exactly the app.
  */
-export function SidebarAppsRow({ onNavigate }: Readonly<{ onNavigate?: () => void }>): React.JSX.Element | null {
+export function SidebarAppsRow({
+  onNavigate,
+}: Readonly<{ onNavigate?: () => void }>): React.JSX.Element | null {
   const { t } = useTranslation();
   const { apps } = useNavigation();
   const pathname = usePathname();

@@ -46,11 +46,20 @@ export function MemberAccessSheet({
   app,
   onClose,
   onSaved,
-}: Readonly<{ member: Member; app: TeamApp; onClose: () => void; onSaved: () => void }>): React.JSX.Element {
+}: Readonly<{
+  member: Member;
+  app: TeamApp;
+  onClose: () => void;
+  onSaved: () => void;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const business = useAppSelector(selectActiveTenant)?.name ?? '';
-  const name = accountDisplayName({ name: member.fullName, email: member.email, mobile: member.mobile });
+  const name = accountDisplayName({
+    name: member.fullName,
+    email: member.email,
+    mobile: member.mobile,
+  });
   const groupLabelId = useId();
   const [access, setAccess] = useState<MemberAccess | null>(null);
   const [groups, setGroups] = useState<readonly AccessGroup[]>([]);
@@ -63,7 +72,10 @@ export function MemberAccessSheet({
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([getMemberAccess(member.id, app.code, controller.signal), getAccessGroups(app.code, controller.signal)])
+    Promise.all([
+      getMemberAccess(member.id, app.code, controller.signal),
+      getAccessGroups(app.code, controller.signal),
+    ])
       .then(([mine, all]) => {
         setFailed(false);
         setAccess(mine);
@@ -78,7 +90,9 @@ export function MemberAccessSheet({
 
   const group = groups.find((g) => g.id === groupId) ?? null;
   const groupLevelOf = useMemo(
-    () => (part: string): AccessLevel => (group?.levels[part] as AccessLevel | undefined) ?? 'full',
+    () =>
+      (part: string): AccessLevel =>
+        (group?.levels[part] as AccessLevel | undefined) ?? 'full',
     [group]
   );
   const parts = access?.parts ?? [];
@@ -88,7 +102,11 @@ export function MemberAccessSheet({
     setGroupId(id);
     // A new group brings its own levels; the member's differences start again.
     const next = groups.find((g) => g.id === id);
-    setLevels(Object.fromEntries(parts.map((p) => [p.part, (next?.levels[p.part] as AccessLevel | undefined) ?? 'full'])));
+    setLevels(
+      Object.fromEntries(
+        parts.map((p) => [p.part, (next?.levels[p.part] as AccessLevel | undefined) ?? 'full'])
+      )
+    );
   };
 
   const save = async (): Promise<void> => {
@@ -103,14 +121,21 @@ export function MemberAccessSheet({
       dispatch(
         showSnackbar({
           severity: 'success',
-          message: canUse ? t('team.access.memberSaved', { name, app: app.label }) : t('team.access.memberOff', { name, app: app.label }),
+          message: canUse
+            ? t('team.access.memberSaved', { name, app: app.label })
+            : t('team.access.memberOff', { name, app: app.label }),
         })
       );
       onSaved();
     } catch (e) {
       const error = toApiError(e, 'team.access.error');
       const lastApp = (error.details as { can_use?: string[] } | undefined)?.can_use?.[0];
-      dispatch(showSnackbar({ severity: 'error', message: lastApp ? t('team.access.lastApp') : t('team.access.error') }));
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          message: lastApp ? t('team.access.lastApp') : t('team.access.error'),
+        })
+      );
     } finally {
       setSaving(false);
     }
@@ -128,7 +153,13 @@ export function MemberAccessSheet({
           <UbButton variant="secondary" onClick={onClose} disabled={saving}>
             {t('common.action.cancel')}
           </UbButton>
-          <UbButton onClick={() => void save()} busy={saving} busyLabel={t('team.access.saving')} disabled={!access} data-testid="member-access-save">
+          <UbButton
+            onClick={() => void save()}
+            busy={saving}
+            busyLabel={t('team.access.saving')}
+            disabled={!access}
+            data-testid="member-access-save"
+          >
             {t('team.access.save')}
           </UbButton>
         </>
@@ -138,7 +169,9 @@ export function MemberAccessSheet({
         <UbEmptyState
           variant="error"
           title={t('team.access.loadError')}
-          action={<UbButton onClick={() => setAttempt((n) => n + 1)}>{t('common.action.retry')}</UbButton>}
+          action={
+            <UbButton onClick={() => setAttempt((n) => n + 1)}>{t('common.action.retry')}</UbButton>
+          }
         />
       ) : !access ? (
         <UbSkeleton variant="list" count={3} label={t('team.access.loading')} />
@@ -158,7 +191,12 @@ export function MemberAccessSheet({
           {canUse && (
             <>
               <UbStack gap={1.5}>
-                <UbText as="span" variant="inherit" className="text-[13px] font-medium" id={groupLabelId}>
+                <UbText
+                  as="span"
+                  variant="inherit"
+                  className="text-[13px] font-medium"
+                  id={groupLabelId}
+                >
                   {t('team.access.group')}
                 </UbText>
                 <UbSelect
@@ -173,7 +211,11 @@ export function MemberAccessSheet({
                 />
               </UbStack>
               {changes.length > 0 && (
-                <UbStack gap={1} className="rounded-card bg-warning-dim p-4" data-testid="member-access-changes">
+                <UbStack
+                  gap={1}
+                  className="rounded-card bg-warning-dim p-4"
+                  data-testid="member-access-changes"
+                >
                   <UbText as="span" variant="inherit" className="font-semibold">
                     {t('team.access.changes', { count: changes.length })}
                   </UbText>
@@ -181,7 +223,11 @@ export function MemberAccessSheet({
                     size="sm"
                     variant="outlineNeutral"
                     className="mt-1 self-start"
-                    onClick={() => setLevels(Object.fromEntries(parts.map((p) => [p.part, groupLevelOf(p.part)])))}
+                    onClick={() =>
+                      setLevels(
+                        Object.fromEntries(parts.map((p) => [p.part, groupLevelOf(p.part)]))
+                      )
+                    }
                   >
                     {t('team.access.useGroupAgain')}
                   </UbButton>

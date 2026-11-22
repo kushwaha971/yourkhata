@@ -22,7 +22,7 @@ def became_late(tenant: Any, today: dt.date) -> list:
     loans = selectors.active_loans(tenant)
     pos = selectors.positions(tenant, loans, today)
     yesterday = today - dt.timedelta(days=1)
-    return [l for l in loans if pos[l.pk].late_since == yesterday]
+    return [ln for ln in loans if pos[ln.pk].late_since == yesterday]
 
 
 def notify_late_today(tenant: Any, today: dt.date) -> bool:
@@ -40,7 +40,7 @@ def notify_late_today(tenant: Any, today: dt.date) -> bool:
             LATE_TODAY,
             params={"count": len(late)},
             group_key=f"lending_late:{today.isoformat()}",
-            ids=[str(l.pk) for l in late],
+            ids=[str(ln.pk) for ln in late],
         )
     return True
 
@@ -58,6 +58,8 @@ def late_today(job: Any, ctx: Any) -> dict:
     )
     notified = 0
     for tenant in tenants:
-        if "lending" in effective_modules(tenant) and notify_late_today(tenant, tenant_today(tenant)):
+        if "lending" in effective_modules(tenant) and notify_late_today(
+            tenant, tenant_today(tenant)
+        ):
             notified += 1
     return {"tenants": notified}

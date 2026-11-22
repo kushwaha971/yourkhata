@@ -19,7 +19,11 @@ const REASONS = ['closed', 'away', 'noMoney', 'later'] as const;
  * Not paid at the door (I8): why, in one tap, and the day they promised. The
  * stop moves to "Not paid" in the round; collecting later the same day clears it.
  */
-export function NotPaidSheet({ loan, onClose, onSaved }: Readonly<{ loan: Loan; onClose: () => void; onSaved?: () => void }>) {
+export function NotPaidSheet({
+  loan,
+  onClose,
+  onSaved,
+}: Readonly<{ loan: Loan; onClose: () => void; onSaved?: () => void }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const today = todayInTenantTz();
@@ -30,16 +34,29 @@ export function NotPaidSheet({ loan, onClose, onSaved }: Readonly<{ loan: Loan; 
 
   const save = async () => {
     setSaving(true);
-    const action = await dispatch(notPaid({ loanId: loan.id, reason: t(`lending.notPaid.reason.${reason}`), promisedOn, key }));
+    const action = await dispatch(
+      notPaid({ loanId: loan.id, reason: t(`lending.notPaid.reason.${reason}`), promisedOn, key })
+    );
     setSaving(false);
     if (notPaid.fulfilled.match(action)) {
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'lending.notPaid.saved', params: { name: loan.borrower } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'lending.notPaid.saved',
+          params: { name: loan.borrower },
+        })
+      );
       onSaved?.();
       onClose();
       return;
     }
-    dispatch(showSnackbar({ severity: 'error', message: action.payload?.message ?? t('lending.notPaid.error') }));
+    dispatch(
+      showSnackbar({
+        severity: 'error',
+        message: action.payload?.message ?? t('lending.notPaid.error'),
+      })
+    );
   };
 
   return (
@@ -49,7 +66,12 @@ export function NotPaidSheet({ loan, onClose, onSaved }: Readonly<{ loan: Loan; 
       title={t('lending.notPaid.title', { name: loan.borrower })}
       closeLabel={t('lending.common.close')}
       footer={
-        <UbButton size="lg" busy={saving} onClick={() => void save()} data-testid="lending-not-paid-save">
+        <UbButton
+          size="lg"
+          busy={saving}
+          onClick={() => void save()}
+          data-testid="lending-not-paid-save"
+        >
           {t('lending.notPaid.save')}
         </UbButton>
       }

@@ -134,8 +134,20 @@ const PARTS = [
   { part: 'purchases', levels: ['off', 'view', 'full'] },
   { part: 'stock', levels: ['off', 'view', 'full'] },
 ];
-const COUNTER = { id: 'g1', app: 'shop', name: 'Counter staff', isDefault: true, levels: { sales: 'full', purchases: 'off', stock: 'view' }, members: 2 };
-const PAYLOAD = { app: 'shop', parts: PARTS, groups: [COUNTER], suggested: { name: 'Counter staff', levels: COUNTER.levels } };
+const COUNTER = {
+  id: 'g1',
+  app: 'shop',
+  name: 'Counter staff',
+  isDefault: true,
+  levels: { sales: 'full', purchases: 'off', stock: 'view' },
+  members: 2,
+};
+const PAYLOAD = {
+  app: 'shop',
+  parts: PARTS,
+  groups: [COUNTER],
+  suggested: { name: 'Counter staff', levels: COUNTER.levels },
+};
 const MINE = {
   app: 'shop',
   canUse: true,
@@ -152,14 +164,30 @@ const MINE = {
 
 beforeEach(() => {
   mockPath = '/dashboard';
-  invitations.listInvitations.mockResolvedValue({ rows: [], meta: { page: 1, pageSize: 25, total: 0, totalPages: 1 } });
+  invitations.listInvitations.mockResolvedValue({
+    rows: [],
+    meta: { page: 1, pageSize: 25, total: 0, totalPages: 1 },
+  });
   access.getAccessGroups.mockResolvedValue(PAYLOAD);
   access.getMemberAccess.mockResolvedValue(MINE);
   access.setMemberAccess.mockResolvedValue(MINE);
   access.createAccessGroup.mockResolvedValue(COUNTER);
   access.updateAccessGroup.mockResolvedValue(COUNTER);
   memberService.listMembers.mockResolvedValue(
-    page(ROWS.map((r) => ({ ...r, access: r.role === 'owner' || r.role === 'admin' ? null : { canUse: true, groupId: 'g1', groupName: 'Counter staff', changes: r.id === 'm-staff' ? 1 : 0 } })))
+    page(
+      ROWS.map((r) => ({
+        ...r,
+        access:
+          r.role === 'owner' || r.role === 'admin'
+            ? null
+            : {
+                canUse: true,
+                groupId: 'g1',
+                groupName: 'Counter staff',
+                changes: r.id === 'm-staff' ? 1 : 0,
+              },
+      }))
+    )
   );
 });
 
@@ -168,7 +196,12 @@ describe('Team follows the open business and app', () => {
     signInAs('u-owner', 'owner');
     renderWithProviders(<TeamPageContent />);
     expect(await screen.findByText('Business · Kumar Stores')).toBeInTheDocument();
-    await waitFor(() => expect(memberService.listMembers).toHaveBeenCalledWith(expect.objectContaining({ app: 'shop' }), expect.anything()));
+    await waitFor(() =>
+      expect(memberService.listMembers).toHaveBeenCalledWith(
+        expect.objectContaining({ app: 'shop' }),
+        expect.anything()
+      )
+    );
     // Each member's group in Business, and the one who differs from it.
     expect((await screen.findAllByText('Counter staff')).length).toBeGreaterThan(0);
     expect(screen.getByText('1 change from the group')).toBeInTheDocument();
@@ -178,7 +211,9 @@ describe('Team follows the open business and app', () => {
     signInAs('u-owner', 'owner');
     renderWithProviders(<TeamPageContent />);
     await userEvent.click(await screen.findByRole('tab', { name: 'Access groups' }));
-    expect(await screen.findByText('Full: Sales · View only: Stock · Off: Purchases')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Full: Sales · View only: Stock · Off: Purchases')
+    ).toBeInTheDocument();
     expect(screen.getByText('Default')).toBeInTheDocument();
     expect(access.getAccessGroups).toHaveBeenCalledWith('shop', expect.anything());
   });
@@ -194,7 +229,11 @@ describe('Team follows the open business and app', () => {
     expect(name).toHaveValue('Counter staff');
     await userEvent.click(screen.getByTestId('access-group-save'));
     await waitFor(() =>
-      expect(access.createAccessGroup).toHaveBeenCalledWith('shop', { name: 'Counter staff', isDefault: false, levels: COUNTER.levels })
+      expect(access.createAccessGroup).toHaveBeenCalledWith('shop', {
+        name: 'Counter staff',
+        isDefault: false,
+        levels: COUNTER.levels,
+      })
     );
   });
 
@@ -216,14 +255,18 @@ describe('Team follows the open business and app', () => {
     const [edit] = await screen.findAllByTestId('access-group-edit');
     if (!edit) throw new Error('no Edit button');
     await userEvent.click(edit);
-    expect(await screen.findByRole('button', { name: 'Save · 2 members change' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Save · 2 members change' })
+    ).toBeInTheDocument();
   });
 });
 
 describe('one member\u2019s access in the open app', () => {
   const openAccess = async (name: string) => {
     await userEvent.click(await screen.findByRole('button', { name: `Actions for ${name}` }));
-    await userEvent.click(await within(screen.getByRole('dialog', { name })).findByRole('button', { name: /^Access/ }));
+    await userEvent.click(
+      await within(screen.getByRole('dialog', { name })).findByRole('button', { name: /^Access/ })
+    );
     return screen.findByTestId('member-access');
   };
 
@@ -236,18 +279,32 @@ describe('one member\u2019s access in the open app', () => {
     await userEvent.click(within(sheet).getByRole('button', { name: 'Use group again' }));
     expect(within(sheet).queryByText('Group: View only')).not.toBeInTheDocument();
     await userEvent.click(screen.getByTestId('member-access-save'));
-    await waitFor(() => expect(access.setMemberAccess).toHaveBeenCalledWith('m-staff', 'shop', { groupId: 'g1', exceptions: {} }));
+    await waitFor(() =>
+      expect(access.setMemberAccess).toHaveBeenCalledWith('m-staff', 'shop', {
+        groupId: 'g1',
+        exceptions: {},
+      })
+    );
   });
 
   it('sends a part changed from the group as an exception', async () => {
-    access.getMemberAccess.mockResolvedValue({ ...MINE, changes: 0, parts: MINE.parts.map((p) => ({ ...p, level: p.groupLevel })) });
+    access.getMemberAccess.mockResolvedValue({
+      ...MINE,
+      changes: 0,
+      parts: MINE.parts.map((p) => ({ ...p, level: p.groupLevel })),
+    });
     signInAs('u-owner', 'owner');
     renderWithProviders(<MembersSection />);
     const sheet = await openAccess('Ramesh Kumar');
-    await userEvent.click(within(within(sheet).getByTestId('part-purchases')).getByRole('button', { name: 'View only' }));
+    await userEvent.click(
+      within(within(sheet).getByTestId('part-purchases')).getByRole('button', { name: 'View only' })
+    );
     await userEvent.click(screen.getByTestId('member-access-save'));
     await waitFor(() =>
-      expect(access.setMemberAccess).toHaveBeenCalledWith('m-staff', 'shop', { groupId: 'g1', exceptions: { purchases: 'view' } })
+      expect(access.setMemberAccess).toHaveBeenCalledWith('m-staff', 'shop', {
+        groupId: 'g1',
+        exceptions: { purchases: 'view' },
+      })
     );
   });
 
@@ -257,7 +314,13 @@ describe('one member\u2019s access in the open app', () => {
     const sheet = await openAccess('Ramesh Kumar');
     await userEvent.click(within(sheet).getByRole('switch', { name: /Can use Business here/ }));
     await userEvent.click(screen.getByTestId('member-access-save'));
-    await waitFor(() => expect(access.setMemberAccess).toHaveBeenCalledWith('m-staff', 'shop', expect.objectContaining({ canUse: false })));
+    await waitFor(() =>
+      expect(access.setMemberAccess).toHaveBeenCalledWith(
+        'm-staff',
+        'shop',
+        expect.objectContaining({ canUse: false })
+      )
+    );
   });
 
   it('offers no Access row in a person\u2019s own app (Money book)', async () => {
@@ -265,7 +328,11 @@ describe('one member\u2019s access in the open app', () => {
     signInAs('u-owner', 'owner');
     renderWithProviders(<MembersSection />);
     await userEvent.click(await screen.findByRole('button', { name: 'Actions for Ramesh Kumar' }));
-    expect(within(screen.getByRole('dialog', { name: 'Ramesh Kumar' })).queryByRole('button', { name: /^Access/ })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('dialog', { name: 'Ramesh Kumar' })).queryByRole('button', {
+        name: /^Access/,
+      })
+    ).not.toBeInTheDocument();
   });
 });
 

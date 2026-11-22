@@ -7,7 +7,6 @@ from uuid import uuid4
 
 import pytest
 from django.db import connection, transaction
-from django.db.utils import InternalError
 
 from apps.moneybook.models import Entry, Person
 from apps.moneybook.services import recalc_balance
@@ -17,7 +16,9 @@ ROOT = "/api/v1/moneybook/"
 
 
 def post(client, path, data=None, key=None):
-    return client.post(ROOT + path, data or {}, format="json", HTTP_IDEMPOTENCY_KEY=key or str(uuid4()))
+    return client.post(
+        ROOT + path, data or {}, format="json", HTTP_IDEMPOTENCY_KEY=key or str(uuid4())
+    )
 
 
 @pytest.fixture
@@ -80,7 +81,11 @@ def test_a_future_date_is_refused_and_a_past_one_kept(me):
     """The design lets the date change; it may not be after today."""
     client, _ = me
     pid = add(client)
-    r = post(client, f"people/{pid}/entries", {"kind": "gave", "amount": "10", "entry_date": "2999-01-01"})
+    r = post(
+        client,
+        f"people/{pid}/entries",
+        {"kind": "gave", "amount": "10", "entry_date": "2999-01-01"},
+    )
     assert r.status_code == 400
     body = entry(client, pid, "gave", "10", entry_date="2026-10-05")
     assert body["data"]["entry_date"] == "2026-10-05"
@@ -102,7 +107,11 @@ def test_a_correction_moves_by_the_difference_and_keeps_the_original(me):
     pid = add(client)
     wrong = entry(client, pid, "gave", "1500", note="Cement")["data"]["id"]
     entry(client, pid, "got", "400")
-    r = post(client, f"entries/{wrong}/replace", {"kind": "gave", "amount": "1000", "note": "Cement", "reason": "Typo"})
+    r = post(
+        client,
+        f"entries/{wrong}/replace",
+        {"kind": "gave", "amount": "1000", "note": "Cement", "reason": "Typo"},
+    )
     assert r.status_code == 201, r.content
     assert r.json()["meta"]["person"]["balance"] == "600.00"
     live = client.get(ROOT + f"people/{pid}/entries").json()["data"]
@@ -120,7 +129,10 @@ def test_a_corrected_entry_keeps_its_place_so_no_balance_lies(me):
     entry(client, pid, "got", "400")
     post(client, f"entries/{wrong}/replace", {"kind": "gave", "amount": "1000"})
     live = client.get(ROOT + f"people/{pid}/entries").json()["data"]
-    assert [(e["amount"], e["balance_after"]) for e in live] == [("400.00", "600.00"), ("1000.00", "1000.00")]
+    assert [(e["amount"], e["balance_after"]) for e in live] == [
+        ("400.00", "600.00"),
+        ("1000.00", "1000.00"),
+    ]
 
 
 def test_removing_an_entry_undoes_it_once(me):
@@ -128,7 +140,12 @@ def test_removing_an_entry_undoes_it_once(me):
     client, _ = me
     pid = add(client)
     eid = entry(client, pid, "got", "400")["data"]["id"]
-    assert post(client, f"entries/{eid}/remove", {"reason": "Twice"}).json()["meta"]["person"]["balance"] == "0.00"
+    assert (
+        post(client, f"entries/{eid}/remove", {"reason": "Twice"}).json()["meta"]["person"][
+            "balance"
+        ]
+        == "0.00"
+    )
     again = post(client, f"entries/{eid}/remove", {"reason": "Twice"})
     assert again.status_code == 409
     assert again.json()["error"]["code"] == "entry_already_reversed"
@@ -138,7 +155,10 @@ def test_the_cached_balance_equals_a_full_recount(me):
     """A cache moved one entry at a time must reach what every row adds up to."""
     client, _ = me
     pid = add(client)
-    ids = [entry(client, pid, k, a)["data"]["id"] for k, a in [("gave", "999.99"), ("got", "120.50"), ("gave", "7")]]
+    ids = [
+        entry(client, pid, k, a)["data"]["id"]
+        for k, a in [("gave", "999.99"), ("got", "120.50"), ("gave", "7")]
+    ]
     post(client, f"entries/{ids[0]}/replace", {"kind": "got", "amount": "50"})
     post(client, f"entries/{ids[1]}/remove", {})
     person = Person.objects.get(pk=pid)
@@ -250,7 +270,11 @@ def test_a_reminder_is_the_owners_words_and_is_only_logged(me):
     assert text.startswith("Hi Suresh, a gentle reminder: ₹4,500 is pending")
     assert "rk@upi" in text and text.endswith("— Ravi")
     assert "YourKhata" not in text and "yourkhata" not in text
-    r = post(client, "reminders", {"person_id": pid, "tone": "polite", "channel": "whatsapp", "text": text})
+    r = post(
+        client,
+        "reminders",
+        {"person_id": pid, "tone": "polite", "channel": "whatsapp", "text": text},
+    )
     assert r.status_code == 201
     assert client.get(ROOT + "reminders").json()["data"][0]["person_name"] == "Suresh Jadhav"
 
@@ -259,7 +283,9 @@ def test_no_reminder_to_someone_who_owes_nothing(me):
     client, _ = me
     pid = add(client)
     entry(client, pid, "got", "100")
-    r = post(client, "reminders", {"person_id": pid, "tone": "polite", "channel": "sms", "text": "Hi"})
+    r = post(
+        client, "reminders", {"person_id": pid, "tone": "polite", "channel": "sms", "text": "Hi"}
+    )
     assert r.status_code == 409 and r.json()["error"]["code"] == "nothing_to_remind"
 
 
@@ -281,7 +307,10 @@ def test_a_reminder_is_unsigned_unless_the_owner_signs_it(me):
     pid = add(client, "Suresh Jadhav")
     entry(client, pid, "gave", "4500", entry_date="2026-10-22")
     text = client.get(ROOT + f"reminders/text?person={pid}&tone=polite").json()["data"]["text"]
-    assert text == "Hi Suresh, a gentle reminder: ₹4,500 is pending from our account (last entry 22 Oct). Thanks!"
+    assert (
+        text
+        == "Hi Suresh, a gentle reminder: ₹4,500 is pending from our account (last entry 22 Oct). Thanks!"
+    )
 
 
 def test_the_reminder_is_written_in_the_language_on_screen(me):
@@ -290,7 +319,11 @@ def test_the_reminder_is_written_in_the_language_on_screen(me):
     client, _ = me
     pid = add(client, "Suresh Jadhav")
     entry(client, pid, "gave", "4500", entry_date="2026-10-22")
-    hi = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=hi").json()["data"]["text"]
+    hi = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=hi").json()["data"][
+        "text"
+    ]
     assert hi.startswith("नमस्ते Suresh") and "₹4,500" in hi
-    en = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=en").json()["data"]["text"]
+    en = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=en").json()["data"][
+        "text"
+    ]
     assert en.startswith("Hi Suresh")

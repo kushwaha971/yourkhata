@@ -60,7 +60,17 @@ export interface UbFabProps extends Omit<
 }
 
 const UbFabInner = forwardRef<HTMLButtonElement, UbFabProps>(function UbFabInner(
-  { label, icon, mobileOnly = false, extended = false, className, type = 'button', disabled, title, ...rest },
+  {
+    label,
+    icon,
+    mobileOnly = false,
+    extended = false,
+    className,
+    type = 'button',
+    disabled,
+    title,
+    ...rest
+  },
   ref
 ) {
   // CR-2026-09-29-SEC-A — a FAB is always a primary write ("Add party").

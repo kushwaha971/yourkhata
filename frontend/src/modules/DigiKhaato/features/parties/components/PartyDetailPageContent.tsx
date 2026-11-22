@@ -99,8 +99,7 @@ const ShopPersonRecordsLazy = dynamic(
 
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -115,8 +114,7 @@ const LedgerEntryDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/ledger/components/LedgerEntryDrawer').then(
       (m) => m.LedgerEntryDrawer
     ),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /** Shop gap §1.6 — loaded only for a customer of a business with inventory. */
@@ -141,8 +139,7 @@ const OpeningBalanceDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/ledger/components/OpeningBalanceDrawer').then(
       (m) => m.OpeningBalanceDrawer
     ),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 export interface PartyDetailPageContentProps {
@@ -465,10 +462,7 @@ export function PartyDetailPageContent({
   /* PAY-01 — against bills, for a role that records payments; PAY-03's QR is a
      read (§12), offered while the party owes the shop something. */
   const canPay =
-    Boolean(party) &&
-    !isArchived &&
-    hasModule('payments') &&
-    can('payments.payment.write');
+    Boolean(party) && !isArchived && hasModule('payments') && can('payments.payment.write');
   /* The figure of the book this page reads: the Shop's from the detail once it has
      landed (a cached list row is the list's own book until then). */
   const shopFacts = shown.shop;
@@ -768,7 +762,10 @@ export function PartyDetailPageContent({
                 a held deposit on a shop with no module roles had no panel (and
                 no Return) anywhere — found at the Wave A gate. */}
             {party && shopBook && sellsToSites && (
-              <ContractorSitesPanelLazy party={{ id: party.id, name: party.name }} onPaid={() => window.location.reload()} />
+              <ContractorSitesPanelLazy
+                party={{ id: party.id, name: party.name }}
+                onPaid={() => window.location.reload()}
+              />
             )}
             {party && <PartyModulePanels party={party} readOnly={isArchived} className="mt-4" />}
           </UbBox>

@@ -120,8 +120,12 @@ describe('what each status allows', () => {
     const party = { id: 'p1', name: 'Ramesh', gstin: null, mobile: null, state_code: '27' };
     expect(canReturn(makeDocument({ party }))).toBe(true);
     expect(canReturn(makeDocument({ party: null }))).toBe(true);
-    expect(emptyCreditNoteForm(makeDocument({ party: null }), '2026-11-11').settlement).toBe('refund');
-    expect(emptyCreditNoteForm(makeDocument({ party }), '2026-11-11').settlement).toBe('hold_advance');
+    expect(emptyCreditNoteForm(makeDocument({ party: null }), '2026-11-11').settlement).toBe(
+      'refund'
+    );
+    expect(emptyCreditNoteForm(makeDocument({ party }), '2026-11-11').settlement).toBe(
+      'hold_advance'
+    );
     expect(
       canReturn(makeDocument({ party, lines: [wireLine({ qty: '1.000', returned_qty: '1.000' })] }))
     ).toBe(false);

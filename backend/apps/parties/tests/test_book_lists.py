@@ -80,7 +80,7 @@ def test_the_shop_header_adds_up_the_shop_column(tenant: Any, api_as: Any) -> No
 
 
 def test_the_shop_chips_filter_by_the_shop_figure(tenant: Any, api_as: Any) -> None:
-    """"Owes me" on the Shop's list is who owes on bills — Sunita owes only the udhaar book."""
+    """ "Owes me" on the Shop's list is who owes on bills — Sunita owes only the udhaar book."""
     client, _ = api_as(tenant)
     _people(tenant)
 

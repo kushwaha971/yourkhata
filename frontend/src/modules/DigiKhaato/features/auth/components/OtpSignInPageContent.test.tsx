@@ -83,7 +83,9 @@ describe('OtpSignInPageContent — the number', () => {
   it('asks only for a mobile number: no email, no password; India first, any country allowed', async () => {
     renderWithProviders(<OtpSignInPageContent />);
     // Owner, 12 Nov 2026: one page for both — a new number becomes an account.
-    expect(screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })
+    ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
     expect(screen.queryByText(/sign up|create/i)).not.toBeInTheDocument();
     // No Terms or Privacy links on public pages for now (owner, 17 Nov 2026).
@@ -104,7 +106,9 @@ describe('OtpSignInPageContent — the number', () => {
     await user.paste('+44 7911 123456');
     await user.click(screen.getByRole('button', { name: 'Send code' }));
     await waitFor(() =>
-      expect(authService.requestOtp).toHaveBeenCalledWith(expect.objectContaining({ mobile: '+447911123456' }))
+      expect(authService.requestOtp).toHaveBeenCalledWith(
+        expect.objectContaining({ mobile: '+447911123456' })
+      )
     );
   });
 

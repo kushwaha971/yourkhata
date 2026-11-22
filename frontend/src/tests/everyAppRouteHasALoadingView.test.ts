@@ -31,11 +31,14 @@ describe('app routes', () => {
     expect(folders.length).toBeGreaterThan(80);
   });
 
-  it.each(folders.map((f) => [relative(APP, f) || '.', f]))('%s has a loading view', (_name, folder) => {
-    const file = join(folder, 'loading.tsx');
-    expect(existsSync(file)).toBe(true);
-    expect(readFileSync(file, 'utf8')).toMatch(
-      /^export \{ (Home|List|Detail|Form)Loading as default \} from 'src\/components\/layout\/RouteLoading';\n$/
-    );
-  });
+  it.each(folders.map((f) => [relative(APP, f) || '.', f]))(
+    '%s has a loading view',
+    (_name, folder) => {
+      const file = join(folder, 'loading.tsx');
+      expect(existsSync(file)).toBe(true);
+      expect(readFileSync(file, 'utf8')).toMatch(
+        /^export \{ (Home|List|Detail|Form)Loading as default \} from 'src\/components\/layout\/RouteLoading';\n$/
+      );
+    }
+  );
 });

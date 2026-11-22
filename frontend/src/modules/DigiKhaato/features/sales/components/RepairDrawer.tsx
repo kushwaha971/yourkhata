@@ -103,7 +103,9 @@ export function RepairDrawer({
             value,
           ])
         );
-        setErrors(applyServerErrors({ ...error, details }, form.setError, Object.values(REPAIR_FIELD), t));
+        setErrors(
+          applyServerErrors({ ...error, details }, form.setError, Object.values(REPAIR_FIELD), t)
+        );
       }
     },
     [onSaved, form.setError, t, copy]
@@ -166,7 +168,11 @@ export function RepairDrawer({
             {t('sales.repair.restored')}
           </UbText>
         )}
-        <UbField name="partyId" label={t('sales.repair.customer')} hint={t('sales.repair.customerHint')}>
+        <UbField
+          name="partyId"
+          label={t('sales.repair.customer')}
+          hint={t('sales.repair.customerHint')}
+        >
           {(field) => (
             <PartyPickerField
               field={field}
@@ -190,29 +196,56 @@ export function RepairDrawer({
         {!partyId && (
           <UbField name="walkInMobile" label={t('sales.repair.walkInMobile')}>
             {(field) => (
-              <UbPhoneInput {...field} value={(field.value as string) ?? ''} onChange={field.onChange} />
+              <UbPhoneInput
+                {...field}
+                value={(field.value as string) ?? ''}
+                onChange={field.onChange}
+              />
             )}
           </UbField>
         )}
         <UbBox className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           <UbField name="phoneModel" label={t('sales.repair.phone')}>
             {(field) => (
-              <UbTextInput {...field} value={field.value as string} maxLength={80} placeholder={t('sales.repair.phonePlaceholder')} />
+              <UbTextInput
+                {...field}
+                value={field.value as string}
+                maxLength={80}
+                placeholder={t('sales.repair.phonePlaceholder')}
+              />
             )}
           </UbField>
           <UbField name="imei" label={t('sales.repair.imei')}>
-            {(field) => <UbTextInput {...field} value={field.value as string} maxLength={20} inputMode="numeric" />}
+            {(field) => (
+              <UbTextInput
+                {...field}
+                value={field.value as string}
+                maxLength={20}
+                inputMode="numeric"
+              />
+            )}
           </UbField>
         </UbBox>
         <UbField name="fault" label={t('sales.repair.fault')}>
           {(field) => (
-            <UbTextInput {...field} value={field.value as string} maxLength={200} placeholder={t('sales.repair.faultPlaceholder')} />
+            <UbTextInput
+              {...field}
+              value={field.value as string}
+              maxLength={200}
+              placeholder={t('sales.repair.faultPlaceholder')}
+            />
           )}
         </UbField>
         <UbField name="cameWith" label={t('sales.repair.cameWith')} controlOwnsLabel>
           {() => (
             /* Design pRepair "Came with": several may be ticked, so each is a toggle. */
-            <UbStack direction="row" gap={2} className="flex-wrap" role="group" aria-label={t('sales.repair.cameWith')}>
+            <UbStack
+              direction="row"
+              gap={2}
+              className="flex-wrap"
+              role="group"
+              aria-label={t('sales.repair.cameWith')}
+            >
               {CAME_WITH.map((value) => (
                 <UbFilterChip
                   key={value}
@@ -247,11 +280,28 @@ export function RepairDrawer({
           </UbField>
         </UbBox>
         <UbBox className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-          <UbField name="advance" label={t('sales.repair.advance')} hint={partyId ? undefined : t('sales.repair.advanceHint')}>
-            {(field) => <UbMoneyInput {...field} value={(field.value as string) ?? ''} disabled={!partyId} />}
+          <UbField
+            name="advance"
+            label={t('sales.repair.advance')}
+            hint={partyId ? undefined : t('sales.repair.advanceHint')}
+          >
+            {(field) => (
+              <UbMoneyInput {...field} value={(field.value as string) ?? ''} disabled={!partyId} />
+            )}
           </UbField>
-          <UbField name="lockNote" label={t('sales.repair.lock')} optionalLabel={t('common.field.optional')}>
-            {(field) => <UbTextInput {...field} value={field.value as string} maxLength={60} placeholder={t('sales.repair.lockPlaceholder')} />}
+          <UbField
+            name="lockNote"
+            label={t('sales.repair.lock')}
+            optionalLabel={t('common.field.optional')}
+          >
+            {(field) => (
+              <UbTextInput
+                {...field}
+                value={field.value as string}
+                maxLength={60}
+                placeholder={t('sales.repair.lockPlaceholder')}
+              />
+            )}
           </UbField>
         </UbBox>
         {Number(advance) > 0 && (

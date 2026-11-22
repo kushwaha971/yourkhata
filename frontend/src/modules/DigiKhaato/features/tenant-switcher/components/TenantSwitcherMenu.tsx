@@ -141,14 +141,14 @@ export function TenantSwitcherMenu({
   // Money Book with no business open (sign-in lands there, owner 18 Nov 2026):
   // the same fixed "My Money Book" block as inside a business, never empty.
   const active =
-    switcher.activeTenant ??
-    (fixed ? { ...EMPTY_PLACE, name: t('moneybook.app.mine') } : null);
+    switcher.activeTenant ?? (fixed ? { ...EMPTY_PLACE, name: t('moneybook.app.mine') } : null);
   if (!active) return null;
   const shown = splitByOwnership(switcher.groups.active.slice(0, MENU_TENANT_LIMIT));
   const overflow = switcher.groups.active.length > MENU_TENANT_LIMIT;
   // The Money Book is the person's own book, not the business's: its header says
   // "My Money Book" (design I1), while the menu still switches apps and businesses.
-  const shownName = app === 'khata' || !switcher.activeTenant ? t('moneybook.app.mine') : active.name;
+  const shownName =
+    app === 'khata' || !switcher.activeTenant ? t('moneybook.app.mine') : active.name;
   const activeName = tenantNameView(shownName);
   const openAppLabel = apps.find((a) => a.code === app)?.labelId;
   // B2 (design `rail()`): "Hardware · Shop" — the kind under the business name,
@@ -162,15 +162,29 @@ export function TenantSwitcherMenu({
   if (fixed) {
     return rail ? (
       <UbBox className={cn('flex items-center gap-2 p-3', className)} data-testid="open-place">
-        <UbBox as="span" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-1">
+        <UbBox
+          as="span"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-1"
+        >
           <UbLogo variant="mark" size="sm" />
         </UbBox>
         <UbBox as="span" className="flex min-w-0 flex-1 flex-col justify-center">
-          <UbText as="span" variant="inherit" truncate title={activeName.truncated ? shownName : undefined} className="ds-nav-label-medium text-text-onNav">
+          <UbText
+            as="span"
+            variant="inherit"
+            truncate
+            title={activeName.truncated ? shownName : undefined}
+            className="ds-nav-label-medium text-text-onNav"
+          >
             {activeName.text}
           </UbText>
           {railCaption && (
-            <UbText as="span" variant="inherit" truncate className="ds-nav-caption-regular text-text-onNavMuted">
+            <UbText
+              as="span"
+              variant="inherit"
+              truncate
+              className="ds-nav-caption-regular text-text-onNavMuted"
+            >
               {railCaption}
             </UbText>
           )}
@@ -180,7 +194,12 @@ export function TenantSwitcherMenu({
       <UbBox className={cn('flex min-w-0 items-center gap-2', className)} data-testid="open-place">
         <UbAvatar name={app === 'khata' ? userName || shownName : active.name} size="sm" />
         <UbBox as="span" className="flex min-w-0 flex-1 flex-col">
-          <UbText as="span" variant="body-sm-medium" truncate title={activeName.truncated ? shownName : undefined}>
+          <UbText
+            as="span"
+            variant="body-sm-medium"
+            truncate
+            title={activeName.truncated ? shownName : undefined}
+          >
             {activeName.text}
           </UbText>
           {appCaption && (

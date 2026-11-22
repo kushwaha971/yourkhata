@@ -83,7 +83,7 @@ export function AppRouteWarmup(): null {
     // `filters` is deliberately NOT a dependency: this warms the FIRST request
     // for a screen and then gets out of the way. Every later filter change is
     // `usePartyList`'s own effect, which owns the abort.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the listed values change
   }, [dispatch, pathname, canSpeculate]);
 
   return null;

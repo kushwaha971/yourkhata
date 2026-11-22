@@ -46,29 +46,66 @@ const SiteDrawer = dynamic(() => import('./SiteDrawer').then((m) => m.SiteDrawer
 
 /** Design's Status cell: 15 days, Not due, Settled. */
 export const siteStatus = (site: ContractorSite, t: TranslateFn): React.ReactNode => {
-  if (Number(site.due) <= 0) return <UbStatusBadge tone="neutral" label={t('sales.site.settled')} />;
+  if (Number(site.due) <= 0)
+    return <UbStatusBadge tone="neutral" label={t('sales.site.settled')} />;
   if (site.days_late > 0)
-    return <UbStatusBadge tone="warning" label={t('sales.site.daysLate', { count: site.days_late })} />;
+    return (
+      <UbStatusBadge tone="warning" label={t('sales.site.daysLate', { count: site.days_late })} />
+    );
   return <UbStatusBadge tone="success" label={t('sales.site.notDue')} />;
 };
 
 const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<ContractorSite>[] => {
   if (tier === 'cards')
     return [
-      { id: 'site', header: t('sales.site.col.site'), priority: 1, cardSlot: 'title', cell: (s) => s.name },
+      {
+        id: 'site',
+        header: t('sales.site.col.site'),
+        priority: 1,
+        cardSlot: 'title',
+        cell: (s) => s.name,
+      },
       {
         id: 'party',
         header: t('sales.site.col.contractor'),
         priority: 1,
         cardSlot: 'meta',
-        cell: (s) => `${s.party.name} · ${t(s.bills === 1 ? 'sales.site.oneBill' : 'sales.site.billCount', { count: s.bills })} · ${formatInr(s.due)}`,
+        cell: (s) =>
+          `${s.party.name} · ${t(s.bills === 1 ? 'sales.site.oneBill' : 'sales.site.billCount', { count: s.bills })} · ${formatInr(s.due)}`,
       },
-      { id: 'status', header: t('sales.site.col.status'), priority: 1, cardSlot: 'trailing', cell: (s) => siteStatus(s, t) },
+      {
+        id: 'status',
+        header: t('sales.site.col.status'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: (s) => siteStatus(s, t),
+      },
     ];
   return [
-    { id: 'site', header: t('sales.site.col.site'), priority: 1, cardSlot: 'none', widthShare: 30, cell: (s) => s.name },
-    { id: 'party', header: t('sales.site.col.contractor'), priority: 1, cardSlot: 'none', widthShare: 20, cell: (s) => s.party.name },
-    { id: 'bills', header: t('sales.site.col.bills'), priority: 2, cardSlot: 'none', widthShare: 8, cell: (s) => String(s.bills) },
+    {
+      id: 'site',
+      header: t('sales.site.col.site'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 30,
+      cell: (s) => s.name,
+    },
+    {
+      id: 'party',
+      header: t('sales.site.col.contractor'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 20,
+      cell: (s) => s.party.name,
+    },
+    {
+      id: 'bills',
+      header: t('sales.site.col.bills'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 8,
+      cell: (s) => String(s.bills),
+    },
     {
       id: 'last',
       header: t('sales.site.col.lastBill'),
@@ -77,8 +114,23 @@ const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<Contr
       widthShare: 12,
       cell: (s) => (s.last_bill ? formatBusinessDate(s.last_bill) : '—'),
     },
-    { id: 'due', header: t('sales.site.col.balance'), priority: 1, cardSlot: 'none', align: 'end', widthShare: 14, cell: (s) => formatInr(s.due) },
-    { id: 'status', header: t('sales.site.col.status'), priority: 1, cardSlot: 'none', widthShare: 16, cell: (s) => siteStatus(s, t) },
+    {
+      id: 'due',
+      header: t('sales.site.col.balance'),
+      priority: 1,
+      cardSlot: 'none',
+      align: 'end',
+      widthShare: 14,
+      cell: (s) => formatInr(s.due),
+    },
+    {
+      id: 'status',
+      header: t('sales.site.col.status'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (s) => siteStatus(s, t),
+    },
   ];
 };
 
@@ -123,10 +175,20 @@ export function SitesPageContent(): React.JSX.Element {
           : 'empty'
         : 'rows';
   const searchBox = (
-    <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.site.search')} aria-label={t('sales.site.search')} />
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('sales.site.search')}
+      aria-label={t('sales.site.search')}
+    />
   );
   const newButton = canWrite && (
-    <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} iconOnly="mobile" onClick={() => setAdding(true)} data-testid="site-new">
+    <UbButton
+      icon={<Plus className="h-4 w-4" aria-hidden />}
+      iconOnly="mobile"
+      onClick={() => setAdding(true)}
+      data-testid="site-new"
+    >
       {t('sales.site.new')}
     </UbButton>
   );
@@ -144,7 +206,11 @@ export function SitesPageContent(): React.JSX.Element {
               closeLabel: t('common.action.close'),
               primaryPlacement: 'header',
               primary: canWrite
-                ? { label: t('sales.site.new'), icon: <Plus className="h-6 w-6" aria-hidden />, onClick: () => setAdding(true) }
+                ? {
+                    label: t('sales.site.new'),
+                    icon: <Plus className="h-6 w-6" aria-hidden />,
+                    onClick: () => setAdding(true),
+                  }
                 : undefined,
             }}
           />
@@ -185,7 +251,11 @@ export function SitesPageContent(): React.JSX.Element {
             selectRow: 'sales.site.title',
           })}
           emptyStates={{
-            firstUse: { title: t('sales.site.empty.title'), description: t('sales.site.empty.body'), action: newButton || undefined },
+            firstUse: {
+              title: t('sales.site.empty.title'),
+              description: t('sales.site.empty.body'),
+              action: newButton || undefined,
+            },
             filtered: { title: t('sales.site.noMatch'), description: '' },
             error: {
               title: t('sales.site.error'),
@@ -212,7 +282,13 @@ export function SitesPageContent(): React.JSX.Element {
           onClose={() => setAdding(false)}
           onSaved={(site) => {
             setAdding(false);
-            dispatch(showSnackbar({ severity: 'success', id: 'sales.site.saved', params: { name: site.name } }));
+            dispatch(
+              showSnackbar({
+                severity: 'success',
+                id: 'sales.site.saved',
+                params: { name: site.name },
+              })
+            );
             setAttempt((n) => n + 1);
           }}
         />

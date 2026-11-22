@@ -288,7 +288,11 @@ function UbShareSheetBase({
               target="_blank"
               rel="noopener noreferrer"
               onClick={openedVia('whatsapp')}
-              className={mlButtonClasses('primary', 'lg', 'outline-none focus-visible:shadow-focus')}
+              className={mlButtonClasses(
+                'primary',
+                'lg',
+                'outline-none focus-visible:shadow-focus'
+              )}
             >
               {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
               <span>{conversation.share}</span>
@@ -302,73 +306,88 @@ function UbShareSheetBase({
 
           {blank ? (
             <div className="flex flex-col gap-1">
-              {onlyChannel !== 'sms' && <UbButton
-                variant="primary"
-                size="lg"
-                className="w-full"
-                disabled
-                icon={whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
-              >
-                {labels.whatsapp}
-              </UbButton>}
-              {onlyChannel !== 'whatsapp' && <UbButton
-                variant={onlyChannel === 'sms' ? 'primary' : 'ghost'}
-                size="lg"
-                className={onlyChannel === 'sms' ? 'w-full' : ROW}
-                disabled
-                icon={<MessageSquare aria-hidden className="h-4 w-4" />}
-              >
-                {labels.sms}
-              </UbButton>}
+              {onlyChannel !== 'sms' && (
+                <UbButton
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  disabled
+                  icon={whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
+                >
+                  {labels.whatsapp}
+                </UbButton>
+              )}
+              {onlyChannel !== 'whatsapp' && (
+                <UbButton
+                  variant={onlyChannel === 'sms' ? 'primary' : 'ghost'}
+                  size="lg"
+                  className={onlyChannel === 'sms' ? 'w-full' : ROW}
+                  disabled
+                  icon={<MessageSquare aria-hidden className="h-4 w-4" />}
+                >
+                  {labels.sms}
+                </UbButton>
+              )}
               {!onlyChannel && callRow}
-              {!onlyChannel && <UbButton
-                variant="ghost"
-                size="lg"
-                className={ROW}
-                disabled
-                icon={<Copy aria-hidden className="h-4 w-4" />}
-              >
-                {labels.copy}
-              </UbButton>}
+              {!onlyChannel && (
+                <UbButton
+                  variant="ghost"
+                  size="lg"
+                  className={ROW}
+                  disabled
+                  icon={<Copy aria-hidden className="h-4 w-4" />}
+                >
+                  {labels.copy}
+                </UbButton>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              {onlyChannel !== 'sms' && <a
-                href={buildWhatsAppUrl(text, phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={openedVia('whatsapp')}
-                className={mlButtonClasses(
-                  'primary',
-                  'lg',
-                  'w-full outline-none focus-visible:shadow-focus'
-                )}
-              >
-                {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
-                <span>{labels.whatsapp}</span>
-              </a>}
-              {onlyChannel !== 'whatsapp' && <a
-                href={buildSmsUrl(smsText, phone)}
-                onClick={openedVia('sms')}
-                className={mlButtonClasses(
-                  onlyChannel === 'sms' ? 'primary' : 'ghost',
-                  'lg',
-                  cn(onlyChannel === 'sms' ? 'w-full' : ROW, 'outline-none focus-visible:shadow-focus')
-                )}
-              >
-                <MessageSquare aria-hidden className="h-4 w-4" />
-                <span>{labels.sms}</span>
-              </a>}
+              {onlyChannel !== 'sms' && (
+                <a
+                  href={buildWhatsAppUrl(text, phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={openedVia('whatsapp')}
+                  className={mlButtonClasses(
+                    'primary',
+                    'lg',
+                    'w-full outline-none focus-visible:shadow-focus'
+                  )}
+                >
+                  {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
+                  <span>{labels.whatsapp}</span>
+                </a>
+              )}
+              {onlyChannel !== 'whatsapp' && (
+                <a
+                  href={buildSmsUrl(smsText, phone)}
+                  onClick={openedVia('sms')}
+                  className={mlButtonClasses(
+                    onlyChannel === 'sms' ? 'primary' : 'ghost',
+                    'lg',
+                    cn(
+                      onlyChannel === 'sms' ? 'w-full' : ROW,
+                      'outline-none focus-visible:shadow-focus'
+                    )
+                  )}
+                >
+                  <MessageSquare aria-hidden className="h-4 w-4" />
+                  <span>{labels.sms}</span>
+                </a>
+              )}
               {!onlyChannel && callRow}
-              {!onlyChannel && <UbButton
-                variant="ghost"
-                size="lg"
-                className={ROW}
-                icon={<Copy aria-hidden className="h-4 w-4" />}
-                onClick={() => void handleCopy()}
-              >
-                {labels.copy}
-              </UbButton>}
+              {!onlyChannel && (
+                <UbButton
+                  variant="ghost"
+                  size="lg"
+                  className={ROW}
+                  icon={<Copy aria-hidden className="h-4 w-4" />}
+                  onClick={() => void handleCopy()}
+                >
+                  {labels.copy}
+                </UbButton>
+              )}
               {!onlyChannel && nativeShare && (
                 <UbButton
                   variant="ghost"

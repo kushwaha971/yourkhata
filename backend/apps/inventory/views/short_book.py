@@ -50,7 +50,9 @@ class ShortBookView(_MedicineView):
             reason=body.get("reason") or "asked",
             qty=body.get("qty"),
         )
-        return StandardResponse.created(result) if result["created"] else StandardResponse.ok(result)
+        return (
+            StandardResponse.created(result) if result["created"] else StandardResponse.ok(result)
+        )
 
 
 class ShortBookOrderedView(_MedicineView):
@@ -58,7 +60,9 @@ class ShortBookOrderedView(_MedicineView):
 
     def post(self, request: Any) -> Any:
         body = request.data if isinstance(request.data, dict) else {}
-        closed = short_book.mark_ordered(ctx=Ctx.from_request(request), item_ids=body.get("item_ids"))
+        closed = short_book.mark_ordered(
+            ctx=Ctx.from_request(request), item_ids=body.get("item_ids")
+        )
         return StandardResponse.ok({"closed": closed})
 
 

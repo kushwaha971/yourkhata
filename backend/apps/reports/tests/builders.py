@@ -29,7 +29,7 @@ def _n(prefix: str) -> str:
     return f"{prefix}/{next(_seq):05d}"
 
 
-def D(value: Any) -> Decimal:  # noqa: N802
+def D(value: Any) -> Decimal:  # noqa: N802 — reason: D() reads like Decimal in the tests
     return Decimal(str(value)).quantize(Decimal("0.01"))
 
 

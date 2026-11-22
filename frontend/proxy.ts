@@ -55,7 +55,11 @@ export function proxy(request: NextRequest): NextResponse {
   // `RequireSession` uses to bounce a tenantless session. It used to be in
   // neither, which is how an anonymous visitor could fill the whole wizard and
   // only discover the problem when `POST /tenants` answered 401.
-  if (!GUARDED_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  if (
+    !GUARDED_ROUTE_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  ) {
     return NextResponse.next();
   }
 

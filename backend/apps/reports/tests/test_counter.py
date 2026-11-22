@@ -3,7 +3,9 @@
 import datetime as dt
 from decimal import Decimal
 from zoneinfo import ZoneInfo
+
 import pytest
+
 from apps.reports.selectors.counter import counter_data, role_lane
 from apps.reports.tests import builders as b
 

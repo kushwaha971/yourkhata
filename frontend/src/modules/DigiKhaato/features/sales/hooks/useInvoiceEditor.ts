@@ -533,7 +533,10 @@ export const useInvoiceEditor = (
     idempotency.rotate();
   }, [dispatch, form, today, context, idempotency, kind, saves]);
 
-  const retryContext = useCallback(() => void dispatch(fetchSalesContext(today)), [dispatch, today]);
+  const retryContext = useCallback(
+    () => void dispatch(fetchSalesContext(today)),
+    [dispatch, today]
+  );
 
   return {
     kind,

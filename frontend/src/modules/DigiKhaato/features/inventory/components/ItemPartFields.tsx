@@ -28,7 +28,12 @@ export function ItemPartFields(): React.JSX.Element {
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-part-details"
     >
-      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
+      <UbText
+        as="p"
+        variant="label"
+        tone="tertiary"
+        className="text-[12px] font-bold uppercase tracking-[0.06em]"
+      >
         {t('items.form.parts.title')}
       </UbText>
       <ItemChipList

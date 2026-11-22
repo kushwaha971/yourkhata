@@ -59,7 +59,9 @@ beforeEach(() => {
 it('turns on wholesale together with orders and challans, and shows only built switches', async () => {
   const start = { 'shop.wholesale': { value: false }, 'shop.features.orders': { value: false } };
   service.fetchSettings.mockResolvedValue(settings(start));
-  service.saveSettings.mockImplementation(async (values: Record<string, unknown>) => settings(values));
+  service.saveSettings.mockImplementation(async (values: Record<string, unknown>) =>
+    settings(values)
+  );
   const user = userEvent.setup();
   renderWithProviders(<ShopFeaturesPageContent />);
 

@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.common.book_access import allowed_books, require_book
+from apps.common.book_access import require_book
 from apps.common.constants import LedgerBucket, ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed

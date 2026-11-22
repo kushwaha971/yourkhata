@@ -28,7 +28,14 @@ SORTS = {
 }
 
 
-def people(*, owner: Any, q: str = "", balance: str = "all", status: str = "active", sort: str = "last_entry") -> Any:
+def people(
+    *,
+    owner: Any,
+    q: str = "",
+    balance: str = "all",
+    status: str = "active",
+    sort: str = "last_entry",
+) -> Any:
     rows = Person.objects.filter(owner=owner)
     rows = rows.filter(archived_at__isnull=status != "archived")
     q = " ".join((q or "").split())
@@ -99,7 +106,13 @@ def entries(*, person: Person, include_removed: bool = False) -> list[Entry]:
     return result
 
 
-def report(*, owner: Any, person_id: Any = None, date_from: dt.date | None = None, date_to: dt.date | None = None) -> dict:
+def report(
+    *,
+    owner: Any,
+    person_id: Any = None,
+    date_from: dt.date | None = None,
+    date_to: dt.date | None = None,
+) -> dict:
     """All people (or one), any dates: the design's Report (I3)."""
     rows = Entry.objects.filter(owner=owner, status=EntryStatus.LIVE).select_related("person")
     if person_id:

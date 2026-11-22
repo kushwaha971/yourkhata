@@ -18,26 +18,64 @@ NAME_MAX = 120
 MONEY_MAX = 9_999_999
 
 COLUMNS = (
-    ColumnSpec("name", required=True, help="required; the student's name",
-               aliases=("student", "student_name", "member", "नाम")),
-    ColumnSpec("mobile", help="10-digit mobile; +91 is optional",
-               aliases=("phone", "mobile_no", "mobile_number", "contact", "फ़ोन")),
-    ColumnSpec("shift", help="Morning, Evening or Full day, as in your shifts; blank if you have one",
-               aliases=("timing", "batch")),
-    ColumnSpec("seat", help="seat number, e.g. 14; blank for no seat", aliases=("seat_no", "seat_number")),
-    ColumnSpec("monthly_fee", help="their fee a month, e.g. 800; blank for the shift's fee",
-               aliases=("fee", "fees", "monthly", "फ़ीस"), kind="money"),
-    ColumnSpec("joined", help="dd/mm/yyyy; the day they joined (blank means today)",
-               aliases=("joined_on", "join_date", "admission_date"), kind="date"),
-    ColumnSpec("paid_till", help="dd/mm/yyyy; the day their next fee is due",
-               aliases=("paid_to", "paid_until", "valid_till", "next_due", "due_date"), kind="date"),
+    ColumnSpec(
+        "name",
+        required=True,
+        help="required; the student's name",
+        aliases=("student", "student_name", "member", "नाम"),
+    ),
+    ColumnSpec(
+        "mobile",
+        help="10-digit mobile; +91 is optional",
+        aliases=("phone", "mobile_no", "mobile_number", "contact", "फ़ोन"),
+    ),
+    ColumnSpec(
+        "shift",
+        help="Morning, Evening or Full day, as in your shifts; blank if you have one",
+        aliases=("timing", "batch"),
+    ),
+    ColumnSpec(
+        "seat", help="seat number, e.g. 14; blank for no seat", aliases=("seat_no", "seat_number")
+    ),
+    ColumnSpec(
+        "monthly_fee",
+        help="their fee a month, e.g. 800; blank for the shift's fee",
+        aliases=("fee", "fees", "monthly", "फ़ीस"),
+        kind="money",
+    ),
+    ColumnSpec(
+        "joined",
+        help="dd/mm/yyyy; the day they joined (blank means today)",
+        aliases=("joined_on", "join_date", "admission_date"),
+        kind="date",
+    ),
+    ColumnSpec(
+        "paid_till",
+        help="dd/mm/yyyy; the day their next fee is due",
+        aliases=("paid_to", "paid_until", "valid_till", "next_due", "due_date"),
+        kind="date",
+    ),
 )
 
 TEMPLATE_ROWS = (
-    {"name": "Pooja Shinde", "mobile": "9890122311", "shift": "Morning", "seat": "8",
-     "monthly_fee": "800", "joined": "04/06/2026", "paid_till": "02/11/2026"},
-    {"name": "Rahul Gaikwad", "mobile": "9764011820", "shift": "Full day", "seat": "14",
-     "monthly_fee": "1200", "joined": "02/01/2026", "paid_till": "25/10/2026"},
+    {
+        "name": "Pooja Shinde",
+        "mobile": "9890122311",
+        "shift": "Morning",
+        "seat": "8",
+        "monthly_fee": "800",
+        "joined": "04/06/2026",
+        "paid_till": "02/11/2026",
+    },
+    {
+        "name": "Rahul Gaikwad",
+        "mobile": "9764011820",
+        "shift": "Full day",
+        "seat": "14",
+        "monthly_fee": "1200",
+        "joined": "02/01/2026",
+        "paid_till": "25/10/2026",
+    },
 )
 
 
@@ -63,18 +101,27 @@ def preflight(tenant: Any) -> dict:
         "today": tenant_today(tenant),
         "shifts": {_key(s.name): s for s in shifts},
         "only_shift": shifts[0] if len(shifts) == 1 else None,
-        "seats": set(Seat.objects.filter(tenant=tenant, active=True).values_list("number", flat=True)),
+        "seats": set(
+            Seat.objects.filter(tenant=tenant, active=True).values_list("number", flat=True)
+        ),
         "held": held,
         "mobiles": {
-            m: n for m, n in Student.objects.filter(tenant=tenant).exclude(status=StudentStatus.LEFT)
-            .exclude(mobile="").values_list("mobile", "name")
+            m: n
+            for m, n in Student.objects.filter(tenant=tenant)
+            .exclude(status=StudentStatus.LEFT)
+            .exclude(mobile="")
+            .values_list("mobile", "name")
         },
-        "names": {_key(n): n for n in Student.objects.filter(tenant=tenant).values_list("name", flat=True)},
+        "names": {
+            _key(n): n for n in Student.objects.filter(tenant=tenant).values_list("name", flat=True)
+        },
     }
 
 
 def _clashes(ctx: dict, seat: int, shift: Any) -> bool:
-    return any(full or shift.is_full_day or sid == shift.pk for sid, full in ctx["held"].get(seat, []))
+    return any(
+        full or shift.is_full_day or sid == shift.pk for sid, full in ctx["held"].get(seat, [])
+    )
 
 
 def validate_row(ctx: dict, row: dict[str, str], number: int) -> RowResult:
@@ -92,7 +139,9 @@ def validate_row(ctx: dict, row: dict[str, str], number: int) -> RowResult:
         result.error("name", "invalid_name", "Enter a name (up to 120 letters).")
     mobile = attempt("mobile", coerce.mobile)
     if mobile and mobile in ctx["mobiles"]:
-        result.error("mobile", "already_student", f"{ctx['mobiles'][mobile]} already has this mobile.")
+        result.error(
+            "mobile", "already_student", f"{ctx['mobiles'][mobile]} already has this mobile."
+        )
     elif not mobile and name and _key(name) in ctx["names"]:
         result.duplicate = ctx["names"][_key(name)]
 
@@ -125,7 +174,9 @@ def validate_row(ctx: dict, row: dict[str, str], number: int) -> RowResult:
     if not fee and shift is not None:
         fee = shift.monthly_fee
     if not fee:
-        result.error("monthly_fee", "required", "Write the monthly fee, or set the shift's fee first.")
+        result.error(
+            "monthly_fee", "required", "Write the monthly fee, or set the shift's fee first."
+        )
     joined = attempt("joined", coerce.date_value, today=ctx["today"]) or ctx["today"]
     paid_till = attempt("paid_till", coerce.date_value)
     if joined > ctx["today"]:
@@ -133,7 +184,9 @@ def validate_row(ctx: dict, row: dict[str, str], number: int) -> RowResult:
     if paid_till is not None and paid_till < joined:
         result.error("paid_till", "invalid_date", "Paid till is before the day they joined.")
     if paid_till is None and not result.errors:
-        result.warn("paid_till", "paid_till_assumed", "No paid-till date: the first fee is due on joining.")
+        result.warn(
+            "paid_till", "paid_till_assumed", "No paid-till date: the first fee is due on joining."
+        )
 
     if not result.errors:
         if seat is not None:
@@ -142,14 +195,22 @@ def validate_row(ctx: dict, row: dict[str, str], number: int) -> RowResult:
         if mobile:
             ctx["mobiles"][mobile] = name
     result.clean = {
-        "name": name, "mobile": mobile or "", "shift_id": str(shift.pk) if shift else None,
-        "seat": seat, "monthly_fee": str(fee or ""), "joined_on": joined.isoformat(),
+        "name": name,
+        "mobile": mobile or "",
+        "shift_id": str(shift.pk) if shift else None,
+        "seat": seat,
+        "monthly_fee": str(fee or ""),
+        "joined_on": joined.isoformat(),
         "paid_to": paid_till.isoformat() if paid_till else None,
     }
     result.tally = {"students": 1}
     result.preview = {
-        "name": name, "mobile": mobile, "shift": shift.name if shift else None, "seat": seat,
-        "monthly_fee": str(fee) if fee else None, "joined": joined.isoformat(),
+        "name": name,
+        "mobile": mobile,
+        "shift": shift.name if shift else None,
+        "seat": seat,
+        "monthly_fee": str(fee) if fee else None,
+        "joined": joined.isoformat(),
         "paid_till": paid_till.isoformat() if paid_till else None,
     }
     return result
@@ -167,7 +228,9 @@ def commit_rows(ctx: dict, service_ctx: Any, rows: list[tuple[int, dict]], progr
         data = {k: v for k, v in clean.items() if k != "paid_to"}
         student = enrol_student(tenant=service_ctx.tenant, user=service_ctx.actor, data=data)
         if clean.get("paid_to"):
-            Student.objects.filter(pk=student.pk).update(paid_to=dt.date.fromisoformat(clean["paid_to"]))
+            Student.objects.filter(pk=student.pk).update(
+                paid_to=dt.date.fromisoformat(clean["paid_to"])
+            )
         created += 1
         progress(index)
     return {"created_students": created}
@@ -192,4 +255,3 @@ def register() -> ImporterSpec:
             records_route="/library/students",
         )
     )
-

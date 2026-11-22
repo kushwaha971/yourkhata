@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { ChevronRight } from 'lucide-react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -24,7 +23,11 @@ import {
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
-import { selectActiveRole, selectActiveTenant, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import {
+  selectActiveRole,
+  selectActiveTenant,
+  selectSessionTenants,
+} from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatPhoneForDisplay } from 'src/utils/share';
@@ -88,7 +91,10 @@ export function MyProfilePageContent(): React.JSX.Element {
 
   // Design S2: "Open when I sign in" is chosen here, from every app in every
   // business the person belongs to — the same primary the Apps page sets.
-  const usable = useMemo(() => tenants.filter((row) => (row.status ?? 'active') === 'active'), [tenants]);
+  const usable = useMemo(
+    () => tenants.filter((row) => (row.status ?? 'active') === 'active'),
+    [tenants]
+  );
   const [appsOf, setAppsOf] = useState<Readonly<Record<string, readonly string[]>>>({});
   const [settingPrimary, setSettingPrimary] = useState(false);
   useEffect(() => {
@@ -116,8 +122,16 @@ export function MyProfilePageContent(): React.JSX.Element {
     if (!row?.membershipId || next === opensValue) return;
     setSettingPrimary(true);
     try {
-      await dispatch(setDefaultTenant({ membershipId: row.membershipId, primaryApp: app })).unwrap();
-      dispatch(showSnackbar({ severity: 'success', id: 'tenant.apps.primarySet', params: { name: row.name } }));
+      await dispatch(
+        setDefaultTenant({ membershipId: row.membershipId, primaryApp: app })
+      ).unwrap();
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'tenant.apps.primarySet',
+          params: { name: row.name },
+        })
+      );
     } catch {
       dispatch(showSnackbar({ severity: 'error', id: 'tenant.apps.primaryError' }));
     } finally {
@@ -128,22 +142,22 @@ export function MyProfilePageContent(): React.JSX.Element {
 
   return (
     <SettingsFrame page="me" title={t('settings.me.title')}>
-        <UbPanel className="p-4">
-          <UbStack direction="row" gap={4} align="center">
-            <UbAvatar name={user?.name ?? ''} size="md" />
-            <UbStack gap={0.5} className="min-w-0">
-              <UbText as="span" variant="h3" className="break-words">
-                {user?.name}
-              </UbText>
-              <UbText as="span" variant="caption" tone="tertiary">
-                {t('settings.me.roleAt', { role: roleWord(role), business: active?.name ?? '' })}
-              </UbText>
-            </UbStack>
+      <UbPanel className="p-4">
+        <UbStack direction="row" gap={4} align="center">
+          <UbAvatar name={user?.name ?? ''} size="md" />
+          <UbStack gap={0.5} className="min-w-0">
+            <UbText as="span" variant="h3" className="break-words">
+              {user?.name}
+            </UbText>
+            <UbText as="span" variant="caption" tone="tertiary">
+              {t('settings.me.roleAt', { role: roleWord(role), business: active?.name ?? '' })}
+            </UbText>
           </UbStack>
-        </UbPanel>
+        </UbStack>
+      </UbPanel>
 
-        <UbPanel as="section" className="p-4" aria-label={t('settings.me.about')}>
-          <FormProvider {...form}>
+      <UbPanel as="section" className="p-4" aria-label={t('settings.me.about')}>
+        <FormProvider {...form}>
           <UbStack as="form" id={formId} gap={3} noValidate onSubmit={onSave}>
             <UbText as="h2" variant="body-medium">
               {t('settings.me.about')}
@@ -161,7 +175,12 @@ export function MyProfilePageContent(): React.JSX.Element {
                 {t('settings.me.mobile')}
               </UbText>
               <UbBox className="flex min-h-11 items-center gap-3 rounded-md border border-border-hairline bg-surface-sunken px-3">
-                <UbText as="span" variant="body" tone={user?.mobile ? 'primary' : 'tertiary'} className="flex-1">
+                <UbText
+                  as="span"
+                  variant="body"
+                  tone={user?.mobile ? 'primary' : 'tertiary'}
+                  className="flex-1"
+                >
                   {user?.mobile ? formatPhoneForDisplay(user.mobile) : t('settings.me.noMobile')}
                 </UbText>
                 <UbLink href={ROUTES.SETTINGS_ME_MOBILE} className="flex min-h-11 items-center">
@@ -175,119 +194,126 @@ export function MyProfilePageContent(): React.JSX.Element {
               ) : null}
             </UbStack>
           </UbStack>
-          </FormProvider>
-        </UbPanel>
+        </FormProvider>
+      </UbPanel>
 
-        <UbPanel as="section" className="p-4" aria-label={t('settings.me.app')}>
-          <UbStack gap={3}>
-            <UbStack gap={0.5}>
-              <UbText as="h2" variant="body-medium">
-                {t('settings.me.app')}
-              </UbText>
-              <UbText as="span" variant="caption" tone="tertiary">
-                {t('settings.me.appHint')}
-              </UbText>
-            </UbStack>
-            <UbStack gap={1}>
-              <UbText as="span" variant="label" id="me-language">
-                {t('settings.me.language')}
-              </UbText>
-              <UbSelect
-                aria-label={t('settings.me.language')}
-                value={locale}
-                onChange={onLanguage}
-                options={options}
-              />
-            </UbStack>
-            <UbStack gap={1}>
-              <UbText as="span" variant="label">
-                {t('settings.me.look')}
-              </UbText>
-              <UbSelect
-                aria-label={t('settings.me.look')}
-                value={theme}
-                onChange={(next) => setTheme(next as (typeof THEME_MODES)[number])}
-                options={THEME_MODES.map((mode) => ({ value: mode, label: t(`settings.me.look.${mode}`) }))}
-              />
-            </UbStack>
-            <UbStack gap={1}>
-              <UbText as="span" variant="label">
-                {t('settings.me.opens')}
-              </UbText>
-              <UbSelect
-                aria-label={t('settings.me.opens')}
-                value={opensValue}
-                onChange={(next) => void onOpens(next)}
-                options={placeOptions}
-                disabled={settingPrimary}
-              />
-              <UbText as="span" variant="caption" tone="tertiary">
-                {t('settings.me.opensHint')}
-              </UbText>
-            </UbStack>
-          </UbStack>
-        </UbPanel>
-
-        <UbPanel as="section" className="p-4" aria-label={t('settings.me.businesses')}>
-          <UbStack gap={2}>
+      <UbPanel as="section" className="p-4" aria-label={t('settings.me.app')}>
+        <UbStack gap={3}>
+          <UbStack gap={0.5}>
             <UbText as="h2" variant="body-medium">
-              {t('settings.me.businesses')}
+              {t('settings.me.app')}
             </UbText>
-            <UbStack as="ul" gap={0}>
-              {tenants
-                .filter((row) => (row.status ?? 'active') === 'active')
-                .map((row) => (
-                  <UbBox
-                    as="li"
-                    key={row.id}
-                    className="flex min-h-11 items-center justify-between gap-3 border-b border-border-subtle last:border-0"
-                  >
-                    <UbText as="span" variant="body" className="min-w-0 break-words">
-                      {row.name}
-                    </UbText>
-                    <UbText as="span" variant="body-sm" tone="secondary" className="shrink-0">
-                      {roleWord(row.role)}
-                    </UbText>
-                  </UbBox>
-                ))}
-            </UbStack>
+            <UbText as="span" variant="caption" tone="tertiary">
+              {t('settings.me.appHint')}
+            </UbText>
           </UbStack>
-        </UbPanel>
+          <UbStack gap={1}>
+            <UbText as="span" variant="label" id="me-language">
+              {t('settings.me.language')}
+            </UbText>
+            <UbSelect
+              aria-label={t('settings.me.language')}
+              value={locale}
+              onChange={onLanguage}
+              options={options}
+            />
+          </UbStack>
+          <UbStack gap={1}>
+            <UbText as="span" variant="label">
+              {t('settings.me.look')}
+            </UbText>
+            <UbSelect
+              aria-label={t('settings.me.look')}
+              value={theme}
+              onChange={(next) => setTheme(next as (typeof THEME_MODES)[number])}
+              options={THEME_MODES.map((mode) => ({
+                value: mode,
+                label: t(`settings.me.look.${mode}`),
+              }))}
+            />
+          </UbStack>
+          <UbStack gap={1}>
+            <UbText as="span" variant="label">
+              {t('settings.me.opens')}
+            </UbText>
+            <UbSelect
+              aria-label={t('settings.me.opens')}
+              value={opensValue}
+              onChange={(next) => void onOpens(next)}
+              options={placeOptions}
+              disabled={settingPrimary}
+            />
+            <UbText as="span" variant="caption" tone="tertiary">
+              {t('settings.me.opensHint')}
+            </UbText>
+          </UbStack>
+        </UbStack>
+      </UbPanel>
 
-        <UbPanel className="p-4">
+      <UbPanel as="section" className="p-4" aria-label={t('settings.me.businesses')}>
+        <UbStack gap={2}>
+          <UbText as="h2" variant="body-medium">
+            {t('settings.me.businesses')}
+          </UbText>
           <UbStack as="ul" gap={0}>
-            <UbBox as="li" className="border-b border-border-subtle">
-              <UbLink
-                href={ROUTES.SETTINGS_DEVICES}
-                variant="inherit"
-                underline={false}
-                className="flex min-h-14 items-center gap-3"
-              >
-                <UbText as="span" variant="body-medium" className="flex-1">
-                  {t('settings.me.devices')}
-                </UbText>
-                <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
-              </UbLink>
-            </UbBox>
-            <UbBox as="li">
-              <UbButton variant="ghost" className="min-h-14 w-full justify-start px-0 text-error" onClick={() => void signOut()}>
-                {t('settings.me.signOut')}
-              </UbButton>
-            </UbBox>
+            {tenants
+              .filter((row) => (row.status ?? 'active') === 'active')
+              .map((row) => (
+                <UbBox
+                  as="li"
+                  key={row.id}
+                  className="flex min-h-11 items-center justify-between gap-3 border-b border-border-subtle last:border-0"
+                >
+                  <UbText as="span" variant="body" className="min-w-0 break-words">
+                    {row.name}
+                  </UbText>
+                  <UbText as="span" variant="body-sm" tone="secondary" className="shrink-0">
+                    {roleWord(row.role)}
+                  </UbText>
+                </UbBox>
+              ))}
           </UbStack>
-        </UbPanel>
-        {/* Design S2: Save at the bottom — docked over the menu on a phone. */}
-        <UbBox className="sticky bottom-[calc(var(--ub-nav-offset)+8px)] z-10 flex justify-end lg:static">
-          <UbButton
-            type="submit"
-            form={formId}
-            variant="primary"
-            busy={form.formState.isSubmitting}
-            className="w-full lg:w-auto"
-          >
-            {t('settings.me.save')}
-          </UbButton>
-        </UbBox>
+        </UbStack>
+      </UbPanel>
+
+      <UbPanel className="p-4">
+        <UbStack as="ul" gap={0}>
+          <UbBox as="li" className="border-b border-border-subtle">
+            <UbLink
+              href={ROUTES.SETTINGS_DEVICES}
+              variant="inherit"
+              underline={false}
+              className="flex min-h-14 items-center gap-3"
+            >
+              <UbText as="span" variant="body-medium" className="flex-1">
+                {t('settings.me.devices')}
+              </UbText>
+              <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
+            </UbLink>
+          </UbBox>
+          <UbBox as="li">
+            <UbButton
+              variant="ghost"
+              className="min-h-14 w-full justify-start px-0 text-error"
+              onClick={() => void signOut()}
+            >
+              {t('settings.me.signOut')}
+            </UbButton>
+          </UbBox>
+        </UbStack>
+      </UbPanel>
+      {/* Design S2: Save at the bottom — docked over the menu on a phone. */}
+      <UbBox className="sticky bottom-[calc(var(--ub-nav-offset)+8px)] z-10 flex justify-end lg:static">
+        <UbButton
+          type="submit"
+          form={formId}
+          variant="primary"
+          busy={form.formState.isSubmitting}
+          className="w-full lg:w-auto"
+        >
+          {t('settings.me.save')}
+        </UbButton>
+      </UbBox>
     </SettingsFrame>
   );
 }

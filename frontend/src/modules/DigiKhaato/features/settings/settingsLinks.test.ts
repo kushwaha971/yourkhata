@@ -16,10 +16,24 @@ const access = (role: 'owner' | 'admin' | 'accountant' | 'staff') => ({
   isOwner: role === 'owner',
 });
 const keys = (role: Parameters<typeof access>[0]) =>
-  settingsGroups(access(role), flags).flatMap((g) => g.links.map((l) => `${l.key}${l.viewOnly ? '*' : ''}`));
+  settingsGroups(access(role), flags).flatMap((g) =>
+    g.links.map((l) => `${l.key}${l.viewOnly ? '*' : ''}`)
+  );
 
 it('the owner sees every row, none view only', () => {
-  expect(keys('owner')).toEqual(['me', 'apps', 'profile', 'shopFeatures', 'branding', 'businessDays', 'team', 'devices', 'activity', 'plan', 'data']);
+  expect(keys('owner')).toEqual([
+    'me',
+    'apps',
+    'profile',
+    'shopFeatures',
+    'branding',
+    'businessDays',
+    'team',
+    'devices',
+    'activity',
+    'plan',
+    'data',
+  ]);
 });
 
 it('an admin sees everything but Your data', () => {
@@ -28,7 +42,21 @@ it('an admin sees everything but Your data', () => {
 });
 
 it("the accountant's business pages are view only; profile, Apps and devices are their own", () => {
-  expect(keys('accountant')).toEqual(['me', 'apps', 'profile*', 'shopFeatures*', 'branding*', 'businessDays*', 'team*', 'devices', 'activity*', 'plan*', 'data*'].filter((k) => k !== 'data*'));
+  expect(keys('accountant')).toEqual(
+    [
+      'me',
+      'apps',
+      'profile*',
+      'shopFeatures*',
+      'branding*',
+      'businessDays*',
+      'team*',
+      'devices',
+      'activity*',
+      'plan*',
+      'data*',
+    ].filter((k) => k !== 'data*')
+  );
 });
 
 it('staff see only their profile, Apps and devices', () => {

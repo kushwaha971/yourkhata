@@ -47,7 +47,12 @@ export interface MemberApiRow {
   readonly must_change_password: boolean;
   readonly password_expires_at: string | null;
   /** Owner, 14 Nov 2026 — present when the list was asked for one app (`?app=`). */
-  readonly access?: { can_use: boolean; group_id: string | null; group_name: string | null; changes: number } | null;
+  readonly access?: {
+    can_use: boolean;
+    group_id: string | null;
+    group_name: string | null;
+    changes: number;
+  } | null;
 }
 
 export interface Member {

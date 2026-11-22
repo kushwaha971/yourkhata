@@ -38,7 +38,7 @@ def _planted_policy(tenant: Any, party_id: Any, context_id: Any, on: dt.date) ->
 
 
 def test_every_registered_policy_answers_in_one_query(
-    tenant: Any, attendance_subject: Any  # noqa: F811
+    tenant: Any, attendance_subject: Any  # noqa: F811 — reason: a pytest fixture named as a parameter
 ) -> None:
     """T-ATT-02-6 — with 365 days of visits on file, each policy asks once."""
     registry.register_checkin_policy(PLANTED, module="test", policy=_planted_policy)

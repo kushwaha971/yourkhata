@@ -32,7 +32,9 @@ export function JewelHomeStrip(): React.JSX.Element | null {
       key: 'rate',
       href: ROUTES.STOCK_RATES,
       label: t('sales.jewelHome.rate'),
-      value: data.gold_22k ? `${formatInr(data.gold_22k).replace(/\.00$/, '')}/g` : t('sales.jewelHome.rateNotSet'),
+      value: data.gold_22k
+        ? `${formatInr(data.gold_22k).replace(/\.00$/, '')}/g`
+        : t('sales.jewelHome.rateNotSet'),
       sub: data.silver ? t('sales.jewelHome.silver', { rate: formatInr(data.silver) }) : '',
     },
     {
@@ -65,16 +67,12 @@ export function JewelHomeStrip(): React.JSX.Element | null {
           data-testid={`jewel-home-${tile.key}`}
           className="grid min-h-[86px] min-w-0 gap-0.5 rounded-card border border-border-hairline bg-surface-card px-3 py-2.5 leading-[1.45] text-text-primary lg:min-h-[95px] lg:px-4 lg:py-3"
         >
-          <UbText
-            variant="inherit"
-            tone="tertiary"
-            className="text-[12px] font-semibold"
-          >
+          <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold">
             {tile.label}
           </UbText>
           <UbText
             variant="inherit"
-            className="break-words text-[17px] font-extrabold leading-[1.45] tabular-nums lg:text-[20px]"
+            className="break-words text-[17px] font-extrabold tabular-nums leading-[1.45] lg:text-[20px]"
           >
             {tile.value}
           </UbText>

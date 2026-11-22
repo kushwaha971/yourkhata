@@ -53,7 +53,6 @@ from apps.inventory.serializers.output import (
 from apps.inventory.services.adjustments import post_adjustment
 from apps.inventory.services.items import archive_item, create_item, restore_item, update_item
 from apps.inventory.services.masters import create_category, create_unit
-from apps.inventory.services.stock import default_location
 
 
 def _has(request: Any, codename: str) -> bool:
@@ -238,7 +237,10 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         kind = kind_column.lines(key=meta["kind_column"], items=list(page))
         return StandardResponse.ok(
             [
-                {**item_row(item, valuation=valuation, gst_percent=gst), "kind_line": kind.get(str(item.id))}
+                {
+                    **item_row(item, valuation=valuation, gst_percent=gst),
+                    "kind_line": kind.get(str(item.id)),
+                }
                 for item in page
             ],
             meta=meta,
@@ -609,7 +611,11 @@ class LowStockView(_InventoryView, APIView):
 class SerialView(_InventoryView, APIView):
     """D P3 — find by IMEI: which item, in stock or sold, when, warranty till."""
 
-    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+    permission_classes = [
+        IsAuthenticated,
+        ModuleEnabled(ModuleCode.INVENTORY),
+        StockReadPermissions,
+    ]
 
     def get(self, request: Any, code: str) -> Any:
         from apps.inventory.services.serials import find
@@ -623,7 +629,11 @@ class SerialView(_InventoryView, APIView):
 class ExpiryView(_InventoryView, APIView):
     """D P4 — design D7 "Expiry": batches expired, or expiring within 30/60/90 days."""
 
-    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+    permission_classes = [
+        IsAuthenticated,
+        ModuleEnabled(ModuleCode.INVENTORY),
+        StockReadPermissions,
+    ]
 
     def get(self, request: Any) -> Any:
         from apps.inventory.services.batches import expiry_rows
@@ -668,7 +678,11 @@ class HomeStripView(_InventoryView, APIView):
     batches expiring in 30 days (medicine), phones in stock (IMEI), sizes sold
     out (clothes). A tile appears only when that business keeps such things."""
 
-    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+    permission_classes = [
+        IsAuthenticated,
+        ModuleEnabled(ModuleCode.INVENTORY),
+        StockReadPermissions,
+    ]
 
     def get(self, request: Any) -> Any:
         from apps.inventory.models import Batch, Serial
@@ -693,9 +707,14 @@ class HomeStripView(_InventoryView, APIView):
                 tile["value"] = str(sum((Decimal(r["value"]) for r in rows), Decimal("0.00")))
             tiles.append(tile)
         # A jeweller's serials are tags, and its Home has its own strip.
-        if not jeweller and ("serials" in features or Serial.objects.filter(tenant=tenant).exists()):
+        if not jeweller and (
+            "serials" in features or Serial.objects.filter(tenant=tenant).exists()
+        ):
             tiles.append(
-                {"key": "phones", "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count()}
+                {
+                    "key": "phones",
+                    "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count(),
+                }
             )
         variants = item_selectors.with_stock(
             Item.objects.filter(tenant=tenant, product__isnull=False, status=ItemStatus.ACTIVE),
@@ -706,7 +725,9 @@ class HomeStripView(_InventoryView, APIView):
         if not jeweller:
             if not tiles:
                 tiles.extend(_shop_due_week_tile(request, tenant, today))
-            base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
+            base = item_selectors.item_list(
+                tenant=tenant, location_id=None, status=ItemStatus.ACTIVE
+            )
             counts = item_selectors.list_meta(base, base)["counts"]
             if keeps_batches:
                 # G4 — a medical store's tile is its short book: the same rows
@@ -722,7 +743,9 @@ class HomeStripView(_InventoryView, APIView):
                     }
                 )
             else:
-                short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
+                short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by(
+                    "name"
+                )
                 tiles.append(
                     {
                         "key": "lowStock",

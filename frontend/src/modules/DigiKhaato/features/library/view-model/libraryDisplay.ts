@@ -57,7 +57,9 @@ export const monthName = (iso: string, t: TranslateFn): string =>
 
 /** "Seat 14 · Morning", "Full day", or "No seat · Evening". */
 export const seatLine = (s: Pick<Student, 'seat' | 'shift'>, t: TranslateFn): string =>
-  s.seat ? t('library.student.seatShift', { seat: s.seat, shift: s.shift }) : t('library.student.noSeat', { shift: s.shift });
+  s.seat
+    ? t('library.student.seatShift', { seat: s.seat, shift: s.shift })
+    : t('library.student.noSeat', { shift: s.shift });
 
 /**
  * The second line the design gives a student in a list (I4 Today):
@@ -86,4 +88,5 @@ export const dueAmount = (s: Student): string =>
   s.fee === 'paid' || s.fee === 'hold' ? '—' : rupees(s.due);
 
 /** Opens WhatsApp with the text; the person at the counter presses send (DEC-012). */
-export const whatsappHref = (mobile: string, text: string): string => buildWhatsAppUrl(text, mobile);
+export const whatsappHref = (mobile: string, text: string): string =>
+  buildWhatsAppUrl(text, mobile);

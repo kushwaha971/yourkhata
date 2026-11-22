@@ -56,7 +56,11 @@ export function LedgerEntryDrawer({
   form: entryForm,
   partyName,
   simple = false,
-}: Readonly<{ form: UseLedgerEntryFormResult; partyName: string; simple?: boolean }>): React.JSX.Element {
+}: Readonly<{
+  form: UseLedgerEntryFormResult;
+  partyName: string;
+  simple?: boolean;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const { ledgerEntrySchema, simpleLedgerEntrySchema } = useLedgerSchemas();
   const formId = useId();
@@ -149,7 +153,10 @@ export function LedgerEntryDrawer({
       if (values.direction === 'credit' && values.paymentMode) {
         rememberPaymentMode(values.paymentMode, values.upiApp);
       }
-      await submit(simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values, setError);
+      await submit(
+        simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values,
+        setError
+      );
     },
     [submit, setError, simple]
   );
@@ -160,7 +167,11 @@ export function LedgerEntryDrawer({
      rather than a second entry. */
   const handleOverride = useCallback(() => {
     const values = form.getValues();
-    void submit(simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values, setError, { override: true });
+    void submit(
+      simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values,
+      setError,
+      { override: true }
+    );
   }, [submit, form, setError, simple]);
 
   const handleOpenChange = useCallback(
@@ -274,24 +285,26 @@ export function LedgerEntryDrawer({
           )}
         </UbField>
 
-        {!simple && <UbField
-          name="entryDate"
-          label={t('ledger.entry.date')}
-          placeholder={t('ledger.entry.date.placeholder')}
-          required
-        >
-          {(field) => (
-            <UbDateInput
-              {...field}
-              max={today}
-              quickChoicesLabel={t('ledger.entry.date.quick')}
-              quickChoices={[
-                { label: t('ledger.entry.date.today'), date: today },
-                { label: t('ledger.entry.date.yesterday'), date: yesterday },
-              ]}
-            />
-          )}
-        </UbField>}
+        {!simple && (
+          <UbField
+            name="entryDate"
+            label={t('ledger.entry.date')}
+            placeholder={t('ledger.entry.date.placeholder')}
+            required
+          >
+            {(field) => (
+              <UbDateInput
+                {...field}
+                max={today}
+                quickChoicesLabel={t('ledger.entry.date.quick')}
+                quickChoices={[
+                  { label: t('ledger.entry.date.today'), date: today },
+                  { label: t('ledger.entry.date.yesterday'), date: yesterday },
+                ]}
+              />
+            )}
+          </UbField>
+        )}
 
         {/* Shown only for a credit. The field keeps its value when the merchant
             switches to "You gave" and back — the server drops it silently for a
@@ -340,7 +353,13 @@ export function LedgerEntryDrawer({
           hint={t('ledger.entry.note.hint')}
           optionalLabel={t('common.field.optional')}
         >
-          {(field) => <UbTextInput {...field} autoComplete="off" className={simple ? 'max-lg:h-11' : undefined} />}
+          {(field) => (
+            <UbTextInput
+              {...field}
+              autoComplete="off"
+              className={simple ? 'max-lg:h-11' : undefined}
+            />
+          )}
         </UbField>
       </UbForm>
     </UbDrawer>

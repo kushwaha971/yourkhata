@@ -60,7 +60,9 @@ def test_an_app_with_no_contacts_cannot_reach_the_shops_tags(shared_tag):
     _, _, make, _ = shared_tag
     lending = make(lending="admin")
     assert lending.get("/api/v1/parties/tags").status_code == 403
-    assert lending.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 403
+    assert (
+        lending.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 403
+    )
 
 
 def test_member_with_every_contact_app_right_can_manage_tags(shared_tag):

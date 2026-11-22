@@ -18,6 +18,12 @@ it('says what the weighed line comes to at its own rate, not the amount asked', 
 });
 
 it('has no weight for an empty, zero or unreadable amount or rate', () => {
-  const cases: [string, string][] = [['', '44'], ['0', '44'], ['50', '0'], ['5o', '44'], ['50', '']];
+  const cases: [string, string][] = [
+    ['', '44'],
+    ['0', '44'],
+    ['50', '0'],
+    ['5o', '44'],
+    ['50', ''],
+  ];
   for (const [a, r] of cases) expect(looseWeight(a, r)).toBeNull();
 });

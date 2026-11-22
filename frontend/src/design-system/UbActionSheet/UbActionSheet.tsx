@@ -83,7 +83,7 @@ function UbActionSheetBase({
             The click listener only observes clicks on the buttons and links
             inside, which Enter and Space already produce; it needs no key
             handler of its own. */}
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events -- the buttons inside take the keys */}
         <div
           role="group"
           aria-label={title}

@@ -120,7 +120,9 @@ def allocate(*, ctx: Any, document: Any, rows: list[dict]) -> None:
         row["batches"] = taken
 
 
-def put_back(*, ctx: Any, item_batches: list[tuple[Any, list[dict]]], factor: Decimal | None = None) -> None:
+def put_back(
+    *, ctx: Any, item_batches: list[tuple[Any, list[dict]]], factor: Decimal | None = None
+) -> None:
     """A return or a sale's void: each batch taken gets its pieces back."""
     from apps.inventory.models import Batch
 
@@ -129,9 +131,9 @@ def put_back(*, ctx: Any, item_batches: list[tuple[Any, list[dict]]], factor: De
             continue
         for entry in taken or []:
             qty = Decimal(str(entry.get("qty") or "0")) * (factor or Decimal("1"))
-            Batch.objects.filter(tenant=ctx.tenant, item=item, batch_no=entry.get("batch_no")).update(
-                qty=models_f("qty") + qty
-            )
+            Batch.objects.filter(
+                tenant=ctx.tenant, item=item, batch_no=entry.get("batch_no")
+            ).update(qty=models_f("qty") + qty)
 
 
 def take_out(*, ctx: Any, item_batches: list[tuple[Any, list[dict]]]) -> None:
@@ -143,9 +145,9 @@ def take_out(*, ctx: Any, item_batches: list[tuple[Any, list[dict]]]) -> None:
             continue
         for entry in added or []:
             qty = Decimal(str(entry.get("qty") or "0"))
-            Batch.objects.filter(tenant=ctx.tenant, item=item, batch_no=entry.get("batch_no")).update(
-                qty=models_f("qty") - qty
-            )
+            Batch.objects.filter(
+                tenant=ctx.tenant, item=item, batch_no=entry.get("batch_no")
+            ).update(qty=models_f("qty") - qty)
 
 
 def models_f(name: str) -> Any:
@@ -175,9 +177,9 @@ def expiry_rows(*, tenant: Any, within: str, today: dt.date) -> list[dict]:
     }
     try:
         suppliers = dict(
-            Party.objects.filter(tenant=tenant, pk__in=[r.supplier_id for r in rows if r.supplier_id]).values_list(
-                "id", "name"
-            )
+            Party.objects.filter(
+                tenant=tenant, pk__in=[r.supplier_id for r in rows if r.supplier_id]
+            ).values_list("id", "name")
         )
     except (ValueError, DjangoValidationError):
         suppliers = {}
@@ -199,7 +201,9 @@ def expiry_rows(*, tenant: Any, within: str, today: dt.date) -> list[dict]:
         .values("item_id", "batches", "document_id")
     ):
         for entry in line["batches"] or []:
-            bought.setdefault((str(line["item_id"]), str(entry.get("batch_no"))), str(line["document_id"]))
+            bought.setdefault(
+                (str(line["item_id"]), str(entry.get("batch_no"))), str(line["document_id"])
+            )
     return [
         {
             "item": {"id": str(r.item_id), "name": r.item.name},

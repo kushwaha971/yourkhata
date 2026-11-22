@@ -25,17 +25,28 @@ export function ItemAddonFields(): React.JSX.Element {
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-addons"
     >
-      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
+      <UbText
+        as="p"
+        variant="label"
+        tone="tertiary"
+        className="text-[12px] font-bold uppercase tracking-[0.06em]"
+      >
         {t('items.form.addons.title')}
       </UbText>
       {fields.map((row, index) => (
         <UbStack key={row.id} direction="row" gap={2} align="end" className="w-full">
-          <UbField name={`addons.${index}.name`} label={t('items.form.addons.name')} className="min-w-0 flex-[2]">
-            {(field) => (
-              <UbTextInput {...field} value={field.value as string} maxLength={60} />
-            )}
+          <UbField
+            name={`addons.${index}.name`}
+            label={t('items.form.addons.name')}
+            className="min-w-0 flex-[2]"
+          >
+            {(field) => <UbTextInput {...field} value={field.value as string} maxLength={60} />}
           </UbField>
-          <UbField name={`addons.${index}.price`} label={t('items.form.addons.price')} className="min-w-0 flex-1">
+          <UbField
+            name={`addons.${index}.price`}
+            label={t('items.form.addons.price')}
+            className="min-w-0 flex-1"
+          >
             {(field) => <UbMoneyInput {...field} />}
           </UbField>
           <UbButton

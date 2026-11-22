@@ -83,8 +83,7 @@ const EwayBillCardLazy = dynamic(() => import('./EwayBillCard').then((m) => m.Ew
 
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 type DetailKind = 'invoice' | FlowKind;

@@ -46,7 +46,7 @@ MVP_BEFORE = (
 )
 
 
-def forwards(apps, schema_editor):  # noqa: ANN001, ANN201
+def forwards(apps, schema_editor):  # noqa: ANN001, ANN201 — reason: the signature Django gives a migration function
     Plan = apps.get_model("platform", "Plan")
     Partner = apps.get_model("platform", "Partner")
     Tenant = apps.get_model("platform", "Tenant")
@@ -67,7 +67,7 @@ def forwards(apps, schema_editor):  # noqa: ANN001, ANN201
             tenant.save(update_fields=["enabled_modules"])
 
 
-def backwards(apps, schema_editor):  # noqa: ANN001, ANN201
+def backwards(apps, schema_editor):  # noqa: ANN001, ANN201 — reason: the signature Django gives a migration function
     Plan = apps.get_model("platform", "Plan")
     Partner = apps.get_model("platform", "Partner")
     Tenant = apps.get_model("platform", "Tenant")

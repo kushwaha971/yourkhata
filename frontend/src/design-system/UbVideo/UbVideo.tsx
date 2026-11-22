@@ -238,7 +238,7 @@ function UbVideoBase({
       {status === 'failed' ? (
         <a
           href={fallbackHref}
-          className="absolute bottom-3 left-3 rounded-pill bg-surface-card/90 px-3 py-1.5 ds-body-s-medium text-text-accent underline underline-offset-2 shadow-sm backdrop-blur"
+          className="ds-body-s-medium absolute bottom-3 left-3 rounded-pill bg-surface-card/90 px-3 py-1.5 text-text-accent underline underline-offset-2 shadow-sm backdrop-blur"
         >
           {labels.fallback}
         </a>

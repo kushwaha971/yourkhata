@@ -19,7 +19,9 @@ def test_two_boxes_bought_add_forty_pieces_at_the_piece_cost(
     """Decision 3 — 2 BOX at ₹400 (GST0) = 40 pieces at ₹20; the last purchase
     cost the item remembers is a piece's, and a void takes the 40 back out."""
     box = Unit.objects.get(tenant__isnull=True, code="BOX")
-    item = make_item("Anchor switch", "18.00", "GST0", units=[{"unit_id": str(box.id), "factor": "20"}])
+    item = make_item(
+        "Anchor switch", "18.00", "GST0", units=[{"unit_id": str(box.id), "factor": "20"}]
+    )
     bill = recorded_bill(
         owner,
         party_id=str(make_supplier().id),
@@ -40,7 +42,9 @@ def test_a_box_line_defaults_to_twenty_times_the_piece_cost(
     from apps.purchases.tests.conftest import draft
 
     box = Unit.objects.get(tenant__isnull=True, code="BOX")
-    item = make_item("Switch plate", "18.00", "GST0", units=[{"unit_id": str(box.id), "factor": "20"}])
+    item = make_item(
+        "Switch plate", "18.00", "GST0", units=[{"unit_id": str(box.id), "factor": "20"}]
+    )
     made = draft(owner, party_id=str(make_supplier().id), lines=[line(item, "1", unit_code="BOX")])
     assert made.status_code == 201, made.json()
     assert made.json()["data"]["lines"][0]["unit_cost"] == "360.0000"

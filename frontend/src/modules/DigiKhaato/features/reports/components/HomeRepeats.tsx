@@ -3,13 +3,7 @@ import { useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import {
-  UbActionLink,
-  UbBox,
-  UbButton,
-  UbDrawerLoading,
-  UbText,
-} from 'src/design-system';
+import { UbActionLink, UbBox, UbButton, UbDrawerLoading, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -20,7 +14,8 @@ import { groupLabels } from '../view-model/chartDisplay';
 
 import type { RepeatSource } from '../api/counterService';
 const Expense = dynamic(() => import('./RepeatExpense').then((m) => m.RepeatExpense), {
-  ssr: false, loading: () => <UbDrawerLoading />,
+  ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 export function HomeRepeats({
   sources,

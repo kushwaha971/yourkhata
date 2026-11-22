@@ -23,9 +23,18 @@ export function useRemind() {
   const [busy, setBusy] = useState<string | null>(null);
 
   const remind = useCallback(
-    async (student: Pick<Student, 'id' | 'name' | 'mobile'>, kind: MessageKind = 'fee_due'): Promise<boolean> => {
+    async (
+      student: Pick<Student, 'id' | 'name' | 'mobile'>,
+      kind: MessageKind = 'fee_due'
+    ): Promise<boolean> => {
       if (!student.mobile) {
-        dispatch(showSnackbar({ severity: 'warning', id: 'library.remind.noMobile', params: { name: student.name } }));
+        dispatch(
+          showSnackbar({
+            severity: 'warning',
+            id: 'library.remind.noMobile',
+            params: { name: student.name },
+          })
+        );
         return false;
       }
       const wa = window.open('', '_blank');
@@ -34,7 +43,9 @@ export function useRemind() {
         const { text, mobile } = await messageText(student.id, kind, locale);
         if (wa) wa.location.href = whatsappHref(mobile, text);
         else window.location.href = whatsappHref(mobile, text);
-        void recordMessage(student.id, kind, text, `${student.id}-${kind}-${Date.now()}`).catch(() => undefined);
+        void recordMessage(student.id, kind, text, `${student.id}-${kind}-${Date.now()}`).catch(
+          () => undefined
+        );
         return true;
       } catch {
         wa?.close();

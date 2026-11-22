@@ -6,11 +6,7 @@ import dynamic from 'next/dynamic';
 
 import { Bell } from 'lucide-react';
 
-import {
-  UbBox,
-  UbButton,
-  UbDialogLoading,
-} from 'src/design-system';
+import { UbBox, UbButton, UbDialogLoading } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 
@@ -27,7 +23,7 @@ const NotificationPanel = dynamic(
   () => import('./NotificationPanel').then((m) => m.NotificationPanel),
   {
     ssr: false,
-  loading: () => <UbDialogLoading />,
+    loading: () => <UbDialogLoading />,
   }
 );
 

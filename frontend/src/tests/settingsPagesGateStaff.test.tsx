@@ -26,7 +26,15 @@ jest.mock('next/navigation', () => ({
 beforeEach(() => {
   store.dispatch(
     sessionLoaded({
-      user: { id: 'u-staff', name: 'Ravi', email: 'r@x.test', mobile: null, locale: 'en', mustChangePassword: false, passwordExpiresAt: null },
+      user: {
+        id: 'u-staff',
+        name: 'Ravi',
+        email: 'r@x.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
       activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'staff' },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'staff' }],
       permissions: ['parties.party.read', 'sales.invoice.read'],

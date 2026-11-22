@@ -44,7 +44,8 @@ export const createSite = async (
   body: { readonly party_id: string; readonly name: string },
   clientKey: string
 ): Promise<ContractorSite> =>
-  (await api.post<{ data: ContractorSite }>('/sales/sites', { ...body, client_key: clientKey })).data.data;
+  (await api.post<{ data: ContractorSite }>('/sales/sites', { ...body, client_key: clientKey }))
+    .data.data;
 
 /** `key` is made once per set of amounts, so a double tap is one payment. */
 export const paySites = async (

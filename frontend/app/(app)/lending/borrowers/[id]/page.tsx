@@ -8,7 +8,9 @@ import { BorrowerPageContent } from 'modules/DigiKhaato/features/lending/compone
 import 'src/i18n/catalogues/lending';
 
 /** A borrower and their loans. */
-export default function Page({ params }: Readonly<{ params: Promise<{ id: string }> }>): React.JSX.Element {
+export default function Page({
+  params,
+}: Readonly<{ params: Promise<{ id: string }> }>): React.JSX.Element {
   const { id } = use(params);
   return <BorrowerPageContent id={id} />;
 }

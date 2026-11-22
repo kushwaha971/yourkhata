@@ -184,7 +184,9 @@ def test_a_starred_business_still_in_setup_is_where_the_owner_lands_to_finish_it
     work = TenantFactory(onboarding_step=4)
     branch = TenantFactory(onboarding_step=1)
     MembershipFactory(user=user, tenant=work, role=_owner(), last_used_at=timezone.now())
-    MembershipFactory(user=user, tenant=branch, role=_owner(), is_default=True, primary_app="library")
+    MembershipFactory(
+        user=user, tenant=branch, role=_owner(), is_default=True, primary_app="library"
+    )
     data = _sign_in(user)
     assert data["active_tenant_id"] == str(branch.id)
     assert data["landing"]["kind"] == "business_setup"

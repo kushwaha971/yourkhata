@@ -8,6 +8,8 @@ import { VehicleDetailPageContent } from 'modules/DigiKhaato/features/sales/comp
 import 'src/i18n/catalogues/sales';
 
 /** G8 — `/sales/vehicles/<number>`: one vehicle (design dVehicle). */
-export default function VehiclePage({ params }: Readonly<{ params: Promise<{ number: string }> }>): React.JSX.Element {
+export default function VehiclePage({
+  params,
+}: Readonly<{ params: Promise<{ number: string }> }>): React.JSX.Element {
   return <VehicleDetailPageContent number={decodeURIComponent(use(params).number)} />;
 }

@@ -41,11 +41,15 @@ class TodayRateView(_RatesView):
         return StandardResponse.ok(metal_rates.today_view(tenant=get_effective_tenant(request)))
 
     def put(self, request: Any) -> Any:
-        return StandardResponse.ok(metal_rates.save_today(ctx=Ctx.from_request(request), data=request.data))
+        return StandardResponse.ok(
+            metal_rates.save_today(ctx=Ctx.from_request(request), data=request.data)
+        )
 
 
 class RateHistoryView(_RatesView):
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(
-            metal_rates.month_rows(tenant=get_effective_tenant(request), month=request.query_params.get("month"))
+            metal_rates.month_rows(
+                tenant=get_effective_tenant(request), month=request.query_params.get("month")
+            )
         )

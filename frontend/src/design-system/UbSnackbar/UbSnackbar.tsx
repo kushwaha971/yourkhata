@@ -106,7 +106,7 @@ function UbSnackbarBase({
               variant="ghost"
               size="sm"
               onClick={onAction}
-              className="ds-fixed-base-regular ub-hit h-5 shrink-0 px-2 !text-[0.875rem] font-semibold !leading-5 text-current underline-offset-2 hover:bg-transparent hover:underline"
+              className="ub-hit ds-fixed-base-regular h-5 shrink-0 px-2 !text-[0.875rem] font-semibold !leading-5 text-current underline-offset-2 hover:bg-transparent hover:underline"
             >
               {actionLabel}
             </MLButton>

@@ -116,7 +116,9 @@ def build_lines(
         if item is not None and raw.get("addons"):
             offered = {a.name.lower(): a for a in item.addons.all()}
             for entry in raw.get("addons") or []:
-                name = str((entry or {}).get("name") if isinstance(entry, dict) else entry or "").strip()
+                name = str(
+                    (entry or {}).get("name") if isinstance(entry, dict) else entry or ""
+                ).strip()
                 found = offered.get(name.lower())
                 if found is None:
                     errors[f"{prefix}.addons"] = [f"{name} is not an add-on of this item."]

@@ -63,8 +63,15 @@ describe('defaultBillingMode', () => {
     'starts a %s bill on Quick sale',
     (type) => expect(defaultBillingMode(type)).toBe('walkIn')
   );
-  it.each(['wholesale', 'distribution', 'trader', 'manufacturer', 'jewellery', 'furniture', 'agri'])(
-    'starts a %s bill on Saved customer',
-    (type) => expect(defaultBillingMode(type)).toBe('party')
+  it.each([
+    'wholesale',
+    'distribution',
+    'trader',
+    'manufacturer',
+    'jewellery',
+    'furniture',
+    'agri',
+  ])('starts a %s bill on Saved customer', (type) =>
+    expect(defaultBillingMode(type)).toBe('party')
   );
 });

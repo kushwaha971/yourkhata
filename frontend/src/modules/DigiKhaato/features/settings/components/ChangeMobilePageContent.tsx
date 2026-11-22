@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
-
 import {
   UbButton,
   UbField,
@@ -31,7 +30,8 @@ import { confirmMobileChange, requestMobileChange } from '../redux/myMobileThunk
 import { SettingsFrame } from './SettingsFrame';
 
 /** `42` → `0:42`, as the sign-in screen's resend timer reads. */
-const clock = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+const clock = (seconds: number): string =>
+  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 /**
  * Design settings-and-profile S2 › "Change mobile number" (owner-approved 14
@@ -45,7 +45,9 @@ export function ChangeMobilePageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const schemas = useAuthSchemas();
-  const [challenge, setChallenge] = useState<(OtpChallenge & { readonly mobile: string }) | null>(null);
+  const [challenge, setChallenge] = useState<(OtpChallenge & { readonly mobile: string }) | null>(
+    null
+  );
   const [wait, setWait] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -81,7 +83,13 @@ export function ChangeMobilePageContent(): React.JSX.Element {
     } else {
       const code = result.payload?.code;
       mobileForm.setError('mobile', {
-        message: t(code === 'mobile_taken' ? 'settings.me.mobileTaken' : code === 'mobile_unchanged' ? 'settings.me.mobileSame' : 'settings.me.mobileSendError'),
+        message: t(
+          code === 'mobile_taken'
+            ? 'settings.me.mobileTaken'
+            : code === 'mobile_unchanged'
+              ? 'settings.me.mobileSame'
+              : 'settings.me.mobileSendError'
+        ),
       });
     }
   };
@@ -89,7 +97,9 @@ export function ChangeMobilePageContent(): React.JSX.Element {
   const confirm = async ({ code }: { code: string }): Promise<void> => {
     if (!challenge || busy) return;
     setBusy(true);
-    const result = await dispatch(confirmMobileChange({ challengeId: challenge.challengeId, code }));
+    const result = await dispatch(
+      confirmMobileChange({ challengeId: challenge.challengeId, code })
+    );
     setBusy(false);
     if (confirmMobileChange.fulfilled.match(result)) {
       dispatch(showSnackbar({ severity: 'success', id: 'settings.me.mobileChanged' }));
@@ -138,11 +148,21 @@ export function ChangeMobilePageContent(): React.JSX.Element {
                     {t('auth.otp.resendIn', { time: clock(wait) })}
                   </UbText>
                 ) : (
-                  <UbButton variant="ghost" size="sm" busy={busy} onClick={() => void send({ mobile: challenge.mobile })}>
+                  <UbButton
+                    variant="ghost"
+                    size="sm"
+                    busy={busy}
+                    onClick={() => void send({ mobile: challenge.mobile })}
+                  >
                     {t('auth.otp.resend')}
                   </UbButton>
                 )}
-                <UbButton variant="ghost" size="sm" disabled={busy} onClick={() => setChallenge(null)}>
+                <UbButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => setChallenge(null)}
+                >
                   {t('settings.me.otherNumber')}
                 </UbButton>
               </UbStack>

@@ -50,13 +50,19 @@ class PhoneOrdersView(_View):
 
 class PhoneOrderDetailView(_View):
     def get(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(phone_orders.view(phone_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)))
+        return StandardResponse.ok(
+            phone_orders.view(
+                phone_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)
+            )
+        )
 
 
 class PhoneOrderStatusView(_View):
     def post(self, request: Any, pk: Any) -> Any:
         body = request.data if isinstance(request.data, dict) else {}
-        order = phone_orders.move_order(ctx=Ctx.from_request(request), order_id=pk, status=body.get("status"))
+        order = phone_orders.move_order(
+            ctx=Ctx.from_request(request), order_id=pk, status=body.get("status")
+        )
         return StandardResponse.ok(phone_orders.view(order))
 
 
@@ -65,4 +71,6 @@ class PhoneOrderReadListView(_View):
 
     def post(self, request: Any) -> Any:
         body = request.data if isinstance(request.data, dict) else {}
-        return StandardResponse.ok(phone_orders.read_list(tenant=get_effective_tenant(request), text=body.get("text")))
+        return StandardResponse.ok(
+            phone_orders.read_list(tenant=get_effective_tenant(request), text=body.get("text"))
+        )

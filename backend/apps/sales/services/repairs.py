@@ -35,7 +35,9 @@ LIVE = (RepairJob.OPEN, RepairJob.WAITING, RepairJob.READY)
 
 
 def view(job: RepairJob, *, today: dt.date | None = None) -> dict:
-    late = (today - job.ready_by).days if today and job.status in LIVE and job.ready_by < today else 0
+    late = (
+        (today - job.ready_by).days if today and job.status in LIVE and job.ready_by < today else 0
+    )
     return {
         "id": str(job.id),
         "number": job.number,
@@ -81,7 +83,9 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
     party = None
     if data.get("party_id"):
         try:
-            party = Party.objects.filter(tenant=ctx.tenant, pk=data["party_id"], deleted_at__isnull=True).first()
+            party = Party.objects.filter(
+                tenant=ctx.tenant, pk=data["party_id"], deleted_at__isnull=True
+            ).first()
         except (ValueError, TypeError, ValidationError):
             party = None
         if party is None:
@@ -89,7 +93,9 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
     name = " ".join(str(data.get("walk_in_name") or "").split())[:120]
     mobile = "".join(ch for ch in str(data.get("walk_in_mobile") or "") if ch.isdigit())[-10:]
     if party is None and not mobile and "party_id" not in errors:
-        errors["walk_in_mobile"] = ["Enter the customer's mobile, so the shop can call when it is ready."]
+        errors["walk_in_mobile"] = [
+            "Enter the customer's mobile, so the shop can call when it is ready."
+        ]
     phone_model = " ".join(str(data.get("phone_model") or "").split())[:80]
     if not phone_model:
         errors["phone_model"] = ["Enter the phone, like Redmi Note 12."]
@@ -142,7 +148,9 @@ def create_job(*, ctx: Ctx, data: dict) -> tuple[RepairJob, bool]:
     clean = _clean(ctx=ctx, data=data)
     # One writer at a time per business: the number is gap-free, and a double
     # tap finds the first tap's job here rather than making a second.
-    last = RepairJob.objects.select_for_update().filter(tenant=ctx.tenant).order_by("-number").first()
+    last = (
+        RepairJob.objects.select_for_update().filter(tenant=ctx.tenant).order_by("-number").first()
+    )
     same = RepairJob.objects.filter(tenant=ctx.tenant, client_key=clean["client_key"]).first()
     if same is not None:
         return same, False
@@ -177,7 +185,11 @@ def create_job(*, ctx: Ctx, data: dict) -> tuple[RepairJob, bool]:
                 "allocations": [],
                 "meta": {
                     "job_number": job.number,
-                    "earmark": {"module": "sales", "subject_type": "repair_job", "subject_id": str(job.id)},
+                    "earmark": {
+                        "module": "sales",
+                        "subject_type": "repair_job",
+                        "subject_id": str(job.id),
+                    },
                 },
             },
         )
@@ -192,7 +204,11 @@ def _release(ctx: Ctx, job: RepairJob) -> list[str]:
 
     if not job.advance_payment_id:
         return []
-    payment = Payment.objects.select_for_update().filter(tenant=ctx.tenant, pk=job.advance_payment_id).first()
+    payment = (
+        Payment.objects.select_for_update()
+        .filter(tenant=ctx.tenant, pk=job.advance_payment_id)
+        .first()
+    )
     if payment is None:
         return []
     payment.meta = {k: v for k, v in (payment.meta or {}).items() if k != "earmark"}
@@ -216,7 +232,11 @@ def move_job(*, ctx: Ctx, job_id: Any, status: Any) -> RepairJob:
     if job is None:
         raise NotFound("No such repair.")
     if status not in NEXT.get(job.status, ()):
-        raise BusinessRuleViolation("repair_status", "This repair cannot move to that stage.", details={"status": job.status})
+        raise BusinessRuleViolation(
+            "repair_status",
+            "This repair cannot move to that stage.",
+            details={"status": job.status},
+        )
     job.status = status
     job.save(update_fields=["status", "updated_at"])
     if status == RepairJob.CANCELLED:
@@ -292,9 +312,13 @@ def advance_for_issue(*, ctx: Ctx, document: Any) -> tuple[RepairJob | None, lis
         return None, []
     job = RepairJob.objects.select_for_update().filter(tenant=ctx.tenant, pk=link["id"]).first()
     if job is None or job.status not in LIVE:
-        raise BusinessRuleViolation("repair_status", "This repair is already finished. Remove it from the bill.", details={})
+        raise BusinessRuleViolation(
+            "repair_status", "This repair is already finished. Remove it from the bill.", details={}
+        )
     if job.party_id and job.party_id != document.party_id:
-        raise BusinessRuleViolation("repair_status", "This bill is for a different customer than the repair.", details={})
+        raise BusinessRuleViolation(
+            "repair_status", "This bill is for a different customer than the repair.", details={}
+        )
     return job, _release(ctx, job)
 
 

@@ -243,13 +243,13 @@ export function OldGoldSection({
               </UbStack>
             )}
             <UbSwitch
-                  checked={Boolean(draft.cashBack)}
-                  onCheckedChange={(on) => setEditing({ ...draft, cashBack: on })}
-                  label={t('sales.oldGold.cashBack')}
-                  description={t('sales.oldGold.cashBackHint')}
-                  data-testid="old-gold-cash-back"
-                />
-                <UbText variant="caption" tone="tertiary">
+              checked={Boolean(draft.cashBack)}
+              onCheckedChange={(on) => setEditing({ ...draft, cashBack: on })}
+              label={t('sales.oldGold.cashBack')}
+              description={t('sales.oldGold.cashBackHint')}
+              data-testid="old-gold-cash-back"
+            />
+            <UbText variant="caption" tone="tertiary">
               {t('sales.oldGold.note')}
             </UbText>
           </UbStack>

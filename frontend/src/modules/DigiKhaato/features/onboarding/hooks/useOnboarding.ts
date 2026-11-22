@@ -93,7 +93,14 @@ import type { UseFormSetError } from 'react-hook-form';
  *    disabled — not hidden — in confirmed `offline`.
  */
 /** The RHF paths each step owns, so `applyServerErrors()` knows what to anchor. */
-const BUSINESS_FIELDS = ['name', 'businessType', 'sellsWholesale', 'apps', 'stateCode', 'ownerName'];
+const BUSINESS_FIELDS = [
+  'name',
+  'businessType',
+  'sellsWholesale',
+  'apps',
+  'stateCode',
+  'ownerName',
+];
 const GST_FIELDS = ['gstType', 'gstin', 'legalName', 'pan'];
 const ADDRESS_FIELDS = ['line1', 'line2', 'city', 'district', 'pincode', 'phone', 'email'];
 

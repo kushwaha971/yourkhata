@@ -147,7 +147,7 @@ export function CounterSearchPanel({
     items.activate();
     bills.activate();
     // `activate` is stable per hook; run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the panel opens
   }, []);
   const actions = new Map<string, () => void>();
   const start: UbCommandRow[] = [],

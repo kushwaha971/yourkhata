@@ -99,13 +99,16 @@ const initialState: LibraryState = {
   stale: false,
 };
 
-type Key = { [K in keyof LibraryState]: LibraryState[K] extends Loadable<unknown> ? K : never }[keyof LibraryState];
+type Key = {
+  [K in keyof LibraryState]: LibraryState[K] extends Loadable<unknown> ? K : never;
+}[keyof LibraryState];
 
 /** A student changed (a fee, a move, a hold): every copy of them moves at once. */
 const studentChanged = (state: LibraryState, s: Student): void => {
   const swap = (rows: readonly Student[]) => rows.map((row) => (row.id === s.id ? s : row));
   if (state.student.data?.id === s.id) state.student.data = { ...state.student.data, ...s };
-  if (state.students.data) state.students.data = { ...state.students.data, rows: swap(state.students.data.rows) };
+  if (state.students.data)
+    state.students.data = { ...state.students.data, rows: swap(state.students.data.rows) };
   if (state.fees.data) state.fees.data = { ...state.fees.data, rows: swap(state.fees.data.rows) };
   if (state.home.data) state.home.data = { ...state.home.data, today: swap(state.home.data.today) };
   if (state.seats.data)
@@ -172,7 +175,15 @@ export const librarySlice = createSlice({
             state.fees.data?.rows.find((r) => r.id === action.meta.arg.id) ??
             state.home.data?.today.find((r) => r.id === action.meta.arg.id);
           state.student.data = held
-            ? { ...held, paidThisYear: '', paymentsThisYear: 0, attendance: [], attendanceMonth: '', lastIn: null, messages: 0 }
+            ? {
+                ...held,
+                paidThisYear: '',
+                paymentsThisYear: 0,
+                attendance: [],
+                attendanceMonth: '',
+                lastIn: null,
+                messages: 0,
+              }
             : null;
           state.payments.data = null;
         }
@@ -198,7 +209,9 @@ export const librarySlice = createSlice({
       // "Show more" asks for the next page and keeps what is on screen.
       const more = payload.page > 1 && state.students.data;
       state.students.data = (
-        more ? { ...payload, rows: [...(state.students.data?.rows ?? []), ...payload.rows] } : payload
+        more
+          ? { ...payload, rows: [...(state.students.data?.rows ?? []), ...payload.rows] }
+          : payload
       ) as Draft<StudentsPage>;
     });
     track('student', fetchStudent as never, (state, payload: StudentDetail) => {
@@ -212,7 +225,6 @@ export const librarySlice = createSlice({
     track('expenses', fetchExpenses as never);
     track('books', fetchBooks as never);
     track('settings', fetchSettings as never);
-
   },
 });
 

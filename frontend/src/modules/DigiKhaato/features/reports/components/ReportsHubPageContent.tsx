@@ -16,10 +16,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
-import {
-  REPORT_CATALOGUE,
-  visibleReports,
-} from '../constants/reportCatalogue';
+import { REPORT_CATALOGUE, visibleReports } from '../constants/reportCatalogue';
 
 /**
  * `/reports` — the index of reports this reader can open (RPT-common:

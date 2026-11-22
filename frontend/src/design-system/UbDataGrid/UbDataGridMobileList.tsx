@@ -85,7 +85,9 @@ const cardBody = <TRow,>(
   compact = false
 ): ReactNode => (
   <>
-    {avatar && <UbAvatar name={name} size={compact ? 'sm' : 'md'} icon={avatarIcon?.(row) ?? undefined} />}
+    {avatar && (
+      <UbAvatar name={name} size={compact ? 'sm' : 'md'} icon={avatarIcon?.(row) ?? undefined} />
+    )}
     <span className={cn('flex min-w-0 flex-1 flex-col', stacked && 'col-start-1 row-start-1')}>
       <span
         className={cn(
@@ -170,7 +172,10 @@ function UbDataGridMobileListBase<TRow>({
                 >
                   {model.title?.cell(row)}
                   {model.meta.map((column) => (
-                    <span key={column.id} className="text-[12.5px] leading-[1.45] text-text-tertiary">
+                    <span
+                      key={column.id}
+                      className="text-[12.5px] leading-[1.45] text-text-tertiary"
+                    >
                       {column.cell(row)}
                     </span>
                   ))}

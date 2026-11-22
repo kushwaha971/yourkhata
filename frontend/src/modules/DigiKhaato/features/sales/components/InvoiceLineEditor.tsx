@@ -421,7 +421,8 @@ export function InvoiceLineTable({
   // the shared columns, so no plain line sits under "Net wt".
   const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const jewelBill =
-    (indexes.some((i) => lines[i]?.jewel) || (jeweller && !indexes.some((i) => lines[i]?.itemId || lines[i]?.description.trim()))) &&
+    (indexes.some((i) => lines[i]?.jewel) ||
+      (jeweller && !indexes.some((i) => lines[i]?.itemId || lines[i]?.description.trim()))) &&
     indexes.every((i) => lines[i]?.jewel || (!lines[i]?.itemId && !lines[i]?.description.trim()));
   const columns: UbEditTableColumn[] = jewelBill
     ? [

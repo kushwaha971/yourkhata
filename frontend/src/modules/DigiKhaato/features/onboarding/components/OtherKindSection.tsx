@@ -1,6 +1,14 @@
 'use client';
 
-import { UbBox, UbField, UbPanel, UbRadioGroup, UbStack, UbSwitch, UbText } from 'src/design-system';
+import {
+  UbBox,
+  UbField,
+  UbPanel,
+  UbRadioGroup,
+  UbStack,
+  UbSwitch,
+  UbText,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
 import {
@@ -35,7 +43,10 @@ export function OtherKindSection({
   return (
     // Design dPick: the two blocks side by side on a desktop (`1fr 1fr`, 14 px),
     // one under the other on a phone (10 px).
-    <UbBox className="grid items-start gap-[10px] lg:grid-cols-2 lg:gap-[14px]" data-testid="other-kind-section">
+    <UbBox
+      className="grid items-start gap-[10px] lg:grid-cols-2 lg:gap-[14px]"
+      data-testid="other-kind-section"
+    >
       <UbField
         name="businessType"
         label={t('onboarding.other.kindTitle')}
@@ -64,7 +75,11 @@ export function OtherKindSection({
         {/* Design G12: both blocks open with the same 600 heading, so this one
             takes the field label's `.lbl` (13 px semibold), as "What kind of
             business?" beside it does. */}
-        <UbText as="h3" variant="inherit" className="text-[13px] font-semibold leading-5 text-text-primary">
+        <UbText
+          as="h3"
+          variant="inherit"
+          className="text-[13px] font-semibold leading-5 text-text-primary"
+        >
           {t('onboarding.other.needsTitle')}
         </UbText>
         <UbText as="p" variant="caption" tone="tertiary">

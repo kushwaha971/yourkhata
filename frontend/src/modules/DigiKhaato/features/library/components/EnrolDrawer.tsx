@@ -96,7 +96,10 @@ export function EnrolDrawer({
   }, [shift, form]);
 
   const freeSeats = useMemo(
-    () => (map?.shiftId === (shiftId || map?.shiftId) ? (map?.seats ?? []).filter((c) => !c.student) : []),
+    () =>
+      map?.shiftId === (shiftId || map?.shiftId)
+        ? (map?.seats ?? []).filter((c) => !c.student)
+        : [],
     [map, shiftId]
   );
 
@@ -108,7 +111,13 @@ export function EnrolDrawer({
     setSaving(false);
     if (enrol.fulfilled.match(action)) {
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'library.enrol.saved', params: { name: values.name } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'library.enrol.saved',
+          params: { name: values.name },
+        })
+      );
       onSaved(action.payload);
       return;
     }
@@ -119,7 +128,9 @@ export function EnrolDrawer({
       return;
     }
     if (error?.code === 'validation_error') rotate();
-    dispatch(showSnackbar({ severity: 'error', message: error?.message ?? t('library.enrol.error') }));
+    dispatch(
+      showSnackbar({ severity: 'error', message: error?.message ?? t('library.enrol.error') })
+    );
   };
 
   return (
@@ -130,16 +141,28 @@ export function EnrolDrawer({
       closeLabel={t('library.common.close')}
       keyboardAware
       footer={
-        <UbButton type="submit" form={formId} busy={saving} size="lg" data-testid="library-enrol-save">
+        <UbButton
+          type="submit"
+          form={formId}
+          busy={saving}
+          size="lg"
+          data-testid="library-enrol-save"
+        >
           {t('library.enrol.save')}
         </UbButton>
       }
     >
       <UbForm id={formId} form={form} onSubmit={save}>
         <UbField name="name" label={t('library.enrol.name')} required>
-          {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />}
+          {(field) => (
+            <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />
+          )}
         </UbField>
-        <UbField name="mobile" label={t('library.enrol.mobile')} hint={t('library.enrol.mobileHint')}>
+        <UbField
+          name="mobile"
+          label={t('library.enrol.mobile')}
+          hint={t('library.enrol.mobileHint')}
+        >
           {(field) => <UbPhoneInput {...field} autoComplete="tel" />}
         </UbField>
         <UbField name="shiftId" label={t('library.enrol.shift')} required>
@@ -156,25 +179,44 @@ export function EnrolDrawer({
             />
           )}
         </UbField>
-        <UbField name="seat" label={t('library.enrol.seat')} hint={t('library.enrol.seatHint', { count: freeSeats.length })}>
+        <UbField
+          name="seat"
+          label={t('library.enrol.seat')}
+          hint={t('library.enrol.seatHint', { count: freeSeats.length })}
+        >
           {(field) => (
             <UbNativeSelect
               {...field}
               value={field.value as string}
               options={[
                 { value: '', label: t('library.enrol.noSeat') },
-                ...freeSeats.map((c) => ({ value: String(c.number), label: t('library.enrol.seatNumber', { seat: c.number }) })),
+                ...freeSeats.map((c) => ({
+                  value: String(c.number),
+                  label: t('library.enrol.seatNumber', { seat: c.number }),
+                })),
               ]}
             />
           )}
         </UbField>
         {taken && <UbStatusBanner tone="warning" title={taken} />}
         <UbField name="monthlyFee" label={t('library.enrol.fee')} required>
-          {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+          {(field) => (
+            <UbMoneyInput
+              {...field}
+              value={field.value as string}
+              inputMode="decimal"
+              className="text-right"
+            />
+          )}
         </UbField>
         <UbField name="joinedOn" label={t('library.enrol.joined')}>
           {(field) => (
-            <UbDateInput {...field} value={field.value as string} max={today} onChange={(v) => field.onChange(v ?? today)} />
+            <UbDateInput
+              {...field}
+              value={field.value as string}
+              max={today}
+              onChange={(v) => field.onChange(v ?? today)}
+            />
           )}
         </UbField>
         <UbField
@@ -183,7 +225,14 @@ export function EnrolDrawer({
           optionalLabel={t('library.common.optional')}
           hint={t('library.enrol.firstPaymentHint')}
         >
-          {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+          {(field) => (
+            <UbMoneyInput
+              {...field}
+              value={field.value as string}
+              inputMode="decimal"
+              className="text-right"
+            />
+          )}
         </UbField>
         <UbSegmentedControl
           ariaLabel={t('library.collect.mode')}

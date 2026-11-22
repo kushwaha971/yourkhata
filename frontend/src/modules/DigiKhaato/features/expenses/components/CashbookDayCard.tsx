@@ -28,7 +28,9 @@ export const isOpenableRow = (row: CashRow): boolean =>
 
 const rowLabel = (row: CashRow, t: TranslateFn): string => {
   if (row.sourceType === 'expense') {
-    return t('cashbook.row.expenseOf', { name: row.note.trim() || row.category?.name || t('cashbook.row.expense') });
+    return t('cashbook.row.expenseOf', {
+      name: row.note.trim() || row.category?.name || t('cashbook.row.expense'),
+    });
   }
   if (row.sourceType === 'payment' && row.direction === 'out') {
     return row.party ? t('cashbook.row.paidTo', { name: row.party.name }) : t('cashbook.row.paid');
@@ -85,7 +87,12 @@ export function CashbookRows({
                 <UbText as="span" variant="body-sm" className="ds-num">
                   {time}
                 </UbText>
-                <UbText as="span" variant="caption" tone="tertiary" className="break-words lg:hidden">
+                <UbText
+                  as="span"
+                  variant="caption"
+                  tone="tertiary"
+                  className="break-words lg:hidden"
+                >
                   {`${label} · ${moneyIn}`}
                 </UbText>
                 <UbText as="span" variant="body-sm" className="min-w-0 break-words max-lg:hidden">
@@ -111,7 +118,12 @@ export function CashbookRows({
               {body}
             </UbPressable>
           ) : (
-            <UbStack key={row.id} gap={0} className="border-b border-border-hairline last:border-b-0" data-testid="cashbook-row">
+            <UbStack
+              key={row.id}
+              gap={0}
+              className="border-b border-border-hairline last:border-b-0"
+              data-testid="cashbook-row"
+            >
               {body}
             </UbStack>
           );

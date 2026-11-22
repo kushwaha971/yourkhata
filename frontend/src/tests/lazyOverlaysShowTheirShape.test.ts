@@ -37,7 +37,8 @@ const NOT_AN_OPENER = new Set([
   'src/components/layout/MobileQuickSearch.tsx:UbDrawer',
 ]);
 
-const OVERLAY = /<(UbDrawer|CompactDrawer|UbDialog|UbConfirmDialog|CompactDialog|MLDialog|UbActionSheet|UbShareSheet)\b/;
+const OVERLAY =
+  /<(UbDrawer|CompactDrawer|UbDialog|UbConfirmDialog|CompactDialog|MLDialog|UbActionSheet|UbShareSheet)\b/;
 
 const sources = (dir: string): readonly string[] =>
   readdirSync(dir).flatMap((entry) => {

@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-import { UbButton, UbDrawer, UbNativeSelect, UbStack, UbStatusBanner, UbText } from 'src/design-system';
+import {
+  UbButton,
+  UbDrawer,
+  UbNativeSelect,
+  UbStack,
+  UbStatusBanner,
+  UbText,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -35,7 +42,9 @@ export function MoveSeatSheet({
 
   useEffect(() => {
     const controller = new AbortController();
-    getSeats(shiftId, controller.signal).then(setMap).catch(() => undefined);
+    getSeats(shiftId, controller.signal)
+      .then(setMap)
+      .catch(() => undefined);
     return () => controller.abort();
   }, [shiftId, error]);
 
@@ -44,12 +53,18 @@ export function MoveSeatSheet({
   const save = async () => {
     setSaving(true);
     setError(null);
-    const action = await dispatch(moveStudent({ id: student.id, seat: seat ? Number(seat) : null, shiftId, key }));
+    const action = await dispatch(
+      moveStudent({ id: student.id, seat: seat ? Number(seat) : null, shiftId, key })
+    );
     setSaving(false);
     if (moveStudent.fulfilled.match(action)) {
       rotate();
       dispatch(
-        showSnackbar({ severity: 'success', id: 'library.move.saved', params: { name: student.name, place: seatLine(action.payload, t) } })
+        showSnackbar({
+          severity: 'success',
+          id: 'library.move.saved',
+          params: { name: student.name, place: seatLine(action.payload, t) },
+        })
       );
       onMoved?.(action.payload);
       onClose();
@@ -60,7 +75,12 @@ export function MoveSeatSheet({
       setSeat('');
       return;
     }
-    dispatch(showSnackbar({ severity: 'error', message: action.payload?.message ?? t('library.move.error') }));
+    dispatch(
+      showSnackbar({
+        severity: 'error',
+        message: action.payload?.message ?? t('library.move.error'),
+      })
+    );
   };
 
   return (
@@ -71,7 +91,12 @@ export function MoveSeatSheet({
       description={student.name}
       closeLabel={t('library.common.close')}
       footer={
-        <UbButton size="lg" busy={saving} onClick={() => void save()} data-testid="library-move-save">
+        <UbButton
+          size="lg"
+          busy={saving}
+          onClick={() => void save()}
+          data-testid="library-move-save"
+        >
           {t('library.move.save')}
         </UbButton>
       }
@@ -95,7 +120,10 @@ export function MoveSeatSheet({
           onChange={setSeat}
           options={[
             { value: '', label: t('library.enrol.noSeat') },
-            ...free.map((c) => ({ value: String(c.number), label: t('library.enrol.seatNumber', { seat: c.number }) })),
+            ...free.map((c) => ({
+              value: String(c.number),
+              label: t('library.enrol.seatNumber', { seat: c.number }),
+            })),
           ]}
         />
         {error && <UbStatusBanner tone="warning" title={error} />}

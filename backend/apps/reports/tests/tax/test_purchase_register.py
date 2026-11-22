@@ -11,12 +11,7 @@ import pytest
 from django.db import connection
 from django.urls import reverse
 
-from apps.reports.tests.tax.builders import (
-    RAMESH_GSTIN,
-    bill,
-    csv_rows,
-    party,
-)
+from apps.reports.tests.tax.builders import RAMESH_GSTIN, bill, csv_rows, party
 
 pytestmark = pytest.mark.django_db
 

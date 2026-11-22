@@ -67,13 +67,18 @@ export function CollectSheet({
   // Paid on an earlier day (owner, 12 Nov: "but I want date"): today unless changed.
   const [changingDate, setChangingDate] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [answer, setAnswer] = useState<{ ask: string; paidTo: string; credit: string } | null>(null);
+  const [answer, setAnswer] = useState<{ ask: string; paidTo: string; credit: string } | null>(
+    null
+  );
   const form = useForm<CollectValues>({
     resolver: yupResolver(collectSchema),
     mode: 'onTouched',
     defaultValues: { amount: plain(start), mode: 'cash', paidOn: today },
   });
-  const [amount, mode, paidOn] = useWatch({ control: form.control, name: ['amount', 'mode', 'paidOn'] });
+  const [amount, mode, paidOn] = useWatch({
+    control: form.control,
+    name: ['amount', 'mode', 'paidOn'],
+  });
   const typed = useDebounce(amount, 250);
 
   const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
@@ -101,13 +106,20 @@ export function CollectSheet({
   const afterText = (() => {
     if (!after) return null;
     const left = Number(after.credit);
-    const seat = student.seat ? ` ${t('library.collect.seatStays', { seat: student.seat, name: first })}` : '';
+    const seat = student.seat
+      ? ` ${t('library.collect.seatStays', { seat: student.seat, name: first })}`
+      : '';
     const date = shortDate(after.paidTo, today);
     // No month moved: the money waits as part of THIS month, which is still owed (hand pass, 12 Nov).
     if (after.paidTo === student.paidTo)
-      return { paid: t('library.collect.partOnly', { amount: rupees(String(fee - left)), date }), rest: seat, date };
+      return {
+        paid: t('library.collect.partOnly', { amount: rupees(String(fee - left)), date }),
+        rest: seat,
+        date,
+      };
     const paid = t('library.collect.after', { date });
-    const part = left > 0 ? ` ${t('library.collect.partLeft', { amount: rupees(String(fee - left)) })}` : '';
+    const part =
+      left > 0 ? ` ${t('library.collect.partLeft', { amount: rupees(String(fee - left)) })}` : '';
     return { paid, rest: `${part}${seat}`, date };
   })();
 
@@ -143,7 +155,12 @@ export function CollectSheet({
     }
     wa?.close();
     if (action.payload?.code === 'validation_error') rotate();
-    dispatch(showSnackbar({ severity: 'error', message: action.payload?.message ?? t('library.collect.error') }));
+    dispatch(
+      showSnackbar({
+        severity: 'error',
+        message: action.payload?.message ?? t('library.collect.error'),
+      })
+    );
   };
 
   return (
@@ -162,7 +179,9 @@ export function CollectSheet({
           className="min-w-[104px] justify-self-start px-6"
           data-testid="library-collect-save"
         >
-          {amountOk ? t('library.collect.save', { amount: rupees(amount) }) : t('library.collect.saveEmpty')}
+          {amountOk
+            ? t('library.collect.save', { amount: rupees(amount) })
+            : t('library.collect.saveEmpty')}
         </UbButton>
       }
     >
@@ -190,7 +209,10 @@ export function CollectSheet({
           onChange={(v) => pick(v as Choice)}
           options={[
             { value: 'one', label: t('library.collect.oneMonth', { amount: rupees(String(fee)) }) },
-            { value: 'three', label: t('library.collect.threeMonths', { amount: rupees(String(fee * 3)) }) },
+            {
+              value: 'three',
+              label: t('library.collect.threeMonths', { amount: rupees(String(fee * 3)) }),
+            },
             { value: 'part', label: t('library.collect.part') },
           ]}
           className="flex-nowrap [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
@@ -222,13 +244,19 @@ export function CollectSheet({
             data-testid="library-collect-change-date"
           >
             {t('library.collect.date', {
-              date: paidOn === today ? t('library.collect.today', { date: shortDate(today, today) }) : shortDate(paidOn, today),
+              date:
+                paidOn === today
+                  ? t('library.collect.today', { date: shortDate(today, today) })
+                  : shortDate(paidOn, today),
             })}
           </UbPressable>
         )}
         <UbBox
           aria-live="polite"
-          className={cn('min-h-11 rounded-[10px] bg-surface-sunken px-3.5 py-3', !afterText && 'invisible')}
+          className={cn(
+            'min-h-11 rounded-[10px] bg-surface-sunken px-3.5 py-3',
+            !afterText && 'invisible'
+          )}
           data-testid="library-collect-after"
         >
           {afterText && (

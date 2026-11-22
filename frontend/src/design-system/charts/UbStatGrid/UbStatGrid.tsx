@@ -99,11 +99,7 @@ function UbStatGridBase({ children, live, label, collapse, className }: Readonly
   // figures, then the summary line.
   if (items.length === 0) return grid;
   return (
-    <UbStatSummary
-      items={items}
-      storageKey={collapse.storageKey}
-      labels={collapse.labels}
-    >
+    <UbStatSummary items={items} storageKey={collapse.storageKey} labels={collapse.labels}>
       {grid}
     </UbStatSummary>
   );

@@ -55,7 +55,9 @@ def test_moving_keeps_total_stock_and_value(owner: Any, tenant: Any, make_item: 
     rows = ItemStock.objects.filter(item=parle)
     assert sum(r.on_hand for r in rows) == Decimal("140.000")
     assert sum(r.stock_value for r in rows) == Decimal("5600.00")
-    pair = StockMovement.objects.filter(item=parle, movement_type__in=["transfer_out", "transfer_in"])
+    pair = StockMovement.objects.filter(
+        item=parle, movement_type__in=["transfer_out", "transfer_in"]
+    )
     assert {m.unit_cost for m in pair} == {Decimal("40.0000")}
 
 
@@ -67,17 +69,24 @@ def test_more_than_the_godown_holds_is_refused_and_nothing_moves(
     parle = make_item("Parle-G", opening=("50", "40"))
     shop = str(default_location(tenant).id)
     godown = add_place(owner, "Godown")["id"]
-    refused = move(owner, shop, godown, [
-        {"item_id": str(parle.id), "qty": "20"},
-        {"item_id": str(tea.id), "qty": "12"},
-    ])
+    refused = move(
+        owner,
+        shop,
+        godown,
+        [
+            {"item_id": str(parle.id), "qty": "20"},
+            {"item_id": str(tea.id), "qty": "12"},
+        ],
+    )
     assert refused.status_code == 409
     short = refused.json()["error"]["details"]["lines"]
     assert [(s["index"], s["available"]) for s in short] == [(1, "9.000")]
     assert not StockMovement.objects.filter(movement_type="transfer_out").exists()
 
 
-def test_same_place_twice_and_a_second_godown_name_are_refused(owner: Any, tenant: Any, make_item: Any) -> None:
+def test_same_place_twice_and_a_second_godown_name_are_refused(
+    owner: Any, tenant: Any, make_item: Any
+) -> None:
     item = make_item("Soap", opening=("5", "10"))
     shop = str(default_location(tenant).id)
     add_place(owner, "Godown")
@@ -94,7 +103,9 @@ def test_the_move_screen_reads_both_places(owner: Any, tenant: Any, make_item: A
     move(owner, shop, godown, [{"item_id": str(parle.id), "qty": "12"}])
     url = reverse("v1:stock-transfer-stock") + f"?from={godown}&to={shop}"
     rows = owner.get(url).json()["data"]
-    assert [(r["name"], r["at_from"], r["at_to"]) for r in rows] == [("Parle-G", "12.000", "128.000")]
+    assert [(r["name"], r["at_from"], r["at_to"]) for r in rows] == [
+        ("Parle-G", "12.000", "128.000")
+    ]
     places = owner.get(reverse("v1:location-list")).json()["data"]
     assert [p["name"] for p in places][0] == Location.objects.get(pk=shop).name
 
@@ -107,7 +118,9 @@ def test_staff_cannot_move_stock(api_as: Any, tenant: Any, make_item: Any, main:
     assert staff.get(reverse("v1:location-list")).status_code == 200
 
 
-def test_lists_show_the_whole_business_or_one_godown(owner: Any, tenant: Any, make_item: Any) -> None:
+def test_lists_show_the_whole_business_or_one_godown(
+    owner: Any, tenant: Any, make_item: Any
+) -> None:
     """Before this, every list read MAIN only: 30 moved to the godown vanished
     from the Items list and the stock value. Without `location_id` they show
     every place summed; with it, one place."""
@@ -119,7 +132,9 @@ def test_lists_show_the_whole_business_or_one_godown(owner: Any, tenant: Any, ma
     assert (row["on_hand"], row["avg_cost"]) == ("100.000", "40.0000")
     summary = owner.get(reverse("v1:stock-summary")).json()["data"]
     assert [r["on_hand"] for r in summary if r["item"]["name"] == "Parle-G"] == ["100.000"]
-    at_godown = owner.get(reverse("v1:item-list") + f"?q=Parle&location_id={godown}").json()["data"][0]
+    at_godown = owner.get(reverse("v1:item-list") + f"?q=Parle&location_id={godown}").json()[
+        "data"
+    ][0]
     assert at_godown["on_hand"] == "30.000"
     bad = owner.get(reverse("v1:item-list") + "?location_id=01a18dba-0000-7000-8000-000000000000")
     assert bad.status_code == 400

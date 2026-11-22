@@ -230,7 +230,10 @@ export const useInventorySchemas = (
         .defined()
         .default('')
         .max(160, t('validation.maxChars', { value: 160 })),
-      schedule: Yup.mixed<ItemSchedule>().oneOf([...ITEM_SCHEDULES]).defined().default(''),
+      schedule: Yup.mixed<ItemSchedule>()
+        .oneOf([...ITEM_SCHEDULES])
+        .defined()
+        .default(''),
     });
 
     const adjustmentSchema: Yup.ObjectSchema<AdjustmentFormValues> = Yup.object({

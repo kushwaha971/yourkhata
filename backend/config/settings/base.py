@@ -413,6 +413,6 @@ UB_LOG_FORMAT = env.str("UB_LOG_FORMAT", "json")
 UB_LOG_DIR = env.str("UB_LOG_DIR", str(BASE_DIR / "logs"))
 UB_LOG_SQL = env.bool("UB_LOG_SQL", False)
 
-from apps.common.logging import build_logging_config  # noqa: E402
+from apps.common.logging import build_logging_config
 
 LOGGING = build_logging_config(level=UB_LOG_LEVEL, fmt=UB_LOG_FORMAT)

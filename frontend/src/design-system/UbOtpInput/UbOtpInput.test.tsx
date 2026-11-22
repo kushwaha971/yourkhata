@@ -195,7 +195,8 @@ it('typing beside a filled digit replaces it rather than spilling', () => {
  * 4821" sent "1048"). The cells now take the run of digits that IS a code.
  */
 describe('a pasted message gives the code, not its other numbers', () => {
-  const six = (): string[] => screen.getAllByRole('textbox').map((cell) => (cell as HTMLInputElement).value);
+  const six = (): string[] =>
+    screen.getAllByRole('textbox').map((cell) => (cell as HTMLInputElement).value);
 
   it.each([
     ['code last', 'Valid for 10 minutes. Your YourKhata code is 482193'],

@@ -217,11 +217,11 @@ def table_sizes(tenant_id: Any) -> dict[str, int]:
         for table in LARGE_TABLES:
             if table in headers:
                 sql = (
-                    f"SELECT count(*) FROM {table} l JOIN {headers[table]} d "  # noqa: S608
+                    f"SELECT count(*) FROM {table} l JOIN {headers[table]} d "  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
                     "ON d.id = l.document_id WHERE d.tenant_id = %s"
                 )
             else:
-                sql = f"SELECT count(*) FROM {table} WHERE tenant_id = %s"  # noqa: S608
+                sql = f"SELECT count(*) FROM {table} WHERE tenant_id = %s"  # noqa: S608 — reason: names come from code, never from the request; values are bound parameters
             cursor.execute(sql, [str(tenant_id)])
             sizes[table] = cursor.fetchone()[0]
     return sizes

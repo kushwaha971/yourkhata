@@ -90,7 +90,21 @@ _PICTURE: dict[str, str] = {
 }
 
 #: Every feature key the session may carry.
-FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders", "part_numbers", "godowns", "addons", "serials", "rates", "jewellery", "sites", "schemes", "cafe_orders", "phone_orders", "loose_amount")
+FEATURE_KEYS: tuple[str, ...] = (
+    *presets.SIGNUP_FEATURES,
+    "orders",
+    "part_numbers",
+    "godowns",
+    "addons",
+    "serials",
+    "rates",
+    "jewellery",
+    "sites",
+    "schemes",
+    "cafe_orders",
+    "phone_orders",
+    "loose_amount",
+)
 
 
 def _setting(tenant: Any, rows: dict[str, Any], key: str) -> Any:
@@ -107,8 +121,9 @@ def _rows(tenant: Any) -> dict[str, Any]:
 
     return dict(
         TenantSetting.objects.filter(
-            tenant=tenant, key__in=["shop.wholesale", "parties.labels"]
-            + [f"shop.features.{k}" for k in FEATURE_KEYS]
+            tenant=tenant,
+            key__in=["shop.wholesale", "parties.labels"]
+            + [f"shop.features.{k}" for k in FEATURE_KEYS],
         ).values_list("key", "value")
     )
 
@@ -171,8 +186,12 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
         low = _plural(supplier, locale).lower()
         # The register subtitles (design SCR) name the kind's own people.
         words["purchases.list.titleSub"] = f"{low} के बिल।" if hi else f"Bills from your {low}."
-        words["purchases.order.listTitleSub"] = f"आपने {low} से जो मँगाया।" if hi else f"What you asked {low} to send."
-        words["purchases.debitNote.listTitleSub"] = f"{low} को वापस भेजा गया माल।" if hi else f"Goods you sent back to {low}."
+        words["purchases.order.listTitleSub"] = (
+            f"आपने {low} से जो मँगाया।" if hi else f"What you asked {low} to send."
+        )
+        words["purchases.debitNote.listTitleSub"] = (
+            f"{low} को वापस भेजा गया माल।" if hi else f"Goods you sent back to {low}."
+        )
         many = _plural(supplier, locale)
         one = _ONE_HI.get(supplier, supplier) if hi else supplier
         words["reports.home.paySupplier"] = f"{one} को भुगतान" if hi else f"Pay {one.lower()}"

@@ -78,7 +78,13 @@ export function CounterPageContent(): React.JSX.Element {
     setMarking(s.id);
     try {
       await markAttendance(s.id, out, `${s.id}-${today}-${out ? 'out' : 'in'}`);
-      dispatch(showSnackbar({ severity: 'success', id: out ? 'library.counter.outDone' : 'library.counter.inDone', params: { name: s.name } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: out ? 'library.counter.outDone' : 'library.counter.inDone',
+          params: { name: s.name },
+        })
+      );
       void loadIn();
     } catch {
       dispatch(showSnackbar({ severity: 'error', message: t('library.counter.markError') }));
@@ -102,7 +108,11 @@ export function CounterPageContent(): React.JSX.Element {
             onClick={() => void mark(s, isIn)}
             data-testid="library-counter-mark"
           >
-            {row?.outAt ? t('library.counter.wentOut') : isIn ? t('library.counter.out') : t('library.counter.in')}
+            {row?.outAt
+              ? t('library.counter.wentOut')
+              : isIn
+                ? t('library.counter.out')
+                : t('library.counter.in')}
           </UbButton>
         )}
         {s.fee !== 'paid' && s.fee !== 'hold' && s.status !== 'left' && (
@@ -131,13 +141,22 @@ export function CounterPageContent(): React.JSX.Element {
           lib.students.status === 'loading' && results.length === 0 ? (
             <UbSkeleton variant="list" count={3} label={t('library.common.loading')} />
           ) : results.length === 0 ? (
-            <UbEmptyState variant="filtered" title={t('library.students.noMatch.title')} description={t('library.students.noMatch.body', { q })} />
+            <UbEmptyState
+              variant="filtered"
+              title={t('library.students.noMatch.title')}
+              description={t('library.students.noMatch.body', { q })}
+            />
           ) : (
             <List testId="library-counter-results">
               {results.map((s) => (
                 <UbBox as="li" key={s.id}>
                   {/* Two controls side by side, never a button inside a button. */}
-                  <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2">
+                  <UbStack
+                    direction="row"
+                    align="center"
+                    gap={3}
+                    className="min-h-14 border-b border-border-hairline px-4 py-2"
+                  >
                     <UbPressable
                       onClick={() => router.push(LIBRARY_ROUTES.student(s.id))}
                       className="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -147,7 +166,11 @@ export function CounterPageContent(): React.JSX.Element {
                         <UbText variant="inherit" truncate className="text-[14px] font-medium">
                           {s.name}
                         </UbText>
-                        <UbText variant="inherit" truncate className="text-[12.5px] text-text-tertiary">
+                        <UbText
+                          variant="inherit"
+                          truncate
+                          className="text-[12.5px] text-text-tertiary"
+                        >
                           {feeLine(s, today, t)}
                         </UbText>
                       </UbStack>
@@ -168,7 +191,9 @@ export function CounterPageContent(): React.JSX.Element {
               <UbEmptyState
                 variant="error"
                 title={t('library.attendance.error')}
-                action={<UbButton onClick={() => void loadIn()}>{t('library.common.tryAgain')}</UbButton>}
+                action={
+                  <UbButton onClick={() => void loadIn()}>{t('library.common.tryAgain')}</UbButton>
+                }
               />
             ) : !lib.attendance.data ? (
               <UbSkeleton variant="list" count={3} label={t('library.common.loading')} />
@@ -180,7 +205,12 @@ export function CounterPageContent(): React.JSX.Element {
               <List testId="library-counter-inside">
                 {insideNow.map((a) => (
                   <UbBox as="li" key={a.id}>
-                    <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2">
+                    <UbStack
+                      direction="row"
+                      align="center"
+                      gap={3}
+                      className="min-h-14 border-b border-border-hairline px-4 py-2"
+                    >
                       <UbStack gap={0} className="min-w-0 flex-1">
                         <UbText variant="inherit" truncate className="text-[14px] font-medium">
                           {a.student}
@@ -189,7 +219,12 @@ export function CounterPageContent(): React.JSX.Element {
                           {[
                             a.seat ? t('library.fees.seat', { seat: a.seat }) : null,
                             t('library.counter.since', {
-                              time: new Date(a.inAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }),
+                              time: new Date(a.inAt).toLocaleTimeString('en-IN', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                                timeZone: 'Asia/Kolkata',
+                              }),
                             }),
                           ]
                             .filter(Boolean)
@@ -197,7 +232,12 @@ export function CounterPageContent(): React.JSX.Element {
                         </UbText>
                       </UbStack>
                       {canCollect && (
-                        <UbButton size="sm" variant="outlineNeutral" busy={marking === a.studentId} onClick={() => void mark({ id: a.studentId, name: a.student }, true)}>
+                        <UbButton
+                          size="sm"
+                          variant="outlineNeutral"
+                          busy={marking === a.studentId}
+                          onClick={() => void mark({ id: a.studentId, name: a.student }, true)}
+                        >
                           {t('library.counter.out')}
                         </UbButton>
                       )}

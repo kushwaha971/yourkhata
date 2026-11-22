@@ -48,29 +48,25 @@ import 'src/i18n/catalogues/teamAccess';
  */
 const AddMemberDialog = dynamic(
   () => import('./AddMemberDialog').then((module) => module.AddMemberDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /* Owner, 12 Oct 2026 — the edit form carries the same form stack as the add
    dialog, so it is fetched when it opens, for the same reason. */
 const EditMemberDialog = dynamic(
   () => import('./EditMemberDialog').then((module) => module.EditMemberDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /* Owner, 14 Nov 2026 — which apps a member opens: fetched when it opens. */
 const MemberAccessSheet = dynamic(
   () => import('./MemberAccessSheet').then((module) => module.MemberAccessSheet),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const CredentialsDialog = dynamic(
   () => import('./CredentialsDialog').then((module) => module.CredentialsDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

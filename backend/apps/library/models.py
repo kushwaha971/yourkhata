@@ -56,14 +56,18 @@ class Seat(TenantModel):
 class Student(TenantModel):
     name = models.CharField(max_length=NAME_MAX)
     mobile = models.CharField(max_length=10, blank=True, default="")
-    seat = models.ForeignKey(Seat, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    seat = models.ForeignKey(
+        Seat, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="+")
     monthly_fee = MoneyField()
     joined_on = models.DateField()
     # Caches moved only by a payment in the same transaction; `recalc` re-derives them.
     paid_to = models.DateField(null=True, blank=True)
     credit = MoneyField(default=0)
-    status = models.CharField(max_length=8, choices=StudentStatus.choices, default=StudentStatus.ACTIVE)
+    status = models.CharField(
+        max_length=8, choices=StudentStatus.choices, default=StudentStatus.ACTIVE
+    )
     hold_until = models.DateField(null=True, blank=True)
     note = models.CharField(max_length=NOTE_MAX, blank=True, default="")
 
@@ -106,7 +110,9 @@ class Payment(TenantModel):
     class Meta:
         db_table = "library_payment"
         constraints = [
-            models.CheckConstraint(condition=Q(amount__gt=0), name="ck_library_payment_amount_positive"),
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="ck_library_payment_amount_positive"
+            ),
         ]
         indexes = [
             models.Index(fields=["student", "-created_at"], name="ix_library_payment_student"),
@@ -139,7 +145,9 @@ class Expense(TenantModel):
     class Meta:
         db_table = "library_expense"
         constraints = [
-            models.CheckConstraint(condition=Q(amount__gt=0), name="ck_library_expense_amount_positive"),
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="ck_library_expense_amount_positive"
+            ),
         ]
         indexes = [models.Index(fields=["tenant", "spent_on"], name="ix_library_expense_day")]
 

@@ -93,9 +93,9 @@ export function PaymentAllocationPicker({
         ? compareMoney(total, '0.00') > 0
           ? 'payments.counter.againstOld'
           : 'payments.counter.againstOldEmpty'
-      : compareMoney(total, '0.00') > 0
-        ? 'payments.counter.none'
-        : 'payments.counter.noneEmpty';
+        : compareMoney(total, '0.00') > 0
+          ? 'payments.counter.none'
+          : 'payments.counter.noneEmpty';
     return (
       <UbText variant="caption" tone={counter ? 'secondary' : 'tertiary'} data-testid="alloc-none">
         {t(noneId, { amount: formatAmount(total) })}

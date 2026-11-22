@@ -86,4 +86,3 @@ export const SHOP_BOOK_WORDS: Readonly<Record<string, string>> = {
   'parties.list.totals.receivable.action': 'parties.list.shop.toCollect.action',
   'parties.list.totals.payable.action': 'parties.list.shop.toPay.action',
 };
-

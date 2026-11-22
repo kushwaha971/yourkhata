@@ -89,7 +89,8 @@ it.each<[FlowKind, boolean]>([
   renderWithProviders(<SalesFlowListPageContent kind={kind} />);
   const button = screen.queryByRole('button', { name: 'Export' });
   expect(Boolean(button)).toBe(shown);
-  if (button) expect(button.dataset.path).toMatch(kind === 'estimate' ? /estimates/ : /credit-notes/);
+  if (button)
+    expect(button.dataset.path).toMatch(kind === 'estimate' ? /estimates/ : /credit-notes/);
 });
 
 it('synchronizes an externally changed query without sending the old search back', async () => {

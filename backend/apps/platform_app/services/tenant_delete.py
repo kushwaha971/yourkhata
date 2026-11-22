@@ -408,7 +408,13 @@ def send_delete_code(*, user: Any, ip: str | None = None, request_id: str | None
     from apps.platform_app.services import otp as otp_service
 
     if not user.mobile:
-        raise BusinessRuleViolation("precondition_failed", "Add a mobile number to your profile first.")
+        raise BusinessRuleViolation(
+            "precondition_failed", "Add a mobile number to your profile first."
+        )
     return otp_service.request_otp(
-        mobile=user.mobile, purpose=OtpPurpose.VERIFY, ip=ip, locale=user.locale or "en", request_id=request_id
+        mobile=user.mobile,
+        purpose=OtpPurpose.VERIFY,
+        ip=ip,
+        locale=user.locale or "en",
+        request_id=request_id,
     )

@@ -22,12 +22,7 @@ function UbDialogLoadingBase(): React.JSX.Element {
   // Closing only hides this shape; the screen still asks for the real one.
   const [shown, setShown] = useState(true);
   return (
-    <UbDialog
-      open={shown}
-      onOpenChange={setShown}
-      title={labels.loading}
-      closeLabel={labels.close}
-    >
+    <UbDialog open={shown} onOpenChange={setShown} title={labels.loading} closeLabel={labels.close}>
       <UbStack gap={3} aria-busy data-ub-dialog-loading="">
         <UbSkeleton variant="form" count={1} label={labels.loading} />
         <UbSlowLoadingNote />

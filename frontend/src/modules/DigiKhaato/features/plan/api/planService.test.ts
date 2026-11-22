@@ -95,7 +95,9 @@ describe('planService.getPlanEntitlements — sharing the session read', () => {
   it('waits for the /auth/me read already on its way instead of asking again', async () => {
     // Settings P0 round, 16 Nov 2026: opening Plan read /auth/me twice.
     const get = jest.spyOn(api, 'get').mockResolvedValue({
-      data: { data: { plan_limits: { plan_code: 'free', limits: { max_users: { limit: 3, used: 1 } } } } },
+      data: {
+        data: { plan_limits: { plan_code: 'free', limits: { max_users: { limit: 3, used: 1 } } } },
+      },
     });
     const { getSession } = jest.requireActual('modules/DigiKhaato/features/auth/api/authService');
     const session = getSession().catch(() => null);

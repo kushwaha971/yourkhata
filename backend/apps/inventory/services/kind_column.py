@@ -14,8 +14,23 @@ from apps.inventory.models import Batch, ItemAddon, ItemCode, ItemStock, ItemUni
 from apps.platform_app.selectors.business_words import features_of
 
 #: First match wins, so a kind with several of these shows the design's own.
-ORDER = ("jewellery", "batches", "serials", "part_numbers", "godowns", "alt_units", "variants", "addons")
-_PURITY = {"gold_24k": "24K", "gold_22k": "22K", "gold_18k": "18K", "silver": "999", "silver_925": "925"}
+ORDER = (
+    "jewellery",
+    "batches",
+    "serials",
+    "part_numbers",
+    "godowns",
+    "alt_units",
+    "variants",
+    "addons",
+)
+_PURITY = {
+    "gold_24k": "24K",
+    "gold_22k": "22K",
+    "gold_18k": "18K",
+    "silver": "999",
+    "silver_925": "925",
+}
 
 
 def column_of(tenant: Any) -> str | None:
@@ -56,7 +71,9 @@ def _batches(ids: list) -> dict:
 
 def _imei(ids: list) -> dict:
     counts: dict = defaultdict(int)
-    for item_id in Serial.objects.filter(item_id__in=ids, status=Serial.IN_STOCK).values_list("item_id", flat=True):
+    for item_id in Serial.objects.filter(item_id__in=ids, status=Serial.IN_STOCK).values_list(
+        "item_id", flat=True
+    ):
         counts[item_id] += 1
     return {item_id: {"count": n} for item_id, n in counts.items()}
 
@@ -99,5 +116,12 @@ def lines(*, key: str | None, items: list) -> dict[str, Any]:
     elif key == "variants":
         found = {item.id: item.attributes for item in items if item.attributes}
     else:
-        found = {"jewellery": _tags, "batches": _batches, "serials": _imei, "godowns": _godowns, "alt_units": _units, "addons": _addons}[key](ids)
+        found = {
+            "jewellery": _tags,
+            "batches": _batches,
+            "serials": _imei,
+            "godowns": _godowns,
+            "alt_units": _units,
+            "addons": _addons,
+        }[key](ids)
     return {str(item_id): value for item_id, value in found.items()}

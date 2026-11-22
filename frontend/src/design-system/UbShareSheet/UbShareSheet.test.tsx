@@ -380,7 +380,11 @@ describe('UbShareSheet', () => {
 });
 
 describe('UbShareSheet conversation (design pRemind)', () => {
-  const conversation = { editText: 'Edit text', share: 'Share on WhatsApp', note: 'Nothing is sent.' };
+  const conversation = {
+    editText: 'Edit text',
+    share: 'Share on WhatsApp',
+    note: 'Nothing is sent.',
+  };
   const props: UbShareSheetProps = {
     open: true,
     onOpenChange: () => undefined,

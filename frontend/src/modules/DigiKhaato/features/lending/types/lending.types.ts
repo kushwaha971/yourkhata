@@ -58,7 +58,12 @@ export interface Round {
   readonly stopsDone: number;
   readonly toVisit: number;
   readonly notPaid: number;
-  readonly book: { readonly late: string; readonly lateBorrowers: number; readonly lentMonth: string; readonly loansMonth: number };
+  readonly book: {
+    readonly late: string;
+    readonly lateBorrowers: number;
+    readonly lentMonth: string;
+    readonly loansMonth: number;
+  };
   readonly routes: readonly { readonly id: string; readonly name: string }[];
   readonly name: string;
 }
@@ -83,7 +88,11 @@ export interface CollectionRow {
 export interface LoanDetail extends Loan {
   readonly schedule: readonly ScheduleRow[];
   readonly collections: readonly CollectionRow[];
-  readonly visits: readonly { readonly day: string; readonly reason: string; readonly promisedOn: string | null }[];
+  readonly visits: readonly {
+    readonly day: string;
+    readonly reason: string;
+    readonly promisedOn: string | null;
+  }[];
   readonly daysToGo: number;
 }
 
@@ -101,7 +110,11 @@ export interface LoanPreview {
   readonly inHand: string;
   readonly earns: string;
   readonly lastDay: string;
-  readonly schedule: readonly { readonly seq: number; readonly dueOn: string; readonly amount: string }[];
+  readonly schedule: readonly {
+    readonly seq: number;
+    readonly dueOn: string;
+    readonly amount: string;
+  }[];
 }
 
 export interface Borrower {

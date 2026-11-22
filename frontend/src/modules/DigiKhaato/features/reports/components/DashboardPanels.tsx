@@ -558,65 +558,69 @@ export function NeedsAttention({
       tone: 'warning',
     });
   const body = (
-      <UbStack gap={0}>
-        {!embedded && (
-          <UbText as="h2" variant="h3" className="px-4 pt-4">
-            {t('reports.dashboard.attention.title')}
-          </UbText>
-        )}
-        {items.length > 0 &&
-          (embedded ? (
-            /* The design's `.li`: words on the left, one small button on the right. */
-            <UbStack as="ul" gap={0}>
-              {items.map((item) => (
-                <UbStack
-                  key={item.key}
-                  as="li"
-                  direction="row"
-                  align="center"
-                  className="min-h-14 gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
-                  data-testid="home-follow-row"
-                >
-                  <UbStack gap={0} className="min-w-0 flex-1">
-                    <UbLink
-                      href={item.href ?? ''}
-                      underline={false}
-                      className="ds-num whitespace-normal break-words text-[14px] font-medium leading-[1.45]"
-                    >
-                      {item.title}
-                    </UbLink>
-                    {item.caption && (
-                      <UbText variant="inherit" tone="tertiary" className="text-[12.5px] leading-[1.45]">
-                        {item.caption}
-                      </UbText>
-                    )}
-                  </UbStack>
-                  <UbActionLink
+    <UbStack gap={0}>
+      {!embedded && (
+        <UbText as="h2" variant="h3" className="px-4 pt-4">
+          {t('reports.dashboard.attention.title')}
+        </UbText>
+      )}
+      {items.length > 0 &&
+        (embedded ? (
+          /* The design's `.li`: words on the left, one small button on the right. */
+          <UbStack as="ul" gap={0}>
+            {items.map((item) => (
+              <UbStack
+                key={item.key}
+                as="li"
+                direction="row"
+                align="center"
+                className="min-h-14 gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
+                data-testid="home-follow-row"
+              >
+                <UbStack gap={0} className="min-w-0 flex-1">
+                  <UbLink
                     href={item.href ?? ''}
-                    variant="outlineNeutral"
-                    size="sm"
-                    className="ub-hit shrink-0"
+                    underline={false}
+                    className="ds-num whitespace-normal break-words text-[14px] font-medium leading-[1.45]"
                   >
-                    {t('reports.home.open')}
-                  </UbActionLink>
+                    {item.title}
+                  </UbLink>
+                  {item.caption && (
+                    <UbText
+                      variant="inherit"
+                      tone="tertiary"
+                      className="text-[12.5px] leading-[1.45]"
+                    >
+                      {item.caption}
+                    </UbText>
+                  )}
                 </UbStack>
-              ))}
-            </UbStack>
-          ) : (
-            <UbAttentionList items={items} className="mx-0 py-1" />
-          ))}
-        {/* "Nothing needs you" only when every part it reads arrived. */}
-        {broken ? (
-          <PartUnavailable onRetry={onRetry} t={t} className="p-4" />
+                <UbActionLink
+                  href={item.href ?? ''}
+                  variant="outlineNeutral"
+                  size="sm"
+                  className="ub-hit shrink-0"
+                >
+                  {t('reports.home.open')}
+                </UbActionLink>
+              </UbStack>
+            ))}
+          </UbStack>
         ) : (
-          items.length === 0 &&
-          !alsoShown && (
-            <UbText variant="body-sm" tone="tertiary" className="p-4">
-              {t('reports.dashboard.attention.none')}
-            </UbText>
-          )
-        )}
-      </UbStack>
+          <UbAttentionList items={items} className="mx-0 py-1" />
+        ))}
+      {/* "Nothing needs you" only when every part it reads arrived. */}
+      {broken ? (
+        <PartUnavailable onRetry={onRetry} t={t} className="p-4" />
+      ) : (
+        items.length === 0 &&
+        !alsoShown && (
+          <UbText variant="body-sm" tone="tertiary" className="p-4">
+            {t('reports.dashboard.attention.none')}
+          </UbText>
+        )
+      )}
+    </UbStack>
   );
   return embedded ? (
     body

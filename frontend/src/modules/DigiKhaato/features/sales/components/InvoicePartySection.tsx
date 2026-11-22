@@ -254,7 +254,11 @@ export function InvoicePartySection({
         {/* D P1b — design D1 auto parts: Vehicle no. and Mechanic. */}
         {keepsVehicles && (
           <UbGrid columns={{ base: 1, sm: 3 }} gap={3}>
-            <UbField name="vehicleNo" label={t('sales.editor.vehicleNo')} hint={t('sales.editor.vehicleHint')}>
+            <UbField
+              name="vehicleNo"
+              label={t('sales.editor.vehicleNo')}
+              hint={t('sales.editor.vehicleHint')}
+            >
               {(field) => (
                 <UbTextInput
                   {...field}
@@ -267,12 +271,22 @@ export function InvoicePartySection({
             </UbField>
             <UbField name="vehicleModel" label={t('sales.editor.vehicleModel')}>
               {(field) => (
-                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={60} disabled={disabled} />
+                <UbTextInput
+                  {...field}
+                  value={(field.value as string) ?? ''}
+                  maxLength={60}
+                  disabled={disabled}
+                />
               )}
             </UbField>
             <UbField name="mechanic" label={t('sales.editor.mechanic')}>
               {(field) => (
-                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={60} disabled={disabled} />
+                <UbTextInput
+                  {...field}
+                  value={(field.value as string) ?? ''}
+                  maxLength={60}
+                  disabled={disabled}
+                />
               )}
             </UbField>
           </UbGrid>
@@ -339,20 +353,31 @@ export function InvoicePartySection({
   /* G4 — design D1 medical: Doctor and Patient name, in the bill's own card
      (not folded under More details) while a Schedule H / H1 / X medicine is on
      the bill, or the bill already has them. */
-  const rxBlock = keepsBatches && (scheduled || Boolean(watch('rxDoctor')) || Boolean(watch('rxPatient'))) && (
-          <UbGrid columns={{ base: 1, sm: 2 }} gap={3} data-testid="bill-rx">
-            <UbField name="rxDoctor" label={t('sales.editor.rxDoctor')} hint={t('sales.editor.rxHint')}>
-              {(field) => (
-                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={80} disabled={disabled} />
-              )}
-            </UbField>
-            <UbField name="rxPatient" label={t('sales.editor.rxPatient')}>
-              {(field) => (
-                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={80} disabled={disabled} />
-              )}
-            </UbField>
-          </UbGrid>
-        );
+  const rxBlock = keepsBatches &&
+    (scheduled || Boolean(watch('rxDoctor')) || Boolean(watch('rxPatient'))) && (
+      <UbGrid columns={{ base: 1, sm: 2 }} gap={3} data-testid="bill-rx">
+        <UbField name="rxDoctor" label={t('sales.editor.rxDoctor')} hint={t('sales.editor.rxHint')}>
+          {(field) => (
+            <UbTextInput
+              {...field}
+              value={(field.value as string) ?? ''}
+              maxLength={80}
+              disabled={disabled}
+            />
+          )}
+        </UbField>
+        <UbField name="rxPatient" label={t('sales.editor.rxPatient')}>
+          {(field) => (
+            <UbTextInput
+              {...field}
+              value={(field.value as string) ?? ''}
+              maxLength={80}
+              disabled={disabled}
+            />
+          )}
+        </UbField>
+      </UbGrid>
+    );
   const showDetails = part !== 'who';
   const detailsBlock = showDetails && renderDetails();
   if (part === 'details') return <>{detailsBlock}</>;
@@ -371,7 +396,7 @@ export function InvoicePartySection({
         // row under the switch and the customer.
         part === 'all' &&
           box &&
-          'lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-center lg:gap-4 lg:[&>:last-child]:col-span-2 xl:grid-cols-[300px_minmax(0,1fr)_360px] xl:[&>:last-child]:col-span-1'
+          'lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-center lg:gap-4 xl:grid-cols-[300px_minmax(0,1fr)_360px] lg:[&>:last-child]:col-span-2 xl:[&>:last-child]:col-span-1'
       )}
     >
       {/* Shop item 4 — goods on a challan always go to a named party (SAL-09 §10). */}

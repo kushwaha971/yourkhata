@@ -37,15 +37,31 @@ const toGroup = (row: GroupApi): AccessGroup => ({
   members: row.members,
 });
 
-export const getAccessGroups = async (app: string, signal?: AbortSignal): Promise<AccessGroupsPayload> => {
+export const getAccessGroups = async (
+  app: string,
+  signal?: AbortSignal
+): Promise<AccessGroupsPayload> => {
   const response = await api.get<{
-    data: { app: string; parts: AccessGroupsPayload['parts']; groups: GroupApi[]; suggested: AccessGroupsPayload['suggested'] };
+    data: {
+      app: string;
+      parts: AccessGroupsPayload['parts'];
+      groups: GroupApi[];
+      suggested: AccessGroupsPayload['suggested'];
+    };
   }>(`${API_PATHS.ACCESS_GROUPS}${toQueryString({ app })}`, { signal });
   const data = response.data.data;
-  return { app: data.app, parts: data.parts, groups: data.groups.map(toGroup), suggested: data.suggested };
+  return {
+    app: data.app,
+    parts: data.parts,
+    groups: data.groups.map(toGroup),
+    suggested: data.suggested,
+  };
 };
 
-export const createAccessGroup = async (app: string, draft: AccessGroupDraft): Promise<AccessGroup> => {
+export const createAccessGroup = async (
+  app: string,
+  draft: AccessGroupDraft
+): Promise<AccessGroup> => {
   const response = await api.post<{ data: GroupApi }>(API_PATHS.ACCESS_GROUPS, {
     app,
     name: draft.name,
@@ -56,7 +72,10 @@ export const createAccessGroup = async (app: string, draft: AccessGroupDraft): P
 };
 export const createAccessGroupWriteClass: TWriteClass = 'online-only';
 
-export const updateAccessGroup = async (groupId: string, draft: AccessGroupDraft): Promise<AccessGroup> => {
+export const updateAccessGroup = async (
+  groupId: string,
+  draft: AccessGroupDraft
+): Promise<AccessGroup> => {
   const response = await api.patch<{ data: GroupApi }>(API_PATHS.ACCESS_GROUP(groupId), {
     name: draft.name,
     is_default: draft.isDefault,
@@ -77,7 +96,12 @@ interface MemberAccessApi {
   readonly narrowed: boolean;
   readonly group_id: string | null;
   readonly group_name: string | null;
-  readonly parts: readonly { part: string; levels: AccessLevel[]; group_level: AccessLevel; level: AccessLevel }[];
+  readonly parts: readonly {
+    part: string;
+    levels: AccessLevel[];
+    group_level: AccessLevel;
+    level: AccessLevel;
+  }[];
   readonly changes: number;
 }
 
@@ -87,11 +111,20 @@ const toMemberAccess = (data: MemberAccessApi): MemberAccess => ({
   narrowed: data.narrowed,
   groupId: data.group_id,
   groupName: data.group_name,
-  parts: data.parts.map((p) => ({ part: p.part, levels: p.levels, groupLevel: p.group_level, level: p.level })),
+  parts: data.parts.map((p) => ({
+    part: p.part,
+    levels: p.levels,
+    groupLevel: p.group_level,
+    level: p.level,
+  })),
   changes: data.changes,
 });
 
-export const getMemberAccess = async (membershipId: string, app: string, signal?: AbortSignal): Promise<MemberAccess> => {
+export const getMemberAccess = async (
+  membershipId: string,
+  app: string,
+  signal?: AbortSignal
+): Promise<MemberAccess> => {
   const response = await api.get<{ data: MemberAccessApi }>(
     `${API_PATHS.MEMBER_ACCESS(membershipId)}${toQueryString({ app })}`,
     { signal }

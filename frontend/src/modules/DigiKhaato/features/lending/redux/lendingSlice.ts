@@ -72,7 +72,9 @@ const initialState: LendingState = {
   settings: loadable(),
 };
 
-type Key = { [K in keyof LendingState]: LendingState[K] extends Loadable<unknown> ? K : never }[keyof LendingState];
+type Key = {
+  [K in keyof LendingState]: LendingState[K] extends Loadable<unknown> ? K : never;
+}[keyof LendingState];
 
 export const lendingSlice = createSlice({
   name: 'lending',
@@ -93,11 +95,20 @@ export const lendingSlice = createSlice({
           const held =
             state.round.data?.stops.find((s) => s.id === action.meta.arg) ??
             state.loans.data?.find((l) => l.id === action.meta.arg);
-          state.loan.data = held ? ({ ...held, schedule: [], collections: [], visits: [], daysToGo: 0 } as Draft<LoanDetail>) : null;
+          state.loan.data = held
+            ? ({
+                ...held,
+                schedule: [],
+                collections: [],
+                visits: [],
+                daysToGo: 0,
+              } as Draft<LoanDetail>)
+            : null;
         }
       })
       .addCase(collect.fulfilled, (state, action) => {
-        if (state.loan.data?.id === action.payload.loan.id) state.loan.data = action.payload.loan as Draft<LoanDetail>;
+        if (state.loan.data?.id === action.payload.loan.id)
+          state.loan.data = action.payload.loan as Draft<LoanDetail>;
       })
       .addCase(notPaid.fulfilled, () => undefined)
       .addCase(resetAllFeatureState, () => initialState);

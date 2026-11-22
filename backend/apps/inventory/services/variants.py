@@ -75,7 +75,9 @@ def create_variants(*, ctx: Ctx, payload: dict) -> dict:
     )
     items = []
     warnings: list = []
-    base = {k: v for k, v in payload.items() if k not in ("variants", "barcode", "opening_stock", "sku")}
+    base = {
+        k: v for k, v in payload.items() if k not in ("variants", "barcode", "opening_stock", "sku")
+    }
     for colour, size in combos:
         attributes = {k: v for k, v in (("colour", colour), ("size", size)) if v}
         label = " · ".join([name, *[v for v in (colour, size) if v]])

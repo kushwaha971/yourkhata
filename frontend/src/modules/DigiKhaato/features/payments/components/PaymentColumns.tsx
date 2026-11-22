@@ -78,7 +78,10 @@ export const createPaymentColumns = ({
               as="span"
               variant="caption"
               tone="tertiary"
-              className={cn('ds-num whitespace-normal break-words', cancelled(row) && 'line-through')}
+              className={cn(
+                'ds-num whitespace-normal break-words',
+                cancelled(row) && 'line-through'
+              )}
             >
               {`${row.number} · ${date(row)}`}
             </UbText>

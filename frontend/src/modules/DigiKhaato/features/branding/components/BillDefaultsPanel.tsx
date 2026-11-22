@@ -38,8 +38,12 @@ export function BillDefaultsPanel(): React.JSX.Element | null {
   const access = useSettingsAccess();
   const settings = useTenantSettings(access.canView);
   const values = settings.data?.values;
-  const savedTerms = ((values?.['documents.terms'] as { text?: string } | undefined)?.text ?? '').trim();
-  const showQr = Boolean((values?.['documents.show_upi_qr'] as { value?: boolean } | undefined)?.value ?? true);
+  const savedTerms = (
+    (values?.['documents.terms'] as { text?: string } | undefined)?.text ?? ''
+  ).trim();
+  const showQr = Boolean(
+    (values?.['documents.show_upi_qr'] as { value?: boolean } | undefined)?.value ?? true
+  );
   // Untouched, the box shows what is saved; once typed in, the draft.
   const [draft, setDraft] = useState<string | null>(null);
   const terms = draft ?? savedTerms;
@@ -50,72 +54,74 @@ export function BillDefaultsPanel(): React.JSX.Element | null {
 
   return (
     <>
-    {/* Another tab or device saved Settings first (412). Without this the save
+      {/* Another tab or device saved Settings first (412). Without this the save
         was refused and nothing on this page said so (settings-edges E5,
         16 Nov 2026). */}
-    <UbConfirmDialog
-      open={settings.conflict}
-      onOpenChange={(next) => {
-        if (!next) settings.reloadAfterConflict();
-      }}
-      title={t('settings.conflict.title')}
-      description={t('settings.conflict')}
-      confirmLabel={t('settings.conflict.reload')}
-      cancelLabel={t('common.action.cancel')}
-      closeLabel={t('common.action.close')}
-      onConfirm={() => {
-        setDraft(null);
-        settings.reloadAfterConflict();
-      }}
-    />
-    <UbPanel as="section">
-      <UbPanelSection title={t('branding.bill.title')}>
-        <UbStack gap={4}>
-          <UbStack gap={2}>
-            <UbText as="label" variant="label" htmlFor="bill-terms">
-              {t('branding.bill.terms')}
-            </UbText>
-            <UbTextArea
-              id="bill-terms"
-              value={terms}
-              rows={2}
-              maxLength={TERMS_MAX}
-              disabled={locked}
-              placeholder={t('branding.bill.termsPlaceholder')}
-              onChange={setDraft}
-            />
-            <UbStack direction="row" justify="between" align="center" gap={2}>
-              <UbText variant="caption" tone="tertiary">
-                {t('branding.bill.termsHint')}
+      <UbConfirmDialog
+        open={settings.conflict}
+        onOpenChange={(next) => {
+          if (!next) settings.reloadAfterConflict();
+        }}
+        title={t('settings.conflict.title')}
+        description={t('settings.conflict')}
+        confirmLabel={t('settings.conflict.reload')}
+        cancelLabel={t('common.action.cancel')}
+        closeLabel={t('common.action.close')}
+        onConfirm={() => {
+          setDraft(null);
+          settings.reloadAfterConflict();
+        }}
+      />
+      <UbPanel as="section">
+        <UbPanelSection title={t('branding.bill.title')}>
+          <UbStack gap={4}>
+            <UbStack gap={2}>
+              <UbText as="label" variant="label" htmlFor="bill-terms">
+                {t('branding.bill.terms')}
               </UbText>
-              {!locked ? (
-                <UbButton
-                  size="sm"
-                  busy={busy}
-                  disabled={terms.trim() === savedTerms}
-                  onClick={() =>
-                    void settings
-                      .saveSection('documents', { 'documents.terms': { text: terms } })
-                      .then((saved) => saved && setDraft(null))
-                  }
-                >
-                  {t('branding.bill.save')}
-                </UbButton>
-              ) : null}
+              <UbTextArea
+                id="bill-terms"
+                value={terms}
+                rows={2}
+                maxLength={TERMS_MAX}
+                disabled={locked}
+                placeholder={t('branding.bill.termsPlaceholder')}
+                onChange={setDraft}
+              />
+              <UbStack direction="row" justify="between" align="center" gap={2}>
+                <UbText variant="caption" tone="tertiary">
+                  {t('branding.bill.termsHint')}
+                </UbText>
+                {!locked ? (
+                  <UbButton
+                    size="sm"
+                    busy={busy}
+                    disabled={terms.trim() === savedTerms}
+                    onClick={() =>
+                      void settings
+                        .saveSection('documents', { 'documents.terms': { text: terms } })
+                        .then((saved) => saved && setDraft(null))
+                    }
+                  >
+                    {t('branding.bill.save')}
+                  </UbButton>
+                ) : null}
+              </UbStack>
             </UbStack>
+            <UbBox className="border-t border-border-subtle pt-3">
+              <UbSwitch
+                checked={showQr}
+                disabled={locked || busy}
+                onCheckedChange={(on) =>
+                  void settings.saveSection('documents', { 'documents.show_upi_qr': { value: on } })
+                }
+                label={t('branding.bill.qr')}
+                description={t('branding.bill.qrHint')}
+              />
+            </UbBox>
           </UbStack>
-          <UbBox className="border-t border-border-subtle pt-3">
-            <UbSwitch
-              checked={showQr}
-              disabled={locked || busy}
-              onCheckedChange={(on) => void settings.saveSection('documents', { 'documents.show_upi_qr': { value: on } })}
-              label={t('branding.bill.qr')}
-              description={t('branding.bill.qrHint')}
-            />
-          </UbBox>
-        </UbStack>
-      </UbPanelSection>
-    </UbPanel>
+        </UbPanelSection>
+      </UbPanel>
     </>
   );
 }

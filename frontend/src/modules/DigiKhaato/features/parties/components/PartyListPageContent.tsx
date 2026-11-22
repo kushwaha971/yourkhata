@@ -86,8 +86,7 @@ import type { Party } from '../types/party.types';
  */
 const SupplierPaymentLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 // BP-08 — the settle dialog loads with its own words when a merchant taps Settle….
@@ -96,8 +95,7 @@ const SettleBalancesLazy = dynamic(
     import('../../payments/settlement/components/SettleBalancesDialog').then(
       (m) => m.SettleBalancesDialog
     ),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const ShopCustomerReminderLazy = dynamic(
@@ -105,11 +103,9 @@ const ShopCustomerReminderLazy = dynamic(
   { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
-
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -125,8 +121,7 @@ const PartyFormDrawerLazy = dynamic(
  */
 const PartyBulkTagDialogLazy = dynamic(
   () => import('./PartyBulkTagDialog').then((m) => m.PartyBulkTagDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -139,8 +134,7 @@ const PartyBulkTagDialogLazy = dynamic(
  */
 const PartyBulkArchiveDialogLazy = dynamic(
   () => import('./PartyBulkArchiveDialog').then((m) => m.PartyBulkArchiveDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -773,10 +767,10 @@ export function PartyListPageContent({
           }
           subtitle={
             kind === 'supplier'
-                ? t('parties.list.supplier.subtitle')
-                : kind === 'customer'
-                  ? t('parties.list.customer.subtitle')
-                  : t('parties.list.subtitle')
+              ? t('parties.list.supplier.subtitle')
+              : kind === 'customer'
+                ? t('parties.list.customer.subtitle')
+                : t('parties.list.subtitle')
           }
           actions={
             <>
@@ -868,7 +862,10 @@ export function PartyListPageContent({
           onSaved={refetch}
         />
       )}
-      <UbStack gap={compactRegister ? 3 : 4} className={compactRegister ? 'min-h-0 flex-1 !shrink' : undefined}>
+      <UbStack
+        gap={compactRegister ? 3 : 4}
+        className={compactRegister ? 'min-h-0 flex-1 !shrink' : undefined}
+      >
         {showStats && !compactRegister && (
           <PartyListStats
             payableFirst={kind === 'supplier'}
@@ -980,8 +977,8 @@ export function PartyListPageContent({
             variant={compactRegister ? 'register' : 'panel'}
             className={
               compactRegister
-                  ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal'
-                  : undefined
+                ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal'
+                : undefined
             }
             columnMenu={compactRegister ? false : undefined}
             toolbar={
@@ -1002,75 +999,77 @@ export function PartyListPageContent({
                      search alone, as the design draws it. */
                   filters={
                     supplier ? undefined : (
-                    <>
-                      {/* The design's desktop toolbar: Show and Balance beside
+                      <>
+                        {/* The design's desktop toolbar: Show and Balance beside
                           the search; a phone keeps its one-tap chips. */}
-                      <UbStack direction="row" gap={2} className="hidden lg:flex">
-                        <UbFilterSelect
-                          spec={{
-                            kind: 'single',
-                            key: 'status',
-                            label: t('parties.list.filter.status.label'),
-                            options: STATUS_OPTIONS.map((value) => ({
-                              value,
-                              label: t(`parties.list.status.${value}`),
-                            })),
-                          }}
-                          value={filters.status}
-                          onChange={(value) => handleStatus(value)}
-                          closeLabel={t('common.action.close')}
+                        <UbStack direction="row" gap={2} className="hidden lg:flex">
+                          <UbFilterSelect
+                            spec={{
+                              kind: 'single',
+                              key: 'status',
+                              label: t('parties.list.filter.status.label'),
+                              options: STATUS_OPTIONS.map((value) => ({
+                                value,
+                                label: t(`parties.list.status.${value}`),
+                              })),
+                            }}
+                            value={filters.status}
+                            onChange={(value) => handleStatus(value)}
+                            closeLabel={t('common.action.close')}
+                          />
+                          <UbFilterSelect
+                            spec={{
+                              kind: 'single',
+                              key: 'balance',
+                              label: t('parties.list.column.balance'),
+                              options: [
+                                { value: '', label: t('parties.list.filter.any') },
+                                {
+                                  value: supplier ? 'i_owe' : 'owes_me',
+                                  label: t(
+                                    supplier
+                                      ? 'parties.list.supplier.owes'
+                                      : 'parties.list.shop.owes'
+                                  ),
+                                },
+                                { value: 'late', label: t('parties.list.shop.late') },
+                                {
+                                  value: supplier ? 'owes_me' : 'i_owe',
+                                  label: t(
+                                    supplier
+                                      ? 'parties.list.supplier.advance'
+                                      : 'parties.list.shop.credit'
+                                  ),
+                                },
+                                { value: 'settled', label: t('parties.list.balance.settled') },
+                              ],
+                            }}
+                            value={filters.late ? 'late' : filters.balance}
+                            onChange={(value) =>
+                              value === 'late'
+                                ? setFilters({ balance: '', late: 'overdue' })
+                                : setFilters({ balance: value as typeof filters.balance, late: '' })
+                            }
+                            closeLabel={t('common.action.close')}
+                          />
+                        </UbStack>
+                        <PartyListSortSheet
+                          t={t}
+                          ordering={filters.ordering}
+                          onOrderingChange={setOrdering}
+                          labelled
+                          shop
+                          supplier={supplier}
+                          className="hidden lg:inline-flex"
                         />
-                        <UbFilterSelect
-                          spec={{
-                            kind: 'single',
-                            key: 'balance',
-                            label: t('parties.list.column.balance'),
-                            options: [
-                              { value: '', label: t('parties.list.filter.any') },
-                              {
-                                value: supplier ? 'i_owe' : 'owes_me',
-                                label: t(
-                                  supplier ? 'parties.list.supplier.owes' : 'parties.list.shop.owes'
-                                ),
-                              },
-                              { value: 'late', label: t('parties.list.shop.late') },
-                              {
-                                value: supplier ? 'owes_me' : 'i_owe',
-                                label: t(
-                                  supplier
-                                    ? 'parties.list.supplier.advance'
-                                    : 'parties.list.shop.credit'
-                                ),
-                              },
-                              { value: 'settled', label: t('parties.list.balance.settled') },
-                            ],
-                          }}
-                          value={filters.late ? 'late' : filters.balance}
-                          onChange={(value) =>
-                            value === 'late'
-                              ? setFilters({ balance: '', late: 'overdue' })
-                              : setFilters({ balance: value as typeof filters.balance, late: '' })
-                          }
-                          closeLabel={t('common.action.close')}
+                        <ShopPartyFilters
+                          supplier={supplier}
+                          t={t}
+                          filters={filters}
+                          tags={tagOptions}
+                          onApply={setFilters}
                         />
-                      </UbStack>
-                      <PartyListSortSheet
-                        t={t}
-                        ordering={filters.ordering}
-                        onOrderingChange={setOrdering}
-                        labelled
-                        shop
-                        supplier={supplier}
-                        className="hidden lg:inline-flex"
-                      />
-                      <ShopPartyFilters
-                        supplier={supplier}
-                        t={t}
-                        filters={filters}
-                        tags={tagOptions}
-                        onApply={setFilters}
-                      />
-                    </>
+                      </>
                     )
                   }
                 />

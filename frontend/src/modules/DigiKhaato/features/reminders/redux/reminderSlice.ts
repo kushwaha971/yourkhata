@@ -219,8 +219,11 @@ const reminderSlice = createSlice({
 
       .addCase(sendManualReminder.fulfilled, (state, action) => {
         /* The strip moves the moment the tap is recorded: "Reminded just now". */
-        if (state.partyId === action.payload.partyId ||
-            state.partyId === `${action.payload.module === 'sales' ? 'shop' : 'main'}:${action.payload.partyId}`) {
+        if (
+          state.partyId === action.payload.partyId ||
+          state.partyId ===
+            `${action.payload.module === 'sales' ? 'shop' : 'main'}:${action.payload.partyId}`
+        ) {
           state.partyRows = [action.payload as Draft<Reminder>, ...state.partyRows].slice(0, 5);
           const totals = state.partyTotals;
           state.partyTotals = {

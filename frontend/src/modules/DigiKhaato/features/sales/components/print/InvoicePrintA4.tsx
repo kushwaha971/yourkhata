@@ -462,7 +462,10 @@ export function InvoicePrintA4({
             {/* G4 — the design's footer line for a Schedule H medicine's sale. */}
             {doc.rx?.doctor && (
               <p data-testid="print-rx">
-                {t(doc.rx.patient ? 'sales.print.rxFor' : 'sales.print.rx', { doctor: doc.rx.doctor, patient: doc.rx.patient ?? '' })}
+                {t(doc.rx.patient ? 'sales.print.rxFor' : 'sales.print.rx', {
+                  doctor: doc.rx.doctor,
+                  patient: doc.rx.patient ?? '',
+                })}
               </p>
             )}
             {doc.terms && (

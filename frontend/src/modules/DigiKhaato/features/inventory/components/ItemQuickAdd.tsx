@@ -104,7 +104,8 @@ const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbSc
 });
 
 const ItemQuickCreate = dynamic(() => import('./ItemQuickCreate').then((m) => m.ItemQuickCreate), {
-  ssr: false, loading: () => <UbDrawerLoading />,
+  ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 
 interface NoMatchAction {
@@ -414,7 +415,6 @@ function ItemQuickAddBase({
   }, [showList]);
   if (!search.canSearch) return null;
 
-
   return (
     <UbBox className={cn('relative w-full', className)} data-testid="item-quick-add">
       <UbBox className={cn(labels.camera && 'flex items-center gap-2')}>
@@ -646,10 +646,18 @@ function ItemQuickAddBase({
                   data-testid="scan-tray-row"
                   className="flex justify-between gap-2.5 text-sm"
                 >
-                  <UbText as="span" variant="inherit" className={cn('min-w-0 truncate', rowInk(index))}>
+                  <UbText
+                    as="span"
+                    variant="inherit"
+                    className={cn('min-w-0 truncate', rowInk(index))}
+                  >
                     {index === 0 ? `+ ${one.name}` : one.name}
                   </UbText>
-                  <UbText as="span" variant="inherit" className={cn('shrink-0 tabular-nums', rowInk(index))}>
+                  <UbText
+                    as="span"
+                    variant="inherit"
+                    className={cn('shrink-0 tabular-nums', rowInk(index))}
+                  >
                     {labels.camera?.lineOf?.(one.id) ?? ''}
                   </UbText>
                 </UbBox>

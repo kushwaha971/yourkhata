@@ -50,10 +50,13 @@ import {
   type PhoneOrderStatus,
 } from '../api/phoneOrderService';
 
-const PhoneOrderDrawer = dynamic(() => import('./PhoneOrderDrawer').then((m) => m.PhoneOrderDrawer), {
-  ssr: false,
-  loading: () => <UbDrawerLoading />,
-});
+const PhoneOrderDrawer = dynamic(
+  () => import('./PhoneOrderDrawer').then((m) => m.PhoneOrderDrawer),
+  {
+    ssr: false,
+    loading: () => <UbDrawerLoading />,
+  }
+);
 
 // Design dPhoneOrders: Udhaar amber, UPI on delivery teal, Cash the plain green badge.
 const PAY_TONE = { udhaar: 'warning', upi: 'info', cash: 'success' } as const;
@@ -82,23 +85,79 @@ const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<Phone
   const items = (count: number): string => t('sales.phone.itemsCount', { count });
   if (tier === 'cards')
     return [
-      { id: 'order', header: t('sales.phone.col.order'), priority: 1, cardSlot: 'title', cell: (o) => `${o.number} · ${o.party.name}` },
+      {
+        id: 'order',
+        header: t('sales.phone.col.order'),
+        priority: 1,
+        cardSlot: 'title',
+        cell: (o) => `${o.number} · ${o.party.name}`,
+      },
       {
         id: 'items',
         header: t('sales.phone.col.items'),
         priority: 1,
         cardSlot: 'meta',
-        cell: (o) => `${itemsSummary(o.lines, items)} · ${deliverText(o, t)} · ${formatInr(o.total)}`,
+        cell: (o) =>
+          `${itemsSummary(o.lines, items)} · ${deliverText(o, t)} · ${formatInr(o.total)}`,
       },
-      { id: 'pay', header: t('sales.phone.col.pay'), priority: 1, cardSlot: 'trailing', cell: (o) => payBadge(o, t) },
+      {
+        id: 'pay',
+        header: t('sales.phone.col.pay'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: (o) => payBadge(o, t),
+      },
     ];
   return [
-    { id: 'order', header: t('sales.phone.col.order'), priority: 1, cardSlot: 'none', widthShare: 11, cell: (o) => o.number },
-    { id: 'customer', header: t('sales.phone.col.customer'), priority: 1, cardSlot: 'none', widthShare: 20, cell: (o) => o.party.name },
-    { id: 'items', header: t('sales.phone.col.items'), priority: 1, cardSlot: 'none', widthShare: 27, cell: (o) => itemsSummary(o.lines, items) },
-    { id: 'deliver', header: t('sales.phone.col.deliver'), priority: 2, cardSlot: 'none', widthShare: 16, cell: (o) => deliverText(o, t) },
-    { id: 'amount', header: t('sales.phone.col.amount'), priority: 1, cardSlot: 'none', align: 'end', widthShare: 12, cell: (o) => formatInr(o.total) },
-    { id: 'pay', header: t('sales.phone.col.pay'), priority: 1, cardSlot: 'none', widthShare: 14, cell: (o) => payBadge(o, t) },
+    {
+      id: 'order',
+      header: t('sales.phone.col.order'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 11,
+      cell: (o) => o.number,
+    },
+    {
+      id: 'customer',
+      header: t('sales.phone.col.customer'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 20,
+      cell: (o) => o.party.name,
+    },
+    {
+      id: 'items',
+      header: t('sales.phone.col.items'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 27,
+      cell: (o) => itemsSummary(o.lines, items),
+    },
+    {
+      id: 'deliver',
+      header: t('sales.phone.col.deliver'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (o) => deliverText(o, t),
+    },
+    {
+      id: 'amount',
+      header: t('sales.phone.col.amount'),
+      priority: 1,
+      cardSlot: 'none',
+      align: 'end',
+      widthShare: 12,
+      cell: (o) => formatInr(o.total),
+    },
+    {
+      id: 'pay',
+      header: t('sales.phone.col.pay'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 14,
+      cell: (o) => payBadge(o, t),
+    },
   ];
 };
 
@@ -143,7 +202,13 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
       setActing(null);
       try {
         await movePhoneOrder(order.id, status);
-        dispatch(showSnackbar({ severity: 'success', id: `sales.phone.moved.${status}`, params: { number: order.number } }));
+        dispatch(
+          showSnackbar({
+            severity: 'success',
+            id: `sales.phone.moved.${status}`,
+            params: { number: order.number },
+          })
+        );
       } finally {
         setAttempt((n) => n + 1);
       }
@@ -158,24 +223,50 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
       (['to_pack', 'out', 'delivered'] as const).map((value) => ({
         value,
         label: counts
-          ? t('sales.repair.chip.withCount', { label: t(`sales.phone.chip.${value}`), count: counts[value] })
+          ? t('sales.repair.chip.withCount', {
+              label: t(`sales.phone.chip.${value}`),
+              count: counts[value],
+            })
           : t(`sales.phone.chip.${value}`),
       })),
     [counts, t]
   );
   const rows = list?.rows ?? [];
-  const gridState: UbGridState = failed ? 'error' : !list ? 'loading' : rows.length === 0 ? (search ? 'filtered-empty' : 'empty') : 'rows';
+  const gridState: UbGridState = failed
+    ? 'error'
+    : !list
+      ? 'loading'
+      : rows.length === 0
+        ? search
+          ? 'filtered-empty'
+          : 'empty'
+        : 'rows';
   const searchBox = (
-    <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.phone.search')} aria-label={t('sales.phone.search')} />
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('sales.phone.search')}
+      aria-label={t('sales.phone.search')}
+    />
   );
   const newButton = canWrite && (
-    <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} iconOnly="mobile" onClick={() => setDrawer({ paste: false })} data-testid="phone-new">
+    <UbButton
+      icon={<Plus className="h-4 w-4" aria-hidden />}
+      iconOnly="mobile"
+      onClick={() => setDrawer({ paste: false })}
+      data-testid="phone-new"
+    >
       {t('sales.phone.new')}
     </UbButton>
   );
   const pasteButton = canWrite && (
     // Design dPhoneOrders: the header's second button is the white, bordered .btn.
-    <UbButton variant="outlineNeutral" icon={<ClipboardPaste className="h-4 w-4" aria-hidden />} onClick={() => setDrawer({ paste: true })} data-testid="phone-paste">
+    <UbButton
+      variant="outlineNeutral"
+      icon={<ClipboardPaste className="h-4 w-4" aria-hidden />}
+      onClick={() => setDrawer({ paste: true })}
+      data-testid="phone-paste"
+    >
       {t('sales.phone.paste')}
     </UbButton>
   );
@@ -196,7 +287,11 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
               closeLabel: t('common.action.close'),
               primaryPlacement: 'header',
               primary: canWrite
-                ? { label: t('sales.phone.new'), icon: <Plus className="h-6 w-6" aria-hidden />, onClick: () => setDrawer({ paste: false }) }
+                ? {
+                    label: t('sales.phone.new'),
+                    icon: <Plus className="h-6 w-6" aria-hidden />,
+                    onClick: () => setDrawer({ paste: false }),
+                  }
                 : undefined,
             }}
           />
@@ -231,7 +326,10 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
               description: t(`sales.phone.empty.${stage}.body`),
               action:
                 canWrite && stage === 'to_pack' ? (
-                  <UbButton icon={<ClipboardPaste className="h-4 w-4" aria-hidden />} onClick={() => setDrawer({ paste: true })}>
+                  <UbButton
+                    icon={<ClipboardPaste className="h-4 w-4" aria-hidden />}
+                    onClick={() => setDrawer({ paste: true })}
+                  >
                     {t('sales.phone.paste')}
                   </UbButton>
                 ) : undefined,
@@ -278,7 +376,11 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
               </UbStack>
             ))}
             <UbText variant="body-sm" tone="secondary">
-              {t('sales.phone.summary', { total: formatInr(acting.total), deliver: deliverText(acting, t), pay: t(`sales.phone.payShown.${acting.pay}`) })}
+              {t('sales.phone.summary', {
+                total: formatInr(acting.total),
+                deliver: deliverText(acting, t),
+                pay: t(`sales.phone.payShown.${acting.pay}`),
+              })}
             </UbText>
             {canWrite && acting.status === 'to_pack' && (
               <UbActionLink href={billHref(acting)} variant="primary" data-testid="phone-bill">
@@ -286,22 +388,37 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
               </UbActionLink>
             )}
             {canWrite && acting.status === 'out' && (
-              <UbButton onClick={() => void move(acting, 'delivered')} data-testid="phone-delivered">
+              <UbButton
+                onClick={() => void move(acting, 'delivered')}
+                data-testid="phone-delivered"
+              >
                 {t('sales.phone.markDelivered')}
               </UbButton>
             )}
             {acting.invoiceId && (
-              <UbActionLink href={`${ROUTES.SALES_INVOICES}/${acting.invoiceId}`} variant="secondary">
+              <UbActionLink
+                href={`${ROUTES.SALES_INVOICES}/${acting.invoiceId}`}
+                variant="secondary"
+              >
                 {t('sales.phone.openBill')}
               </UbActionLink>
             )}
             {share && (
-              <UbActionLink href={share} target="_blank" rel="noopener noreferrer" variant="secondary">
+              <UbActionLink
+                href={share}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="secondary"
+              >
                 {t('sales.phone.share')}
               </UbActionLink>
             )}
             {canWrite && acting.status === 'to_pack' && (
-              <UbButton variant="ghost" onClick={() => void move(acting, 'cancelled')} data-testid="phone-cancel">
+              <UbButton
+                variant="ghost"
+                onClick={() => void move(acting, 'cancelled')}
+                data-testid="phone-cancel"
+              >
                 {t('sales.phone.cancel')}
               </UbButton>
             )}
@@ -314,7 +431,13 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
           onClose={() => setDrawer(null)}
           onSaved={(order) => {
             setDrawer(null);
-            dispatch(showSnackbar({ severity: 'success', id: 'sales.phone.saved', params: { number: order.number } }));
+            dispatch(
+              showSnackbar({
+                severity: 'success',
+                id: 'sales.phone.saved',
+                params: { number: order.number },
+              })
+            );
             setStage('to_pack');
             setAttempt((n) => n + 1);
           }}

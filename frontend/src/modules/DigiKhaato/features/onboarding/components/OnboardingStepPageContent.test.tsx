@@ -129,7 +129,7 @@ describe('a member the owner blocked (owner, 12 Oct 2026)', () => {
 });
 
 describe('the wizard — step 1 (FR-2)', () => {
-  it('renders the four-step progress and the design\'s ten shop-kind tiles', () => {
+  it("renders the four-step progress and the design's ten shop-kind tiles", () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
@@ -139,8 +139,16 @@ describe('the wizard — step 1 (FR-2)', () => {
     const radios = screen.getAllByRole('radio');
     expect(radios).toHaveLength(10);
     expect(radios.map((r) => r.getAttribute('data-kind'))).toEqual([
-      'kirana', 'medical', 'electronics', 'garments', 'hardware',
-      'auto_parts', 'wholesale', 'food', 'jewellery', 'other',
+      'kirana',
+      'medical',
+      'electronics',
+      'garments',
+      'hardware',
+      'auto_parts',
+      'wholesale',
+      'food',
+      'jewellery',
+      'other',
     ]);
     expect(screen.getByText('paint, sanitary')).toBeInTheDocument();
   });
@@ -709,7 +717,7 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
     expect(name.closest('.rounded-card')).toBe(state.closest('.rounded-card'));
   });
 
-  it('draws the design\'s three columns on a phone and five from md', () => {
+  it("draws the design's three columns on a phone and five from md", () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     const tiles = screen.getByRole('radiogroup', {
       name: 'What do you sell?',
@@ -1525,4 +1533,3 @@ describe('the wizard — choosing what to use (step 1)', () => {
     expect(screen.queryByText('Business type')).not.toBeInTheDocument();
   });
 });
-

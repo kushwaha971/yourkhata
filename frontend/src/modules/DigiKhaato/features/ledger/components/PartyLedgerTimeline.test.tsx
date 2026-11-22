@@ -358,9 +358,7 @@ describe('the khata timeline', () => {
     renderWithProviders(<PartyLedgerTimeline partyId={PARTY_ID} />);
 
     expect(await screen.findByText('No transactions yet')).toBeInTheDocument();
-    expect(
-      screen.getByText('Add an entry to see it here.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Add an entry to see it here.')).toBeInTheDocument();
     // And no "Gave money in all ₹0.00" above it — two lines of nothing over an
     // empty state that already says the same thing.
     expect(screen.queryByText('Gave money in all')).not.toBeInTheDocument();

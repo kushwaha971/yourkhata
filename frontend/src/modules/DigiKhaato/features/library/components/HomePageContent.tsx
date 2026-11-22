@@ -31,7 +31,17 @@ import { fetchHome, fetchSeats } from '../redux/libraryThunks';
 import { LIBRARY_ROUTES } from '../routes';
 import { dueAmount, feeLine, rupees } from '../view-model/libraryDisplay';
 
-import { Card, FeeBadge, Figure, Figures, List, SeatGrid, SeatKey, StudentRow, Table } from './LibraryParts';
+import {
+  Card,
+  FeeBadge,
+  Figure,
+  Figures,
+  List,
+  SeatGrid,
+  SeatKey,
+  StudentRow,
+  Table,
+} from './LibraryParts';
 
 import type { Student } from '../types/library.types';
 
@@ -127,13 +137,17 @@ export function HomePageContent(): React.JSX.Element {
         <UbEmptyState
           variant="firstUse"
           title={t('library.home.empty.title')}
-          description={t(home.seats === 0 ? 'library.home.empty.seats' : 'library.home.empty.students')}
+          description={t(
+            home.seats === 0 ? 'library.home.empty.seats' : 'library.home.empty.students'
+          )}
           action={
-            home.seats === 0 ? (
-              canManage && <UbButton onClick={() => router.push(LIBRARY_ROUTES.settings)}>{t('library.home.empty.setUp')}</UbButton>
-            ) : (
-              enrolButton
-            )
+            home.seats === 0
+              ? canManage && (
+                  <UbButton onClick={() => router.push(LIBRARY_ROUTES.settings)}>
+                    {t('library.home.empty.setUp')}
+                  </UbButton>
+                )
+              : enrolButton
           }
         />
       );
@@ -146,7 +160,9 @@ export function HomePageContent(): React.JSX.Element {
             variant="inherit"
             className="ds-num rounded-full border border-border-hairline bg-surface-card px-2.5 py-1 text-[12.5px] font-semibold text-text-secondary"
           >
-            {s.fullDay ? t('library.home.shiftFull', { name: s.name, filled: s.filled }) : t('library.home.shift', { name: s.name, filled: s.filled, seats: s.seats })}
+            {s.fullDay
+              ? t('library.home.shiftFull', { name: s.name, filled: s.filled })
+              : t('library.home.shift', { name: s.name, filled: s.filled, seats: s.seats })}
           </UbText>
         ))}
       </UbStack>
@@ -159,7 +175,10 @@ export function HomePageContent(): React.JSX.Element {
             <UbText variant="inherit" className="font-semibold">
               {t('library.home.filled', { filled: home.seatsFilled, seats: home.seats })}
             </UbText>
-            <UbPressable onClick={() => router.push(LIBRARY_ROUTES.seats)} className="w-auto text-[13px] font-semibold text-text-accent">
+            <UbPressable
+              onClick={() => router.push(LIBRARY_ROUTES.seats)}
+              className="w-auto text-[13px] font-semibold text-text-accent"
+            >
               {t('library.home.seatsLink')}
             </UbPressable>
           </UbStack>
@@ -176,8 +195,16 @@ export function HomePageContent(): React.JSX.Element {
           </UbText>
           <UbBox className="grid grid-cols-3 gap-2">
             {[
-              { label: t('library.home.collected'), value: rupees(home.collected), cls: 'text-get' },
-              { label: t('library.home.dueWeek'), value: rupees(home.dueWeek), cls: 'text-warning' },
+              {
+                label: t('library.home.collected'),
+                value: rupees(home.collected),
+                cls: 'text-get',
+              },
+              {
+                label: t('library.home.dueWeek'),
+                value: rupees(home.dueWeek),
+                cls: 'text-warning',
+              },
               { label: t('library.home.overdue'), value: rupees(home.overdue), cls: 'text-give' },
             ].map((f) => (
               <UbStack key={f.label} gap={0} className="min-w-0">
@@ -230,7 +257,10 @@ export function HomePageContent(): React.JSX.Element {
           <Figure
             label={t('library.home.seatsFilled')}
             value={`${home.seatsFilled} / ${home.seats}`}
-            caption={home.shifts.filter((s) => !s.fullDay).map((s) => `${s.name} ${s.filled}`).join(' · ')}
+            caption={home.shifts
+              .filter((s) => !s.fullDay)
+              .map((s) => `${s.name} ${s.filled}`)
+              .join(' · ')}
           />
           <Figure
             label={t('library.home.collectedMonth')}
@@ -264,7 +294,10 @@ export function HomePageContent(): React.JSX.Element {
             {home.today.map((s) => (
               <UbBox as="tr" key={s.id}>
                 <UbBox as="td">
-                  <UbPressable onClick={() => open(s.id)} className="flex w-auto items-center gap-2.5 text-left">
+                  <UbPressable
+                    onClick={() => open(s.id)}
+                    className="flex w-auto items-center gap-2.5 text-left"
+                  >
                     <UbAvatar name={s.name} size="sm" />
                     <UbText variant="inherit" className="font-semibold">
                       {s.name}
@@ -293,13 +326,25 @@ export function HomePageContent(): React.JSX.Element {
           <Card className="gap-2.5" testId="library-home-map">
             <UbStack direction="row" justify="between" align="center">
               <UbText variant="inherit" className="font-semibold">
-                {t('library.home.seatsShift', { shift: seats?.shifts.find((s) => s.id === seats.shiftId)?.name ?? '' })}
+                {t('library.home.seatsShift', {
+                  shift: seats?.shifts.find((s) => s.id === seats.shiftId)?.name ?? '',
+                })}
               </UbText>
-              <UbPressable onClick={() => router.push(LIBRARY_ROUTES.seats)} className="w-auto text-[13px] font-semibold text-text-accent">
+              <UbPressable
+                onClick={() => router.push(LIBRARY_ROUTES.seats)}
+                className="w-auto text-[13px] font-semibold text-text-accent"
+              >
                 {t('library.home.openSeats')}
               </UbPressable>
             </UbStack>
-            {seats && <SeatGrid seats={seats.seats} columns={{ phone: 6, desk: 10 }} size={{ phone: 40, desk: 30 }} t={t} />}
+            {seats && (
+              <SeatGrid
+                seats={seats.seats}
+                columns={{ phone: 6, desk: 10 }}
+                size={{ phone: 40, desk: 30 }}
+                t={t}
+              />
+            )}
             <SeatKey t={t} />
           </Card>
         </UbBox>

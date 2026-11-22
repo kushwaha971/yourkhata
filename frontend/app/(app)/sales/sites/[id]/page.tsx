@@ -8,6 +8,8 @@ import { SiteDetailPageContent } from 'modules/DigiKhaato/features/sales/compone
 import 'src/i18n/catalogues/sales';
 
 /** G7 — `/sales/sites/<id>`: one site (design pSite). */
-export default function SitePage({ params }: Readonly<{ params: Promise<{ id: string }> }>): React.JSX.Element {
+export default function SitePage({
+  params,
+}: Readonly<{ params: Promise<{ id: string }> }>): React.JSX.Element {
   return <SiteDetailPageContent id={use(params).id} />;
 }

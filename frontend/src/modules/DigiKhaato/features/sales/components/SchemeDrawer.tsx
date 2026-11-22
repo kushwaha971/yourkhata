@@ -46,7 +46,15 @@ interface SchemeFormValues {
 }
 
 const FIELDS: readonly (keyof SchemeFormValues)[] = [
-  'code', 'company', 'rule', 'item_id', 'buy_qty', 'free_qty', 'amount', 'min_bill', 'valid_till',
+  'code',
+  'company',
+  'rule',
+  'item_id',
+  'buy_qty',
+  'free_qty',
+  'amount',
+  'min_bill',
+  'valid_till',
 ];
 const NUMBER = /^\d+(\.\d{1,2})?$/;
 
@@ -68,7 +76,14 @@ export function SchemeDrawer({
   const form = useForm<SchemeFormValues>({
     mode: 'onTouched',
     defaultValues: {
-      code: '', company: '', rule: 'free', item_id: '', buy_qty: '', free_qty: '1', amount: '', min_bill: '',
+      code: '',
+      company: '',
+      rule: 'free',
+      item_id: '',
+      buy_qty: '',
+      free_qty: '1',
+      amount: '',
+      min_bill: '',
       valid_till: addDaysIso(today, 30),
     },
   });
@@ -90,13 +105,19 @@ export function SchemeDrawer({
       const wrong: [keyof SchemeFormValues, string][] = [];
       if (!values.code.trim()) wrong.push(['code', t('sales.scheme.needCode')]);
       if (!values.company.trim()) wrong.push(['company', t('sales.scheme.needCompany')]);
-      if (values.rule !== 'percent' && !values.item_id) wrong.push(['item_id', t('sales.scheme.needItem')]);
+      if (values.rule !== 'percent' && !values.item_id)
+        wrong.push(['item_id', t('sales.scheme.needItem')]);
       const needs: (keyof SchemeFormValues)[] =
-        values.rule === 'free' ? ['buy_qty', 'free_qty'] : values.rule === 'per_unit' ? ['amount'] : ['amount', 'min_bill'];
+        values.rule === 'free'
+          ? ['buy_qty', 'free_qty']
+          : values.rule === 'per_unit'
+            ? ['amount']
+            : ['amount', 'min_bill'];
       for (const name of needs)
         if (!NUMBER.test(values[name].trim()) || (name !== 'min_bill' && Number(values[name]) <= 0))
           wrong.push([name, t('sales.scheme.needNumber')]);
-      if (values.rule === 'percent' && Number(values.amount) > 100) wrong.push(['amount', t('sales.scheme.upTo100')]);
+      if (values.rule === 'percent' && Number(values.amount) > 100)
+        wrong.push(['amount', t('sales.scheme.upTo100')]);
       if (!values.valid_till) wrong.push(['valid_till', t('sales.scheme.needTill')]);
       for (const [name, message] of wrong) setError(name, { message });
       if (wrong.length) return;
@@ -118,7 +139,8 @@ export function SchemeDrawer({
         // Another try is another scheme: a refused one must not replay this key.
         key.current = crypto.randomUUID();
         const details = (thrown as ApiErrorShape).details as Record<string, string[]> | undefined;
-        for (const name of FIELDS) if (details?.[name]?.[0]) setError(name, { message: details[name][0] });
+        for (const name of FIELDS)
+          if (details?.[name]?.[0]) setError(name, { message: details[name][0] });
         setBusy(false);
       }
     },
@@ -128,7 +150,13 @@ export function SchemeDrawer({
   const number = (name: keyof SchemeFormValues, label: string, hint?: string) => (
     <UbField name={name} label={label} hint={hint}>
       {(field) => (
-        <UbTextInput {...field} value={field.value as string} inputMode="decimal" maxLength={10} data-testid={`scheme-${name}`} />
+        <UbTextInput
+          {...field}
+          value={field.value as string}
+          inputMode="decimal"
+          maxLength={10}
+          data-testid={`scheme-${name}`}
+        />
       )}
     </UbField>
   );
@@ -147,10 +175,25 @@ export function SchemeDrawer({
     >
       <UbForm id={formId} form={form} onSubmit={submit}>
         <UbField name="code" label={t('sales.scheme.code')} hint={t('sales.scheme.codeHint')}>
-          {(field) => <UbTextInput {...field} value={field.value as string} maxLength={24} uppercase data-testid="scheme-code" />}
+          {(field) => (
+            <UbTextInput
+              {...field}
+              value={field.value as string}
+              maxLength={24}
+              uppercase
+              data-testid="scheme-code"
+            />
+          )}
         </UbField>
         <UbField name="company" label={t('sales.scheme.company')}>
-          {(field) => <UbTextInput {...field} value={field.value as string} maxLength={120} data-testid="scheme-company" />}
+          {(field) => (
+            <UbTextInput
+              {...field}
+              value={field.value as string}
+              maxLength={120}
+              data-testid="scheme-company"
+            />
+          )}
         </UbField>
         <UbField name="rule" label={t('sales.scheme.gives')}>
           {(field) => (
@@ -171,8 +214,15 @@ export function SchemeDrawer({
             {rule === 'percent' ? t('sales.scheme.itemOptional') : t('sales.scheme.item')}
           </UbText>
           {item ? (
-            <UbStack direction="row" gap={2} className="items-center justify-between" data-testid="scheme-item-picked">
-              <UbText variant="body-sm" className="font-semibold">{item.name}</UbText>
+            <UbStack
+              direction="row"
+              gap={2}
+              className="items-center justify-between"
+              data-testid="scheme-item-picked"
+            >
+              <UbText variant="body-sm" className="font-semibold">
+                {item.name}
+              </UbText>
               <UbButton
                 variant="ghost"
                 size="sm"
@@ -186,7 +236,12 @@ export function SchemeDrawer({
             </UbStack>
           ) : (
             <UbStack gap={1}>
-              <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.scheme.findItem')} aria-label={t('sales.scheme.findItem')} />
+              <UbSearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder={t('sales.scheme.findItem')}
+                aria-label={t('sales.scheme.findItem')}
+              />
               {q &&
                 found.map((row) => (
                   <UbButton
@@ -235,7 +290,9 @@ export function SchemeDrawer({
             />
           )}
         </UbField>
-        <UbText variant="caption" tone="secondary">{t('sales.scheme.drawerNote')}</UbText>
+        <UbText variant="caption" tone="secondary">
+          {t('sales.scheme.drawerNote')}
+        </UbText>
       </UbForm>
     </UbDrawer>
   );

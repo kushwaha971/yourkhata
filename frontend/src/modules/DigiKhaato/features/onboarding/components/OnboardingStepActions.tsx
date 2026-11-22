@@ -82,12 +82,7 @@ function OnboardingStepActionsBase({
         </UbButton>
       )}
       {onSkip && (
-        <UbButton
-          variant="ghost"
-          size="lg"
-          onClick={onSkip}
-          disabled={busy || disabled || !armed}
-        >
+        <UbButton variant="ghost" size="lg" onClick={onSkip} disabled={busy || disabled || !armed}>
           {skipLabel}
         </UbButton>
       )}

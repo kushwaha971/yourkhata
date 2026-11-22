@@ -87,7 +87,9 @@ describe('UbVideo', () => {
     expect(container.querySelector('img')).toHaveAttribute('src', '/p.jpg');
     expect(container.querySelector('video')).toHaveAttribute('preload', 'none');
     expect(sources(container)).toEqual([]);
-    expect(screen.getByRole('img', { name: 'The dashboard, then a khata entry' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'The dashboard, then a khata entry' })
+    ).toBeInTheDocument();
   });
 
   /** Nothing is requested until the clip is near the viewport. */
@@ -98,7 +100,9 @@ describe('UbVideo', () => {
     intersect(true);
 
     expect(sources(container)).toEqual(SOURCES.map((s) => s.src));
-    expect(container.querySelectorAll('source[type="video/mp4; codecs=avc1.4D4020"]')).toHaveLength(1);
+    expect(container.querySelectorAll('source[type="video/mp4; codecs=avc1.4D4020"]')).toHaveLength(
+      1
+    );
     expect(play).toHaveBeenCalled();
     expect((container.querySelector('video') as HTMLVideoElement).muted).toBe(true);
   });

@@ -42,7 +42,9 @@ function OwnerDataPage(): React.JSX.Element {
     );
   }
   if (!data.deletion) return <UbSkeleton variant="form" count={3} />;
-  const supportNeedsOwner = data.support.some((row) => row.status === 'requested' || row.status === 'granted');
+  const supportNeedsOwner = data.support.some(
+    (row) => row.status === 'requested' || row.status === 'granted'
+  );
 
   return (
     <UbStack gap={4}>

@@ -49,13 +49,11 @@ import type { Expense, ExpensePreset } from '../types/expense.types';
 /** The form and the detail sheet load with the tap that opens them, not with the list. */
 const ExpenseFormDrawerLazy = dynamic(
   () => import('./ExpenseFormDrawer').then((m) => m.ExpenseFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const ExpenseDetailDrawerLazy = dynamic(
   () => import('./ExpenseDetailDrawer').then((m) => m.ExpenseDetailDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -233,58 +231,58 @@ export function ExpensesPageContent(): React.JSX.Element {
     />
   );
   const summary = (totals || list.status === 'loading' || list.status === 'idle') && (
-              <ExpenseListStats
-                totals={totals}
-                cancelled={filters.tab === 'void'}
-                loading={list.status === 'loading' || list.status === 'idle'}
-              />
-            );
+    <ExpenseListStats
+      totals={totals}
+      cancelled={filters.tab === 'void'}
+      loading={list.status === 'loading' || list.status === 'idle'}
+    />
+  );
   /* Search and period inside the table's card on a desktop (see Bills). */
   const tools = (
-            <UbStack
-              direction="row"
-              align="center"
-              className="flex-wrap gap-3"
-              data-testid="expense-register-toolbar"
-            >
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <>
-                  <UbPeriodSelect<ExpensePreset>
-                    presets={presets}
-                    value={filters.preset}
-                    customValue="custom"
-                    from={filters.dateFrom}
-                    to={filters.dateTo}
-                    max={list.today}
-                    onChange={(preset, from, to) => {
-                      if (preset === 'custom' && from && to) list.setRange(from, to);
-                      else list.setPreset(preset);
-                    }}
-                    labels={{
-                      period: t('expenses.period.label'),
-                      from: t('expenses.period.from'),
-                      to: t('expenses.period.to'),
-                      apply: t('common.action.apply'),
-                      close: t('common.action.close'),
-                    }}
-                  />
-                </>
-              )}
-            </UbStack>
+    <UbStack
+      direction="row"
+      align="center"
+      className="flex-wrap gap-3"
+      data-testid="expense-register-toolbar"
+    >
+      {searchBox}
+      {phone ? (
+        <UbFilterSheet
+          compact
+          specs={phoneSpecs}
+          values={phoneValues}
+          onApply={applyPhone}
+          labels={{
+            title: t('common.filters.title'),
+            apply: t('common.action.apply'),
+            reset: t('common.action.reset'),
+            close: t('common.action.close'),
+          }}
+        />
+      ) : (
+        <>
+          <UbPeriodSelect<ExpensePreset>
+            presets={presets}
+            value={filters.preset}
+            customValue="custom"
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            max={list.today}
+            onChange={(preset, from, to) => {
+              if (preset === 'custom' && from && to) list.setRange(from, to);
+              else list.setPreset(preset);
+            }}
+            labels={{
+              period: t('expenses.period.label'),
+              from: t('expenses.period.from'),
+              to: t('expenses.period.to'),
+              apply: t('common.action.apply'),
+              close: t('common.action.close'),
+            }}
+          />
+        </>
+      )}
+    </UbStack>
   );
   const grid = (
     <UbDataGrid

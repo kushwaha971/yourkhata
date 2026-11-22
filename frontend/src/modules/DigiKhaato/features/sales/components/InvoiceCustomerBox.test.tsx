@@ -17,7 +17,16 @@ it('says "No mobile number" rather than leaving the slot empty', () => {
    * while the loading bars had held three lines. The words keep the shape and
    * say why there is nothing to call.
    */
-  render(<InvoiceCustomerBox name="Gupta Kirana" mobile={null} balance="1500.00" onChange={() => {}} disabled={false} t={t} />);
+  render(
+    <InvoiceCustomerBox
+      name="Gupta Kirana"
+      mobile={null}
+      balance="1500.00"
+      onChange={() => {}}
+      disabled={false}
+      t={t}
+    />
+  );
   expect(screen.getByText('No mobile number')).toBeInTheDocument();
   expect(screen.getByText('₹1,500.00 to collect')).toBeInTheDocument();
 });

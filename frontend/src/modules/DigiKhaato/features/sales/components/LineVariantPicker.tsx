@@ -25,7 +25,9 @@ export function LineVariantPicker({
   const { t } = useTranslation();
   const size = current.attributes?.size;
   const colour = current.attributes?.colour;
-  const caption = [size ? t('sales.line.size', { size }) : null, colour].filter(Boolean).join(' · ');
+  const caption = [size ? t('sales.line.size', { size }) : null, colour]
+    .filter(Boolean)
+    .join(' · ');
   if (!caption) return null;
   const sizes = variants.filter((row) => row.attributes?.colour === colour);
   const colours = [
@@ -45,7 +47,10 @@ export function LineVariantPicker({
         size="sm"
         onClick={() => !picked && onPick(row)}
         aria-pressed={picked}
-        className={cn('h-8 rounded-full', picked && 'border-accent-line bg-accent-quiet text-text-accent')}
+        className={cn(
+          'h-8 rounded-full',
+          picked && 'border-accent-line bg-accent-quiet text-text-accent'
+        )}
       >
         <UbText as="span" variant="inherit" className={cn(none && 'line-through opacity-60')}>
           {label}
@@ -69,7 +74,12 @@ export function LineVariantPicker({
         </UbStack>
       )}
       {colours.length > 1 && (
-        <UbStack direction="row" gap={1.5} className="flex-wrap" aria-label={t('sales.line.colours')}>
+        <UbStack
+          direction="row"
+          gap={1.5}
+          className="flex-wrap"
+          aria-label={t('sales.line.colours')}
+        >
           {colours.map((row) => chip(row, row.attributes?.colour ?? ''))}
         </UbStack>
       )}

@@ -13,7 +13,11 @@ export function BillSitePicker({
   partyId,
   value,
   onChange,
-}: Readonly<{ partyId: string; value: string; onChange: (siteId: string) => void }>): React.JSX.Element | null {
+}: Readonly<{
+  partyId: string;
+  value: string;
+  onChange: (siteId: string) => void;
+}>): React.JSX.Element | null {
   const { t } = useTranslation();
   const [sites, setSites] = useState<readonly ContractorSite[]>([]);
 
@@ -28,7 +32,9 @@ export function BillSitePicker({
   if (sites.length < 2) return null;
   return (
     <UbStack gap={1} data-testid="bill-site">
-      <UbText variant="body-sm" className="font-semibold">{t('sales.site.which')}</UbText>
+      <UbText variant="body-sm" className="font-semibold">
+        {t('sales.site.which')}
+      </UbText>
       <UbSelect
         aria-label={t('sales.site.which')}
         value={value}

@@ -78,7 +78,10 @@ const SAVED = {
   warnings: [],
 };
 
-const signIn = (permissions: readonly PermissionCode[], modules: readonly ModuleCode[] = []): void => {
+const signIn = (
+  permissions: readonly PermissionCode[],
+  modules: readonly ModuleCode[] = []
+): void => {
   store.dispatch(
     sessionLoaded({
       user: {
@@ -453,7 +456,9 @@ describe('PTY-06 — the credit limit on the form', () => {
     await user.type(limit, '10000');
 
     expect(
-      await screen.findByText('You already have to get ₹47,500.00 from them — this limit is already crossed')
+      await screen.findByText(
+        'You already have to get ₹47,500.00 from them — this limit is already crossed'
+      )
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
@@ -689,7 +694,9 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
       within(drawer).queryByRole('switch', { name: 'I buy from them' })
     ).not.toBeInTheDocument();
     // R-DEC-61: no "Also a supplier" switch; the rare both-roles person is picked.
-    expect(within(drawer).queryByRole('switch', { name: /^Also a supplier/ })).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: /^Also a supplier/ })
+    ).not.toBeInTheDocument();
     expect(
       within(drawer).getByRole('switch', { name: /^Send them reminders/ })
     ).toBeInTheDocument();
@@ -733,7 +740,9 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(within(drawer).getByText('GSTIN, code, address')).toBeInTheDocument();
     expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
 
-    expect(within(drawer).queryByRole('switch', { name: /^Also a customer/ })).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: /^Also a customer/ })
+    ).not.toBeInTheDocument();
 
     await user.type(within(drawer).getByLabelText('Name'), 'Gupta Wholesale');
     await user.click(within(drawer).getByRole('button', { name: 'Add supplier' }));
@@ -784,13 +793,18 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     await waitFor(() => expect(partyService.listParties).toHaveBeenCalled());
     await new Promise((resolve) => setTimeout(resolve, 400));
     await user.click(option);
-    expect(await within(drawer).findByText('Your supplier · will be your customer too')).toBeInTheDocument();
+    expect(
+      await within(drawer).findByText('Your supplier · will be your customer too')
+    ).toBeInTheDocument();
     expect(within(drawer).getByLabelText('Name')).toHaveValue('Gupta Wholesale');
 
     await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
     await waitFor(() => expect(partyService.updateParty).toHaveBeenCalledTimes(1));
     expect(partyService.createParty).not.toHaveBeenCalled();
-    const [id, values] = partyService.updateParty.mock.calls[0] as [string, Record<string, unknown>];
+    const [id, values] = partyService.updateParty.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ];
     expect(id).toBe('s-9');
     expect(values.isCustomer).toBe(true);
     expect(values.isSupplier).toBe(true);

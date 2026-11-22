@@ -25,7 +25,8 @@ import { inventoryGridLabels } from 'modules/DigiKhaato/features/inventory/view-
 
 import { listVehicles, type VehicleRow } from '../api/vehicleService';
 
-export const vehicleHref = (number: string): string => `${ROUTES.SALES_VEHICLES}/${encodeURIComponent(number)}`;
+export const vehicleHref = (number: string): string =>
+  `${ROUTES.SALES_VEHICLES}/${encodeURIComponent(number)}`;
 
 const bills = (v: VehicleRow, t: TranslateFn): string =>
   t(v.bills === 1 ? 'sales.vehicle.oneBill' : 'sales.vehicle.billCount', { count: v.bills });
@@ -33,7 +34,13 @@ const bills = (v: VehicleRow, t: TranslateFn): string =>
 const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<VehicleRow>[] => {
   if (tier === 'cards')
     return [
-      { id: 'number', header: t('sales.vehicle.col.number'), priority: 1, cardSlot: 'title', cell: (v) => v.number },
+      {
+        id: 'number',
+        header: t('sales.vehicle.col.number'),
+        priority: 1,
+        cardSlot: 'title',
+        cell: (v) => v.number,
+      },
       {
         id: 'meta',
         header: t('sales.vehicle.col.model'),
@@ -41,16 +48,72 @@ const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<Vehic
         cardSlot: 'meta',
         cell: (v) => [v.model, v.owner, bills(v, t)].filter(Boolean).join(' · '),
       },
-      { id: 'spent', header: t('sales.vehicle.col.spent'), priority: 1, cardSlot: 'trailing', cell: (v) => formatInr(v.spent) },
+      {
+        id: 'spent',
+        header: t('sales.vehicle.col.spent'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: (v) => formatInr(v.spent),
+      },
     ];
   return [
-    { id: 'number', header: t('sales.vehicle.col.number'), priority: 1, cardSlot: 'none', widthShare: 16, cell: (v) => v.number },
-    { id: 'model', header: t('sales.vehicle.col.model'), priority: 2, cardSlot: 'none', widthShare: 20, cell: (v) => v.model ?? '—' },
-    { id: 'owner', header: t('sales.vehicle.col.owner'), priority: 1, cardSlot: 'none', widthShare: 18, cell: (v) => v.owner ?? '—' },
-    { id: 'mechanic', header: t('sales.vehicle.col.mechanic'), priority: 2, cardSlot: 'none', widthShare: 16, cell: (v) => v.mechanic ?? '—' },
-    { id: 'bills', header: t('sales.vehicle.col.bills'), priority: 2, cardSlot: 'none', widthShare: 8, cell: (v) => String(v.bills) },
-    { id: 'last', header: t('sales.vehicle.col.lastBill'), priority: 2, cardSlot: 'none', widthShare: 10, cell: (v) => formatBusinessDate(v.last_bill) },
-    { id: 'spent', header: t('sales.vehicle.col.spent'), priority: 1, cardSlot: 'none', align: 'end', widthShare: 12, cell: (v) => formatInr(v.spent) },
+    {
+      id: 'number',
+      header: t('sales.vehicle.col.number'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (v) => v.number,
+    },
+    {
+      id: 'model',
+      header: t('sales.vehicle.col.model'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 20,
+      cell: (v) => v.model ?? '—',
+    },
+    {
+      id: 'owner',
+      header: t('sales.vehicle.col.owner'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 18,
+      cell: (v) => v.owner ?? '—',
+    },
+    {
+      id: 'mechanic',
+      header: t('sales.vehicle.col.mechanic'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (v) => v.mechanic ?? '—',
+    },
+    {
+      id: 'bills',
+      header: t('sales.vehicle.col.bills'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 8,
+      cell: (v) => String(v.bills),
+    },
+    {
+      id: 'last',
+      header: t('sales.vehicle.col.lastBill'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 10,
+      cell: (v) => formatBusinessDate(v.last_bill),
+    },
+    {
+      id: 'spent',
+      header: t('sales.vehicle.col.spent'),
+      priority: 1,
+      cardSlot: 'none',
+      align: 'end',
+      widthShare: 12,
+      cell: (v) => formatInr(v.spent),
+    },
   ];
 };
 
@@ -91,17 +154,31 @@ export function VehiclesPageContent(): React.JSX.Element {
           : 'empty'
         : 'rows';
   const searchBox = (
-    <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.vehicle.search')} aria-label={t('sales.vehicle.search')} />
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('sales.vehicle.search')}
+      aria-label={t('sales.vehicle.search')}
+    />
   );
   const partsLink = (
-    <UbActionLink href={ROUTES.SALES_PARTS_FIT} variant="secondary" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicles-parts">
+    <UbActionLink
+      href={ROUTES.SALES_PARTS_FIT}
+      variant="secondary"
+      icon={<Wrench className="h-4 w-4" aria-hidden />}
+      data-testid="vehicles-parts"
+    >
       {t('sales.vehicle.partsFit')}
     </UbActionLink>
   );
 
   return (
     <UbPageShell>
-      <UbPageHeader title={t('sales.vehicle.title')} subtitle={isPhone ? undefined : t('sales.vehicle.subtitle')} primaryAction={partsLink} />
+      <UbPageHeader
+        title={t('sales.vehicle.title')}
+        subtitle={isPhone ? undefined : t('sales.vehicle.subtitle')}
+        primaryAction={partsLink}
+      />
       <UbStack gap={3} data-testid="vehicles-screen">
         {isPhone && searchBox}
         <UbDataGrid
@@ -119,7 +196,10 @@ export function VehiclesPageContent(): React.JSX.Element {
             selectRow: 'sales.vehicle.title',
           })}
           emptyStates={{
-            firstUse: { title: t('sales.vehicle.empty.title'), description: t('sales.vehicle.empty.body') },
+            firstUse: {
+              title: t('sales.vehicle.empty.title'),
+              description: t('sales.vehicle.empty.body'),
+            },
             filtered: { title: t('sales.vehicle.noMatch'), description: '' },
             error: {
               title: t('sales.vehicle.error'),

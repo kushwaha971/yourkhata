@@ -24,13 +24,21 @@ def test_an_inter_state_bill_over_50000_gets_its_portal_file(
     assert refused.status_code == 400
     saved = owner.post(
         invoice_url(invoice["id"], "eway"),
-        {"transporter": "Shree Logistics", "vehicle_number": "mh 14 gu 2290", "distance_km": 840, "mode": "road"},
+        {
+            "transporter": "Shree Logistics",
+            "vehicle_number": "mh 14 gu 2290",
+            "distance_km": 840,
+            "mode": "road",
+        },
         format="json",
     )
     assert saved.status_code == 200, saved.json()
     bill = owner.get(invoice_url(invoice["id"], "eway")).json()["data"]["file"]["billLists"][0]
     assert (bill["docNo"], bill["vehicleNo"], bill["transDistance"], bill["toStateCode"]) == (
-        invoice["number"], "MH14GU2290", "840", 29
+        invoice["number"],
+        "MH14GU2290",
+        "840",
+        29,
     )
     assert bill["igstValue"] > 0 and bill["cgstValue"] == 0
     assert bill["itemList"][0]["quantity"] == 80.0 and bill["itemList"][0]["igstRate"] == 18.0
@@ -42,7 +50,9 @@ def test_a_small_local_bill_is_not_offered(owner: Any, make_item: Any, make_part
     assert owner.get(invoice_url(invoice["id"], "eway")).json()["data"]["offered"] is False
 
 
-def test_an_auto_parts_bill_keeps_the_vehicle_and_mechanic(owner: Any, make_item: Any, make_party: Any) -> None:
+def test_an_auto_parts_bill_keeps_the_vehicle_and_mechanic(
+    owner: Any, make_item: Any, make_party: Any
+) -> None:
     """D1 auto parts "Vehicle no." and "Mechanic", cleaned and read back."""
     from apps.sales.tests.conftest import draft
 

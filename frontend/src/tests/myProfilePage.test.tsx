@@ -23,8 +23,21 @@ jest.mock('next/navigation', () => ({
 beforeEach(() => {
   store.dispatch(
     sessionLoaded({
-      user: { id: 'u1', name: 'Mohan Lal', email: 'm@x.test', mobile: '+919700011102', locale: 'en', mustChangePassword: false, passwordExpiresAt: null },
-      activeTenant: { id: 't1', name: 'Shree Ganesh Kirana', timezone: 'Asia/Kolkata', role: 'staff' },
+      user: {
+        id: 'u1',
+        name: 'Mohan Lal',
+        email: 'm@x.test',
+        mobile: '+919700011102',
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: {
+        id: 't1',
+        name: 'Shree Ganesh Kirana',
+        timezone: 'Asia/Kolkata',
+        role: 'staff',
+      },
       tenants: [
         { id: 't1', name: 'Shree Ganesh Kirana', timezone: 'Asia/Kolkata', role: 'staff' },
         { id: 't2', name: 'Mohan Mobile Shop', timezone: 'Asia/Kolkata', role: 'owner' },

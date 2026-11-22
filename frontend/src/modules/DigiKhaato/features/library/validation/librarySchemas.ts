@@ -74,7 +74,11 @@ export const useLibrarySchemas = () => {
       upiId: Yup.string()
         .defined()
         .default('')
-        .test('upi', t('settings.validation.upiVpa'), (value) => !value || /^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(value)),
+        .test(
+          'upi',
+          t('settings.validation.upiVpa'),
+          (value) => !value || /^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(value)
+        ),
       dueSoonDays: v.quantityValidation(false),
     }) as Yup.ObjectSchema<SettingsValues>;
     return { enrolSchema, collectSchema, reasonSchema, expenseSchema, bookSchema, settingsSchema };

@@ -1,10 +1,6 @@
 import { api, ubConfig } from 'src/api/AxiosInstances';
 
-import type {
-  ShopPromise,
-  ShopPromiseRole,
-  ShopPromiseValues,
-} from '../types/shopPromise.types';
+import type { ShopPromise, ShopPromiseRole, ShopPromiseValues } from '../types/shopPromise.types';
 
 /**
  * BP-16 — Shop promises. One function per endpoint, owning the snake_case ⇄
@@ -55,12 +51,17 @@ const SHOP_PROMISES = '/parties/shop-promises';
 const partyPromisesPath = (partyId: string) =>
   `/parties/${encodeURIComponent(partyId)}/shop-promises`;
 
-const keyed = (idempotencyKey: string) => ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } });
+const keyed = (idempotencyKey: string) =>
+  ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } });
 /* The form's resolver turns a blank amount into null, so either spelling of
    "no figure promised" goes on the wire as null. */
 const body = (values: ShopPromiseValues) => {
   const amount = (values.amount ?? '').trim();
-  return { promised_on: values.promisedOn, amount: amount || null, note: (values.note ?? '').trim() };
+  return {
+    promised_on: values.promisedOn,
+    amount: amount || null,
+    note: (values.note ?? '').trim(),
+  };
 };
 
 /** The contact's open promise in this role (first, if any), then the closed ones. */

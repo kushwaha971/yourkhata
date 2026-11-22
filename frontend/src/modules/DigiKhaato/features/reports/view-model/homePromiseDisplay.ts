@@ -1,11 +1,7 @@
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
-import {
-  promiseStillDue,
-  promiseValues,
-  variant,
-} from '../../parties/view-model/shopPromiseFacts';
+import { promiseStillDue, promiseValues, variant } from '../../parties/view-model/shopPromiseFacts';
 
 import type { ShopPromise } from '../../parties/types/shopPromise.types';
 
@@ -41,10 +37,9 @@ export const homePromiseCaption = (t: TranslateFn, promise: ShopPromise): string
   if (promise.balance !== undefined) {
     parts.push(
       promiseStillDue(promise)
-        ? t(
-            promise.role === 'customer' ? 'homePromise.owes' : 'homePromise.youOwe',
-            { amount: formatInr(promise.balance) }
-          )
+        ? t(promise.role === 'customer' ? 'homePromise.owes' : 'homePromise.youOwe', {
+            amount: formatInr(promise.balance),
+          })
         : t('homePromise.nothingDue')
     );
   }

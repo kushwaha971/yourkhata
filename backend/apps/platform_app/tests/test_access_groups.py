@@ -14,7 +14,7 @@ import pytest
 from django.urls import reverse
 
 from apps.common.permissions_registry import PERMISSIONS, permissions_for
-from apps.platform_app.models import AccessGroup, Membership, MemberAppAccess
+from apps.platform_app.models import AccessGroup, MemberAppAccess, Membership
 from apps.platform_app.services.access_groups import PARTS
 from apps.platform_app.tests.test_app_grants import (  # noqa: F401 — fixtures
     PASSWORD,
@@ -46,7 +46,9 @@ def shop() -> dict:
 
 
 def _group(client: Any, app: str = "shop", **levels: str) -> dict:
-    got = client.post(GROUPS, {"app": app, "name": "Counter staff", "levels": levels}, format="json")
+    got = client.post(
+        GROUPS, {"app": app, "name": "Counter staff", "levels": levels}, format="json"
+    )
     assert got.status_code == 201, got.content
     return got.json()["data"]
 
@@ -68,14 +70,18 @@ def test_every_codename_of_a_business_part_is_in_a_part() -> None:
 
 def test_a_group_narrows_its_member_in_that_app_only(shop: dict) -> None:
     group = _group(shop["owner"], sales="view", purchases="off", stock="view")
-    got = shop["owner"].put(_access(shop["ravi"]) + "?app=shop", {"group_id": group["id"]}, format="json")
+    got = shop["owner"].put(
+        _access(shop["ravi"]) + "?app=shop", {"group_id": group["id"]}, format="json"
+    )
     assert got.status_code == 200, got.content
     held = _held(shop["ravi"])
     assert "sales.invoice.read" in held and "sales.invoice.write" not in held  # view
     assert not any(c.startswith("purchases.") for c in held)  # off
     assert "inventory.stock.read" in held and "inventory.stock.adjust" not in held
     assert "payments.payment.write" in held  # not in the group: full
-    assert "library.fee.create" in held and "lending.collection.create" in held  # other apps untouched
+    assert (
+        "library.fee.create" in held and "lending.collection.create" in held
+    )  # other apps untouched
 
 
 def test_changing_the_group_changes_every_member_in_it(shop: dict) -> None:
@@ -83,8 +89,14 @@ def test_changing_the_group_changes_every_member_in_it(shop: dict) -> None:
     other = MembershipFactory(tenant=shop["tenant"], role=_role("staff"))
     for m in (shop["ravi"], other):
         shop["owner"].put(_access(m) + "?app=shop", {"group_id": group["id"]}, format="json")
-    versions = {m.pk: Membership.objects.get(pk=m.pk).permissions_version for m in (shop["ravi"], other)}
-    got = shop["owner"].patch(reverse("v1:access-group-detail", args=[group["id"]]), {"levels": {"purchases": "full", "sales": "off"}}, format="json")
+    versions = {
+        m.pk: Membership.objects.get(pk=m.pk).permissions_version for m in (shop["ravi"], other)
+    }
+    got = shop["owner"].patch(
+        reverse("v1:access-group-detail", args=[group["id"]]),
+        {"levels": {"purchases": "full", "sales": "off"}},
+        format="json",
+    )
     assert got.status_code == 200 and got.json()["data"]["members"] == 2
     for m in (shop["ravi"], other):
         held = _held(m)
@@ -95,10 +107,17 @@ def test_changing_the_group_changes_every_member_in_it(shop: dict) -> None:
 def test_an_exception_beats_the_group_and_use_group_again_clears_it(shop: dict) -> None:
     group = _group(shop["owner"], sales="view")
     url = _access(shop["ravi"]) + "?app=shop"
-    shop["owner"].put(url, {"group_id": group["id"], "exceptions": {"sales": "full"}}, format="json")
+    shop["owner"].put(
+        url, {"group_id": group["id"], "exceptions": {"sales": "full"}}, format="json"
+    )
     data = shop["owner"].get(url).json()["data"]
     sales = next(p for p in data["parts"] if p["part"] == "sales")
-    assert sales == {"part": "sales", "levels": ["off", "view", "full"], "group_level": "view", "level": "full"}
+    assert sales == {
+        "part": "sales",
+        "levels": ["off", "view", "full"],
+        "group_level": "view",
+        "level": "full",
+    }
     assert data["changes"] == 1 and "sales.invoice.write" in _held(shop["ravi"])
     shop["owner"].put(url, {"exceptions": {}}, format="json")
     assert "sales.invoice.write" not in _held(shop["ravi"])
@@ -113,7 +132,9 @@ def test_a_level_never_gives_more_than_the_role(shop: dict) -> None:
 
 def test_a_group_belongs_to_one_business_and_one_app(shop: dict) -> None:
     library = _group(shop["owner"], app="library", library_fees="off")
-    got = shop["owner"].put(_access(shop["ravi"]) + "?app=shop", {"group_id": library["id"]}, format="json")
+    got = shop["owner"].put(
+        _access(shop["ravi"]) + "?app=shop", {"group_id": library["id"]}, format="json"
+    )
     assert got.status_code == 400  # a Library group cannot run Business
     listed = shop["owner"].get(GROUPS + "?app=shop").json()["data"]["groups"]
     assert library["id"] not in {g["id"] for g in listed}
@@ -122,15 +143,35 @@ def test_a_group_belongs_to_one_business_and_one_app(shop: dict) -> None:
     MembershipFactory(user=stranger, tenant=other, role=_role("owner"))
     elsewhere = _client(stranger)
     assert elsewhere.get(GROUPS + "?app=library").json()["data"]["groups"] == []
-    assert elsewhere.patch(reverse("v1:access-group-detail", args=[library["id"]]), {"name": "x"}, format="json").status_code == 404
+    assert (
+        elsewhere.patch(
+            reverse("v1:access-group-detail", args=[library["id"]]), {"name": "x"}, format="json"
+        ).status_code
+        == 404
+    )
 
 
 def test_one_default_group_per_app(shop: dict) -> None:
-    a = shop["owner"].post(GROUPS, {"app": "shop", "name": "A", "is_default": True}, format="json").json()["data"]
-    b = shop["owner"].post(GROUPS, {"app": "shop", "name": "B", "is_default": True}, format="json").json()["data"]
-    lib = shop["owner"].post(GROUPS, {"app": "library", "name": "L", "is_default": True}, format="json").json()["data"]
+    a = (
+        shop["owner"]
+        .post(GROUPS, {"app": "shop", "name": "A", "is_default": True}, format="json")
+        .json()["data"]
+    )
+    b = (
+        shop["owner"]
+        .post(GROUPS, {"app": "shop", "name": "B", "is_default": True}, format="json")
+        .json()["data"]
+    )
+    lib = (
+        shop["owner"]
+        .post(GROUPS, {"app": "library", "name": "L", "is_default": True}, format="json")
+        .json()["data"]
+    )
     assert not AccessGroup.objects.get(pk=a["id"]).is_default
-    assert AccessGroup.objects.get(pk=b["id"]).is_default and AccessGroup.objects.get(pk=lib["id"]).is_default
+    assert (
+        AccessGroup.objects.get(pk=b["id"]).is_default
+        and AccessGroup.objects.get(pk=lib["id"]).is_default
+    )
 
 
 def test_a_group_with_members_cannot_be_deleted(shop: dict) -> None:
@@ -153,7 +194,9 @@ def test_admins_are_not_put_in_groups(shop: dict) -> None:
 def test_switching_one_app_off_keeps_the_others_and_never_the_last(shop: dict) -> None:
     url = _access(shop["ravi"])
     shop["owner"].put(url + "?app=library", {"can_use": False}, format="json")
-    opens = shop["owner"].get(reverse("v1:member-apps", args=[shop["ravi"].id])).json()["data"]["opens"]
+    opens = (
+        shop["owner"].get(reverse("v1:member-apps", args=[shop["ravi"].id])).json()["data"]["opens"]
+    )
     assert "library" not in opens and {"lending", "shop"} <= set(opens)
     shop["owner"].put(url + "?app=lending", {"can_use": False}, format="json")
     last = shop["owner"].put(url + "?app=shop", {"can_use": False}, format="json")
@@ -161,29 +204,63 @@ def test_switching_one_app_off_keeps_the_others_and_never_the_last(shop: dict) -
 
 
 def test_adding_from_an_app_gives_that_app_in_the_default_group(shop: dict) -> None:
-    group = shop["owner"].post(GROUPS, {"app": "library", "name": "Library desk", "is_default": True, "levels": {"library_fees": "off"}}, format="json").json()["data"]
-    made = shop["owner"].post(reverse("v1:member-list"), {"full_name": "Suresh Patil", "mobile": "+919822041178", "role": "staff", "app": "library"}, format="json")
+    group = (
+        shop["owner"]
+        .post(
+            GROUPS,
+            {
+                "app": "library",
+                "name": "Library desk",
+                "is_default": True,
+                "levels": {"library_fees": "off"},
+            },
+            format="json",
+        )
+        .json()["data"]
+    )
+    made = shop["owner"].post(
+        reverse("v1:member-list"),
+        {"full_name": "Suresh Patil", "mobile": "+919822041178", "role": "staff", "app": "library"},
+        format="json",
+    )
     assert made.status_code == 201, made.content
     member = Membership.objects.get(tenant=shop["tenant"], user__mobile="+919822041178")
     opens = shop["owner"].get(reverse("v1:member-apps", args=[member.id])).json()["data"]["opens"]
     assert opens == ["library"]
     assert MemberAppAccess.objects.get(membership=member, app="library").group_id is not None
-    assert str(MemberAppAccess.objects.get(membership=member, app="library").group_id) == group["id"]
+    assert (
+        str(MemberAppAccess.objects.get(membership=member, app="library").group_id) == group["id"]
+    )
     assert "library.fee.create" not in _held(member)
     # Added again from Business: they gain Business, keep Library.
-    again = shop["owner"].post(reverse("v1:member-list"), {"full_name": "Suresh Patil", "mobile": "+919822041178", "role": "staff", "app": "shop"}, format="json")
+    again = shop["owner"].post(
+        reverse("v1:member-list"),
+        {"full_name": "Suresh Patil", "mobile": "+919822041178", "role": "staff", "app": "shop"},
+        format="json",
+    )
     assert again.status_code == 200 and again.json()["data"]["added_to_app"] == "shop"
-    assert again.json()["data"]["password"] is None and again.json()["data"]["member"]["id"] == str(member.id)
+    assert again.json()["data"]["password"] is None and again.json()["data"]["member"]["id"] == str(
+        member.id
+    )
     opens = shop["owner"].get(reverse("v1:member-apps", args=[member.id])).json()["data"]["opens"]
     assert set(opens) == {"library", "shop"}
 
 
 def test_the_members_list_for_an_app_shows_each_group_and_changes(shop: dict) -> None:
     group = _group(shop["owner"], sales="view")
-    shop["owner"].put(_access(shop["ravi"]) + "?app=shop", {"group_id": group["id"], "exceptions": {"sales": "full"}}, format="json")
+    shop["owner"].put(
+        _access(shop["ravi"]) + "?app=shop",
+        {"group_id": group["id"], "exceptions": {"sales": "full"}},
+        format="json",
+    )
     rows = shop["owner"].get(reverse("v1:member-list") + "?app=shop").json()["data"]
     mine = next(r for r in rows if r["id"] == str(shop["ravi"].id))
-    assert mine["access"] == {"can_use": True, "group_id": group["id"], "group_name": "Counter staff", "changes": 1}
+    assert mine["access"] == {
+        "can_use": True,
+        "group_id": group["id"],
+        "group_name": "Counter staff",
+        "changes": 1,
+    }
 
 
 def test_the_parts_and_the_example_come_from_the_server(shop: dict) -> None:

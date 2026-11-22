@@ -719,7 +719,7 @@ describe("the Shop's Old dues (09 §10.7)", () => {
   ];
   const SHOP_MODULES: readonly ModuleCode[] = ['ledger', 'reports', 'parties', 'payments'];
 
-  it('says the side in the Shop\'s words and draws the buckets as age bars, not tiles', async () => {
+  it("says the side in the Shop's words and draws the buckets as age bars, not tiles", async () => {
     /* "You will get" is the Udhaar book's phrase; the Shop's customers and
        suppliers are separate and never netted, so each side says whose. */
     signIn(SHOP_PERMISSIONS, SHOP_MODULES);
@@ -790,7 +790,7 @@ describe("the Shop's Old dues (09 §10.7)", () => {
     expect(screen.getByTestId('aging-action-statement')).toBeInTheDocument();
   });
 
-  it('says a settled Shop book is settled, in the Shop\'s words', async () => {
+  it("says a settled Shop book is settled, in the Shop's words", async () => {
     signIn(SHOP_PERMISSIONS, SHOP_MODULES);
     agingService.getLedgerAging.mockImplementation(async (filters: AgingFilters) => ({
       ...(await answer([], ZERO)(filters)),

@@ -279,7 +279,7 @@ export function PaymentFormDrawer({
     setValue('allocations', rows);
     // `total` deliberately excluded: re-seeding every row on each keystroke would
     // erase typed rows. The effect below moves only the preset bill's row.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when the listed values change
   }, [openDocuments, context.documentId, setValue, counter, defaults, form]);
 
   /* P-D2 — a part payment from an invoice (or "Pay supplier" from a bill): the

@@ -19,12 +19,7 @@ from django.db import transaction
 
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
-from apps.sales.constants import (
-    CREDITABLE_STATUSES,
-    INVOICE_KINDS,
-    CreditNoteReason,
-    Settlement,
-)
+from apps.sales.constants import CREDITABLE_STATUSES, INVOICE_KINDS, CreditNoteReason, Settlement
 from apps.sales.models import SalesDocument
 from apps.sales.services import documents as drafts
 from apps.sales.services.credit_note_issue import issue_credit_note

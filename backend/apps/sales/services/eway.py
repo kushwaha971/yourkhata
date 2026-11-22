@@ -47,7 +47,12 @@ def save_transport(document: Any, payload: dict) -> dict:
         errors["mode"] = ["Choose road, rail, air or ship."]
     if errors:
         raise ValidationFailed(errors)
-    eway = {"transporter": transporter, "vehicle_number": vehicle, "distance_km": distance, "mode": mode}
+    eway = {
+        "transporter": transporter,
+        "vehicle_number": vehicle,
+        "distance_km": distance,
+        "mode": mode,
+    }
     document.meta = {**(document.meta or {}), "eway": eway}
     document.save(update_fields=["meta", "updated_at"])
     return eway
@@ -55,7 +60,9 @@ def save_transport(document: Any, payload: dict) -> dict:
 
 def portal_json(document: Any) -> dict:
     if document.status in ("draft", "void"):
-        raise BusinessRuleViolation("eway_not_issued", "Issue the bill before making its e-way bill.")
+        raise BusinessRuleViolation(
+            "eway_not_issued", "Issue the bill before making its e-way bill."
+        )
     eway = (document.meta or {}).get("eway")
     if not eway:
         raise ValidationFailed({"vehicle_number": ["Add the transport details first."]})

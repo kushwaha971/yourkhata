@@ -340,7 +340,12 @@ def test_an_override_cannot_hand_a_module_role_a_core_read(
         tenant=tenant,
         role=agent_role,
         permissions_override={
-            "allow": ["parties.party.read", "ledger.entry.read", "test.loan.read_all", "test.loan.read"]
+            "allow": [
+                "parties.party.read",
+                "ledger.entry.read",
+                "test.loan.read_all",
+                "test.loan.read",
+            ]
         },
     )
     held = reg.permissions_for(member)

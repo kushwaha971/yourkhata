@@ -37,9 +37,7 @@ describe('netProbeSpacingMs', () => {
     expect(netProbeSpacingMs('offline', NET_PROBES_TO_OFFLINE)).toBe(NET_PROBE_OFFLINE_MS);
     expect(netProbeSpacingMs('offline', NET_PROBES_TO_OFFLINE + 1)).toBe(NET_PROBE_OFFLINE_MS * 2);
     expect(netProbeSpacingMs('offline', NET_PROBES_TO_OFFLINE + 2)).toBe(NET_PROBE_OFFLINE_MS * 4);
-    expect(netProbeSpacingMs('offline', NET_PROBES_TO_OFFLINE + 99)).toBe(
-      NET_PROBE_BACKOFF_MAX_MS
-    );
+    expect(netProbeSpacingMs('offline', NET_PROBES_TO_OFFLINE + 99)).toBe(NET_PROBE_BACKOFF_MAX_MS);
   });
 
   it('costs about a quarter of the requests over five minutes of a dead link', () => {

@@ -51,8 +51,7 @@ import type { SalesDocument } from '../types/sales.types';
 /* Each dialog loads with the tap that opens it (a form in the chunk that opens it). */
 const VoidDialogLazy = dynamic(
   () => import('./VoidDocumentDialog').then((m) => m.VoidDocumentDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 const CancelOrderDialogLazy = dynamic(
   () => import('./CancelOrderDialog').then((m) => m.CancelOrderDialog),
@@ -60,8 +59,7 @@ const CancelOrderDialogLazy = dynamic(
 );
 const ApplyDialogLazy = dynamic(
   () => import('./ApplyCreditDialog').then((m) => m.ApplyCreditDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 type Open = 'void' | 'apply' | 'convert' | 'reject' | 'cancelOrder' | 'voidChallan' | null;
@@ -104,7 +102,10 @@ export function DocumentActions({
   );
   const sellsSizes = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('variants'));
   const canExchange =
-    hasGoodsToTakeBack(doc) && sellsSizes && can('sales.credit_note.write') && can('sales.invoice.write');
+    hasGoodsToTakeBack(doc) &&
+    sellsSizes &&
+    can('sales.credit_note.write') &&
+    can('sales.invoice.write');
   const convert = useCallback(async () => {
     setBusy(true);
     const result = await dispatch(
@@ -321,7 +322,8 @@ export function DocumentActions({
       {menu &&
       isBill &&
       !voidable &&
-      !(canReturn(doc) && can('sales.credit_note.write')) && !canExchange ? null : menu ? (
+      !(canReturn(doc) && can('sales.credit_note.write')) &&
+      !canExchange ? null : menu ? (
         <>
           <UbButton
             variant="secondary"

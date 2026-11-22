@@ -46,9 +46,17 @@ describe('the enrol form', () => {
   it('accepts a mobile as the phone box gives it (+91 and digits)', async () => {
     const { result } = renderHook(() => useLibrarySchemas(), { wrapper });
     const values = {
-      name: 'Dbg', mobile: '+919822041178', shiftId: 'x', seat: '3', monthlyFee: '800',
-      joinedOn: '2026-11-12', firstPayment: '800', mode: 'upi',
+      name: 'Dbg',
+      mobile: '+919822041178',
+      shiftId: 'x',
+      seat: '3',
+      monthlyFee: '800',
+      joinedOn: '2026-11-12',
+      firstPayment: '800',
+      mode: 'upi',
     };
-    await expect(result.current.enrolSchema.validate(values, { abortEarly: false })).resolves.toBeTruthy();
+    await expect(
+      result.current.enrolSchema.validate(values, { abortEarly: false })
+    ).resolves.toBeTruthy();
   });
 });

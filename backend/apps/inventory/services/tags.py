@@ -31,7 +31,9 @@ HUID = re.compile(r"^[A-Z0-9]{6}$")
 TOLERANCE = Decimal("0.0005")
 
 
-def _dec(raw: Any, field: str, errors: dict, *, required: bool, places: int, minimum: Decimal) -> Decimal | None:
+def _dec(
+    raw: Any, field: str, errors: dict, *, required: bool, places: int, minimum: Decimal
+) -> Decimal | None:
     if raw in (None, ""):
         if required:
             errors[field] = ["Enter this."]
@@ -59,16 +61,21 @@ def _clean(*, tenant: Any, data: dict, allow_serial: Any = None) -> dict:
         Serial.objects.filter(tenant=tenant, serial=tag_no)
         # G: a piece bought on a purchase is in stock with its number and no
         # weights yet; giving it weights is not a second use of the number.
-        .exclude(pk__in=[allow_serial] if allow_serial else [])
-        .exists()
+        .exclude(pk__in=[allow_serial] if allow_serial else []).exists()
     ):
         errors["tag_no"] = ["This tag no. is already used."]
     purity = data.get("purity")
     if purity not in TAG_PURITIES:
         errors["purity"] = ["Choose the metal and purity."]
-    gross = _dec(data.get("gross_g"), "gross_g", errors, required=True, places=3, minimum=Decimal("0.001"))
-    stone = _dec(data.get("stone_g"), "stone_g", errors, required=False, places=3, minimum=Decimal("0")) or Decimal("0")
-    net = _dec(data.get("net_g"), "net_g", errors, required=False, places=3, minimum=Decimal("0.001"))
+    gross = _dec(
+        data.get("gross_g"), "gross_g", errors, required=True, places=3, minimum=Decimal("0.001")
+    )
+    stone = _dec(
+        data.get("stone_g"), "stone_g", errors, required=False, places=3, minimum=Decimal("0")
+    ) or Decimal("0")
+    net = _dec(
+        data.get("net_g"), "net_g", errors, required=False, places=3, minimum=Decimal("0.001")
+    )
     if gross is not None and "gross_g" not in errors and "stone_g" not in errors:
         if stone >= gross:
             errors["stone_g"] = ["Stone weight must be less than the gross weight."]
@@ -79,11 +86,32 @@ def _clean(*, tenant: Any, data: dict, allow_serial: Any = None) -> dict:
     making_type = data.get("making_type") or "pct"
     if making_type not in MAKING_TYPES:
         errors["making_type"] = ["Choose % or ₹ per g."]
-    making = _dec(data.get("making_value"), "making_value", errors, required=False, places=2, minimum=Decimal("0")) or Decimal("0")
-    wastage = _dec(data.get("wastage_pct"), "wastage_pct", errors, required=False, places=2, minimum=Decimal("0")) or Decimal("0")
+    making = _dec(
+        data.get("making_value"),
+        "making_value",
+        errors,
+        required=False,
+        places=2,
+        minimum=Decimal("0"),
+    ) or Decimal("0")
+    wastage = _dec(
+        data.get("wastage_pct"),
+        "wastage_pct",
+        errors,
+        required=False,
+        places=2,
+        minimum=Decimal("0"),
+    ) or Decimal("0")
     if wastage > 100 and "wastage_pct" not in errors:
         errors["wastage_pct"] = ["Wastage is a percentage up to 100."]
-    stone_charge = _dec(data.get("stone_charge"), "stone_charge", errors, required=False, places=2, minimum=Decimal("0")) or Decimal("0")
+    stone_charge = _dec(
+        data.get("stone_charge"),
+        "stone_charge",
+        errors,
+        required=False,
+        places=2,
+        minimum=Decimal("0"),
+    ) or Decimal("0")
     huid = str(data.get("huid") or "").strip().upper()
     if huid and not HUID.match(huid):
         errors["huid"] = ["HUID is 6 letters and digits from the hallmark."]
@@ -128,7 +156,11 @@ def _metal_value(tenant: Any, clean: dict) -> Decimal:
     asks no cost; a piece BOUGHT comes in through a purchase at its price."""
     from apps.inventory.models import MetalRate
 
-    rate = MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(RATE_OF.get(clean["purity"], clean["purity"]), flat=True).first()
+    rate = (
+        MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant))
+        .values_list(RATE_OF.get(clean["purity"], clean["purity"]), flat=True)
+        .first()
+    )
     return (clean["net_g"] * rate).quantize(Decimal("0.0001")) if rate else Decimal("0")
 
 
@@ -138,9 +170,15 @@ def add_tag(*, ctx: Ctx, item: Item, data: dict, labour_per_g: Decimal = Decimal
     from apps.inventory.services.adjustments import post_adjustment
 
     if item.tracking != "serial":
-        raise ValidationFailed({"tag_no": ["This item does not keep tags."]}, "Check the tag details.")
+        raise ValidationFailed(
+            {"tag_no": ["This item does not keep tags."]}, "Check the tag details."
+        )
     bought = Serial.objects.filter(
-        tenant=ctx.tenant, item=item, serial=str(data.get("tag_no") or "").strip().upper(), status=Serial.IN_STOCK, tag__isnull=True
+        tenant=ctx.tenant,
+        item=item,
+        serial=str(data.get("tag_no") or "").strip().upper(),
+        status=Serial.IN_STOCK,
+        tag__isnull=True,
     ).first()
     clean = _clean(tenant=ctx.tenant, data=data, allow_serial=bought.pk if bought else None)
     if bought is not None:
@@ -154,7 +192,16 @@ def add_tag(*, ctx: Ctx, item: Item, data: dict, labour_per_g: Decimal = Decimal
             "adjustment_date": tenant_today(ctx.tenant).isoformat(),
             "reason": "other",
             "note": f"Tag {clean['tag_no']} added",
-            "lines": [{"item_id": str(item.id), "qty": "1", "unit_cost": str(_metal_value(ctx.tenant, clean) + (clean["net_g"] * labour_per_g).quantize(Decimal("0.0001")))}],
+            "lines": [
+                {
+                    "item_id": str(item.id),
+                    "qty": "1",
+                    "unit_cost": str(
+                        _metal_value(ctx.tenant, clean)
+                        + (clean["net_g"] * labour_per_g).quantize(Decimal("0.0001"))
+                    ),
+                }
+            ],
         },
     )
     serial = Serial.objects.create(
@@ -166,7 +213,11 @@ def add_tag(*, ctx: Ctx, item: Item, data: dict, labour_per_g: Decimal = Decimal
 
 def item_tags(*, tenant: Any, item: Item) -> list[dict]:
     """The item page's "Weight and rate" tab: in stock first, then sold, newest first."""
-    rows = Serial.objects.filter(tenant=tenant, item=item).select_related("tag").order_by("status", "-created_at")
+    rows = (
+        Serial.objects.filter(tenant=tenant, item=item)
+        .select_related("tag")
+        .order_by("status", "-created_at")
+    )
     return [tag_view(s) for s in rows]
 
 
@@ -186,21 +237,41 @@ def rate_today(*, tenant: Any, purity: str) -> Decimal | None:
 
     if purity not in TAG_PURITIES:
         return None
-    return MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(RATE_OF.get(purity, purity), flat=True).first()
+    return (
+        MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant))
+        .values_list(RATE_OF.get(purity, purity), flat=True)
+        .first()
+    )
 
 
 def price_piece(
-    *, net_g: Decimal, rate: Decimal, making_type: str, making_value: Decimal, wastage_pct: Decimal, stone_charge: Decimal
+    *,
+    net_g: Decimal,
+    rate: Decimal,
+    making_type: str,
+    making_value: Decimal,
+    wastage_pct: Decimal,
+    stone_charge: Decimal,
 ) -> dict[str, Decimal]:
     """Metal = net × rate; making is a % of the metal or ₹ per net gram; wastage
     is a % of the metal; the stone charge is added as it is. Each part is
     rounded to the paisa, and the total is their sum, so the printed parts
     always add up to the printed total. GST is on the bill, not here."""
     metal = (net_g * rate).quantize(TWO)
-    making = (metal * making_value / 100).quantize(TWO) if making_type == "pct" else (net_g * making_value).quantize(TWO)
+    making = (
+        (metal * making_value / 100).quantize(TWO)
+        if making_type == "pct"
+        else (net_g * making_value).quantize(TWO)
+    )
     wastage = (metal * wastage_pct / 100).quantize(TWO)
     stone = stone_charge.quantize(TWO)
-    return {"metal": metal, "making": making, "wastage": wastage, "stone": stone, "total": metal + making + wastage + stone}
+    return {
+        "metal": metal,
+        "making": making,
+        "wastage": wastage,
+        "stone": stone,
+        "total": metal + making + wastage + stone,
+    }
 
 
 def _snapshot(detail: dict, rate: Decimal | None) -> dict:
@@ -253,7 +324,12 @@ def lookup(*, tenant: Any, tag_no: str) -> dict | None:
 
     Only a tag in stock is found: a sold piece cannot be billed twice."""
     serial = (
-        Serial.objects.filter(tenant=tenant, serial=str(tag_no or "").strip().upper(), status=Serial.IN_STOCK, tag__isnull=False)
+        Serial.objects.filter(
+            tenant=tenant,
+            serial=str(tag_no or "").strip().upper(),
+            status=Serial.IN_STOCK,
+            tag__isnull=False,
+        )
         .select_related("tag", "item", "item__unit")
         .first()
     )
@@ -270,7 +346,9 @@ def lookup(*, tenant: Any, tag_no: str) -> dict | None:
     }
 
 
-def line_jewel(*, tenant: Any, item: Any, serials: list, raw: Any, path: str, errors: dict) -> dict | None:
+def line_jewel(
+    *, tenant: Any, item: Any, serials: list, raw: Any, path: str, errors: dict
+) -> dict | None:
     """The `jewel` snapshot of a bill line, and so its price (one piece).
 
     The tag's own weights and charges are the defaults; the counter may change
@@ -280,20 +358,38 @@ def line_jewel(*, tenant: Any, item: Any, serials: list, raw: Any, path: str, er
     if not isinstance(raw, dict) or item is None or getattr(item, "tracking", None) != "serial":
         return None
     tag_no = str((serials or [None])[0] or raw.get("tag_no") or "").strip().upper()
-    serial = Serial.objects.filter(tenant=tenant, item=item, serial=tag_no).select_related("tag").first()
+    serial = (
+        Serial.objects.filter(tenant=tenant, item=item, serial=tag_no).select_related("tag").first()
+    )
     if serial is None or getattr(serial, "tag", None) is None:
         errors[f"{path}.serials"] = ["Scan a tag of this item."]
         return None
     detail = _detail_of(serial)
     local: dict[str, list[str]] = {}
-    for name, places in (("net_g", 3), ("making_value", 2), ("wastage_pct", 2), ("stone_charge", 2)):
+    for name, places in (
+        ("net_g", 3),
+        ("making_value", 2),
+        ("wastage_pct", 2),
+        ("stone_charge", 2),
+    ):
         if raw.get(name) not in (None, ""):
-            value = _dec(raw.get(name), name, local, required=False, places=places, minimum=Decimal("0.001") if name == "net_g" else Decimal("0"))
+            value = _dec(
+                raw.get(name),
+                name,
+                local,
+                required=False,
+                places=places,
+                minimum=Decimal("0.001") if name == "net_g" else Decimal("0"),
+            )
             if value is not None and name not in local:
                 detail[name] = value
     if raw.get("making_type") in MAKING_TYPES:
         detail["making_type"] = raw["making_type"]
-    rate = _dec(raw.get("rate"), "rate", local, required=False, places=2, minimum=Decimal("0.01")) if raw.get("rate") not in (None, "") else None
+    rate = (
+        _dec(raw.get("rate"), "rate", local, required=False, places=2, minimum=Decimal("0.01"))
+        if raw.get("rate") not in (None, "")
+        else None
+    )
     if rate is None and "rate" not in local:
         rate = rate_today(tenant=tenant, purity=detail["purity"])
         if rate is None:

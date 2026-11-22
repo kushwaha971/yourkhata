@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import zipfile
 from collections.abc import Iterable
+
 from apps.common.exports import ExportColumn, csv_lines
 from apps.reports.exporters.registers import BOOL, DATE, MONEY, QTY, RATE, TEXT, cell
 

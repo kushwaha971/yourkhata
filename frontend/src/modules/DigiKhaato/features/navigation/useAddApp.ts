@@ -35,7 +35,11 @@ export function useAddApp(onAdded?: () => void): {
         const done = await dispatch(setAppRunning({ app: code, running: true }));
         if (setAppRunning.fulfilled.match(done)) {
           dispatch(
-            showSnackbar({ severity: 'success', id: 'tenant.switcher.apps.added', params: { app: name } })
+            showSnackbar({
+              severity: 'success',
+              id: 'tenant.switcher.apps.added',
+              params: { app: name },
+            })
           );
           onAdded?.();
           router.push(home);

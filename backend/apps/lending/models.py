@@ -40,7 +40,9 @@ class Borrower(TenantModel):
     mobile = models.CharField(max_length=10, blank=True, default="")
     # What they do, as the round names them: "Tea stall", "Vegetables".
     work = models.CharField(max_length=NAME_MAX, blank=True, default="")
-    route = models.ForeignKey(Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    route = models.ForeignKey(
+        Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     note = models.CharField(max_length=NOTE_MAX, blank=True, default="")
     active = models.BooleanField(default=True)
 
@@ -52,7 +54,9 @@ class Borrower(TenantModel):
 class Loan(TenantModel):
     number = models.CharField(max_length=16)
     borrower = models.ForeignKey(Borrower, on_delete=models.PROTECT, related_name="loans")
-    route = models.ForeignKey(Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    route = models.ForeignKey(
+        Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     lent = MoneyField()
     charges = MoneyField(default=0)
     frequency = models.CharField(max_length=8, choices=Frequency.choices)
@@ -62,14 +66,19 @@ class Loan(TenantModel):
     skip_sundays = models.BooleanField(default=True)
     status = models.CharField(max_length=8, choices=LoanStatus.choices, default=LoanStatus.ACTIVE)
     closed_on = models.DateField(null=True, blank=True)
-    close_reason = models.CharField(max_length=12, choices=CloseReason.choices, blank=True, default="")
+    close_reason = models.CharField(
+        max_length=12, choices=CloseReason.choices, blank=True, default=""
+    )
     note = models.CharField(max_length=NOTE_MAX, blank=True, default="")
 
     class Meta:
         db_table = "lending_loan"
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_lending_loan_number"),
-            models.CheckConstraint(condition=Q(lent__gt=0) & Q(each__gt=0) & Q(charges__gte=0), name="ck_lending_loan_amounts"),
+            models.CheckConstraint(
+                condition=Q(lent__gt=0) & Q(each__gt=0) & Q(charges__gte=0),
+                name="ck_lending_loan_amounts",
+            ),
         ]
         indexes = [models.Index(fields=["tenant", "status", "route"], name="ix_lending_loan_round")]
 
@@ -97,12 +106,16 @@ class Collection(TenantModel):
     mode = models.CharField(max_length=4, choices=PayMode.choices)
     collected_on = models.DateField()
     status = models.CharField(max_length=8, choices=RowStatus.choices, default=RowStatus.LIVE)
-    removes = models.OneToOneField("self", null=True, blank=True, on_delete=models.PROTECT, related_name="removed_by")
+    removes = models.OneToOneField(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="removed_by"
+    )
     reason = models.CharField(max_length=REASON_MAX, blank=True, default="")
 
     class Meta:
         db_table = "lending_collection"
-        constraints = [models.CheckConstraint(condition=Q(amount__gt=0), name="ck_lending_collection_positive")]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="ck_lending_collection_positive")
+        ]
         indexes = [
             models.Index(fields=["loan", "collected_on"], name="ix_lending_collection_loan"),
             models.Index(fields=["tenant", "collected_on"], name="ix_lending_collection_day"),
@@ -135,7 +148,9 @@ class Message(TenantModel):
 
 
 class Settings(models.Model):
-    tenant = models.OneToOneField("platform.Tenant", primary_key=True, on_delete=models.RESTRICT, related_name="+")
+    tenant = models.OneToOneField(
+        "platform.Tenant", primary_key=True, on_delete=models.RESTRICT, related_name="+"
+    )
     sign_as = models.CharField(max_length=NAME_MAX, blank=True, default="")
     upi_id = models.CharField(max_length=60, blank=True, default="")
 

@@ -35,13 +35,11 @@ import type { AdminTenantDetail } from '../types/admin.types';
 
 const TenantEditDialog = dynamic(
   () => import('./TenantEditDialog').then((module) => module.TenantEditDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 const AdminReasonDialog = dynamic(
   () => import('./AdminReasonDialog').then((module) => module.AdminReasonDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 type Dialog = 'edit' | 'request' | 'enter' | null;

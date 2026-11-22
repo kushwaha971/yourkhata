@@ -112,9 +112,17 @@ export const requestDeletion = async (input: DeleteRequestInput): Promise<Deleti
  * POST /tenants/current/delete-code — a six-digit code to the owner's own
  * mobile, which re-verifies a delete for an owner who has no password.
  */
-export const requestDeleteCode = async (): Promise<{ readonly challengeId: string; readonly codeLength: number }> => {
-  const response = await api.post<{ data: { challenge_id: string; code_length?: number } }>(API_PATHS.TENANT_DELETE_CODE);
-  return { challengeId: response.data.data.challenge_id, codeLength: response.data.data.code_length ?? 6 };
+export const requestDeleteCode = async (): Promise<{
+  readonly challengeId: string;
+  readonly codeLength: number;
+}> => {
+  const response = await api.post<{ data: { challenge_id: string; code_length?: number } }>(
+    API_PATHS.TENANT_DELETE_CODE
+  );
+  return {
+    challengeId: response.data.data.challenge_id,
+    codeLength: response.data.data.code_length ?? 6,
+  };
 };
 export const requestDeleteCodeWriteClass: TWriteClass = 'online-only';
 

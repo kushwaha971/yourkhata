@@ -145,9 +145,9 @@ export function usePartyList(
   // The slice is shared by Shop and Udhaar. Never paint the last book's money
   // under the new book's title while the URL seed and its request settle.
   const expectedBook = book ?? 'main';
-  const bookMatches = filters.book === expectedBook && (
-    rowsQuery?.book === expectedBook || (rowsQuery === null && rawRows.length === 0)
-  );
+  const bookMatches =
+    filters.book === expectedBook &&
+    (rowsQuery?.book === expectedBook || (rowsQuery === null && rawRows.length === 0));
   const rows = useMemo(() => (bookMatches ? rawRows : []), [bookMatches, rawRows]);
   const scopedTotals = bookMatches ? serverTotals : null;
   const totals = useMemo(() => scopedTotals ?? partyTotals(rows), [scopedTotals, rows]);

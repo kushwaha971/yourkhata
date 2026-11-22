@@ -22,7 +22,11 @@ class SalesConfig(AppConfig):
         from apps.sales.services.cafe_orders import due_soon
 
         register_dashboard_section(
-            "sales.advance_orders", module="sales", permission="sales.invoice.read", selector=due_soon, order=15
+            "sales.advance_orders",
+            module="sales",
+            permission="sales.invoice.read",
+            selector=due_soon,
+            order=15,
         )
 
         # LED-10 FR-5 — the khata names an invoice by its number.

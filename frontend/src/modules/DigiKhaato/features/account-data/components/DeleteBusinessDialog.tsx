@@ -168,7 +168,9 @@ export function DeleteBusinessDialog({
             {challenge ? (
               <UbField
                 name="code"
-                label={t('data.delete.code.label', { mobile: formatPhoneForDisplay(user?.mobile ?? '') })}
+                label={t('data.delete.code.label', {
+                  mobile: formatPhoneForDisplay(user?.mobile ?? ''),
+                })}
                 controlOwnsLabel
                 required
               >
@@ -179,7 +181,9 @@ export function DeleteBusinessDialog({
                     value={(field.value as string) ?? ''}
                     onChange={field.onChange}
                     invalid={field.invalid}
-                    label={t('data.delete.code.label', { mobile: formatPhoneForDisplay(user?.mobile ?? '') })}
+                    label={t('data.delete.code.label', {
+                      mobile: formatPhoneForDisplay(user?.mobile ?? ''),
+                    })}
                     cellLabel={(index, total) => t('auth.otp.cell', { index, total })}
                     describedBy={field['aria-describedby']}
                   />

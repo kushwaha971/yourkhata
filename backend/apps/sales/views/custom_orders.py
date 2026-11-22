@@ -46,14 +46,18 @@ class CustomOrdersView(_View):
         )
 
     def post(self, request: Any) -> Any:
-        order, created = custom_orders.create_order(ctx=Ctx.from_request(request), data=request.data)
+        order, created = custom_orders.create_order(
+            ctx=Ctx.from_request(request), data=request.data
+        )
         body = custom_orders.view(order)
         return StandardResponse.created(body) if created else StandardResponse.ok(body)
 
 
 class CustomOrderStatusView(_View):
     def post(self, request: Any, pk: Any) -> Any:
-        order = custom_orders.move_order(ctx=Ctx.from_request(request), order_id=pk, status=request.data.get("status"))
+        order = custom_orders.move_order(
+            ctx=Ctx.from_request(request), order_id=pk, status=request.data.get("status")
+        )
         return StandardResponse.ok(custom_orders.view(order))
 
 
@@ -63,7 +67,9 @@ class CustomOrderDetailView(_View):
         return StandardResponse.ok(custom_orders.view(order))
 
     def patch(self, request: Any, pk: Any) -> Any:
-        order = custom_orders.update_order(ctx=Ctx.from_request(request), order_id=pk, data=request.data)
+        order = custom_orders.update_order(
+            ctx=Ctx.from_request(request), order_id=pk, data=request.data
+        )
         return StandardResponse.ok(custom_orders.view(order))
 
 
@@ -74,7 +80,9 @@ class JewelHomeView(_View):
 
 class OldGoldView(_View):
     def get(self, request: Any) -> Any:
-        return StandardResponse.ok(custom_orders.old_gold_page(tenant=get_effective_tenant(request)))
+        return StandardResponse.ok(
+            custom_orders.old_gold_page(tenant=get_effective_tenant(request))
+        )
 
 
 class KarigarsView(_View):
@@ -82,12 +90,16 @@ class KarigarsView(_View):
         return StandardResponse.ok(karigars.list_karigars(tenant=get_effective_tenant(request)))
 
     def post(self, request: Any) -> Any:
-        return StandardResponse.created(karigars.create_karigar(ctx=Ctx.from_request(request), data=request.data))
+        return StandardResponse.created(
+            karigars.create_karigar(ctx=Ctx.from_request(request), data=request.data)
+        )
 
 
 class KarigarIssueView(_View):
     def post(self, request: Any, pk: Any) -> Any:
-        lot, created = karigars.issue_gold(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data)
+        lot, created = karigars.issue_gold(
+            ctx=Ctx.from_request(request), karigar_id=pk, data=request.data
+        )
         body = karigars.lot_view(lot)
         return StandardResponse.created(body) if created else StandardResponse.ok(body)
 
@@ -100,23 +112,33 @@ class KarigarReceiveView(_View):
 
 class KarigarMakeTagView(_View):
     def post(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.created(karigars.make_tag(ctx=Ctx.from_request(request), lot_id=pk, data=request.data))
+        return StandardResponse.created(
+            karigars.make_tag(ctx=Ctx.from_request(request), lot_id=pk, data=request.data)
+        )
 
 
 class KarigarTagsDoneView(_View):
     def post(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(karigars.finish_tagging(ctx=Ctx.from_request(request), lot_id=pk))
+        return StandardResponse.ok(
+            karigars.finish_tagging(ctx=Ctx.from_request(request), lot_id=pk)
+        )
 
 
 class KarigarLotView(_View):
     def get_permissions(self) -> list[Any]:
         # Removing gold from the record is an owner's act, like voiding a bill.
         if self.request.method == "DELETE":
-            return [IsAuthenticated(), ModuleEnabled(ModuleCode.SALES)(), HasPermission("sales.invoice.void")()]
+            return [
+                IsAuthenticated(),
+                ModuleEnabled(ModuleCode.SALES)(),
+                HasPermission("sales.invoice.void")(),
+            ]
         return super().get_permissions()
 
     def patch(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(karigars.correct_lot(ctx=Ctx.from_request(request), lot_id=pk, data=request.data))
+        return StandardResponse.ok(
+            karigars.correct_lot(ctx=Ctx.from_request(request), lot_id=pk, data=request.data)
+        )
 
     def delete(self, request: Any, pk: Any) -> Any:
         karigars.remove_lot(ctx=Ctx.from_request(request), lot_id=pk)
@@ -125,12 +147,16 @@ class KarigarLotView(_View):
 
 class KarigarDetailView(_View):
     def patch(self, request: Any, pk: Any) -> Any:
-        return StandardResponse.ok(karigars.update_karigar(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data))
+        return StandardResponse.ok(
+            karigars.update_karigar(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data)
+        )
 
 
 class CustomOrderPhotoView(_View):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request: Any, pk: Any) -> Any:
-        order = custom_orders.set_photo(ctx=Ctx.from_request(request), order_id=pk, upload=request.FILES.get("photo"))
+        order = custom_orders.set_photo(
+            ctx=Ctx.from_request(request), order_id=pk, upload=request.FILES.get("photo")
+        )
         return StandardResponse.ok(custom_orders.view(order))

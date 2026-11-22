@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-
 import {
   UbButton,
   UbDataGrid,
@@ -56,7 +55,11 @@ const columns = (
     cell: (r) =>
       r.netG ? (
         <UbStack gap={0} className="items-end">
-          <UbText as="span" variant="inherit" className="ds-num">{`${Number(r.netG).toFixed(3)} g`}</UbText>
+          <UbText
+            as="span"
+            variant="inherit"
+            className="ds-num"
+          >{`${Number(r.netG).toFixed(3)} g`}</UbText>
           <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
             {`${toTola(r.netG)} ${t('items.tags.tolaShort')}`}
           </UbText>

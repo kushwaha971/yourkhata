@@ -95,7 +95,9 @@ class StockCountViewSet(_InventoryView, viewsets.ViewSet):
         count = svc.get_count(ctx=self.ctx(), count_id=pk)
         tenant = self.get_tenant()
         line = StockCountLine.objects.filter(count=count, item=OuterRef("pk"))
-        stock = ItemStock.objects.filter(tenant=tenant, item=OuterRef("pk"), location=count.location)
+        stock = ItemStock.objects.filter(
+            tenant=tenant, item=OuterRef("pk"), location=count.location
+        )
         qs = (
             _countable(tenant)
             .select_related("unit")

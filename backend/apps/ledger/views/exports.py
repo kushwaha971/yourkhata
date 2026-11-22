@@ -19,7 +19,7 @@ from apps.common.context import Ctx
 # the ledger; the names are re-exported so every caller here is unchanged.
 # `authorise_export` followed them there with IMP-02, when every list became
 # exportable and `parties`, `inventory` and `expenses` needed the same gate.
-from apps.common.exports import (  # noqa: F401
+from apps.common.exports import (  # noqa: F401 — reason: imported so the names load or are re-exported
     CROSS_SITE,
     authorise_export,
     charge_export_budget,

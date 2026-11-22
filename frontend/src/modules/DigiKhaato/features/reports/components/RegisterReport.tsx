@@ -59,8 +59,7 @@ import type {
 // the register never downloads it.
 const RegisterRowSheetLazy = dynamic(
   () => import('./RegisterRowSheet').then((m) => m.RegisterRowSheet),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /** Where each book's documents are made — the empty book's one action. */

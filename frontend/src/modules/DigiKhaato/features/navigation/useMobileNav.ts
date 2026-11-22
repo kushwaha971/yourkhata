@@ -28,7 +28,9 @@ export function useMobileNav(): UseMobileNavResult {
   const state = mobileNavState(pathname, rows, bottomNav);
   const upHref =
     bottomNav.find((tab) => tab.key === state.active)?.href ?? bottomNav[0]?.href ?? null;
-  const pageOwnsBack = Boolean(shell.pageBackPattern && new RegExp(shell.pageBackPattern).test(pathname ?? ''));
+  const pageOwnsBack = Boolean(
+    shell.pageBackPattern && new RegExp(shell.pageBackPattern).test(pathname ?? '')
+  );
   const pageOwnsHeader = Boolean(
     shell.pageHeaderPattern && new RegExp(shell.pageHeaderPattern).test(pathname ?? '')
   );

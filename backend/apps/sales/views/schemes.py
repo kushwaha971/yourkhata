@@ -35,7 +35,9 @@ class _View(APIView):
 class SchemesView(_View):
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(
-            schemes.list_schemes(tenant=get_effective_tenant(request), q=request.query_params.get("q", ""))
+            schemes.list_schemes(
+                tenant=get_effective_tenant(request), q=request.query_params.get("q", "")
+            )
         )
 
     def post(self, request: Any) -> Any:
@@ -48,8 +50,14 @@ class SchemesView(_View):
 class RunningSchemesView(_View):
     def get(self, request: Any) -> Any:
         tenant = get_effective_tenant(request)
-        on = _parse_date(request.query_params.get("on"), "on", {}) if request.query_params.get("on") else None
-        return StandardResponse.ok(schemes.running_for_bill(tenant=tenant, on=on or tenant_today(tenant)))
+        on = (
+            _parse_date(request.query_params.get("on"), "on", {})
+            if request.query_params.get("on")
+            else None
+        )
+        return StandardResponse.ok(
+            schemes.running_for_bill(tenant=tenant, on=on or tenant_today(tenant))
+        )
 
 
 class SchemeDetailView(_View):

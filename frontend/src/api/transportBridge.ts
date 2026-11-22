@@ -63,10 +63,13 @@ let host: TransportHost | null = null;
 let routeAppResolver: ((pathname: string | null) => string | null) | null = null;
 
 /** Registered by the authenticated shell, keeping app manifests out of bootstrap. */
-export const registerRouteAppResolver = (resolver: (pathname: string | null) => string | null): void => {
+export const registerRouteAppResolver = (
+  resolver: (pathname: string | null) => string | null
+): void => {
   routeAppResolver = resolver;
 };
-export const routeApp = (pathname: string | null): string | null => routeAppResolver?.(pathname) ?? null;
+export const routeApp = (pathname: string | null): string | null =>
+  routeAppResolver?.(pathname) ?? null;
 
 export const registerTransportHost = (next: TransportHost): void => {
   host = next;

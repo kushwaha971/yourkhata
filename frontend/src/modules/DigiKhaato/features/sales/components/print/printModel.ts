@@ -6,7 +6,6 @@ import { sumQuantities, trimQuantity } from 'src/utils/quantity';
 import { THERMAL_NAME_CHARS } from '../../constants/salesConstants';
 import { sgstLabelId, showsTax } from '../../view-model/invoiceDisplay';
 
-
 import type { SalesDocument, SalesDocumentLine } from '../../types/sales.types';
 
 /**
@@ -218,7 +217,10 @@ export function jewelRatesLine(doc: SalesDocument, t: TranslateFn): string | nul
     seen.set(`${label}|${j.rate}`, text);
   }
   const old = doc.oldGold
-    ? t('sales.print.oldGold', { value: formatInr(doc.oldGold.value), weight: doc.oldGold.weight_g })
+    ? t('sales.print.oldGold', {
+        value: formatInr(doc.oldGold.value),
+        weight: doc.oldGold.weight_g,
+      })
     : '';
   if (seen.size === 0) return old || null;
   return [t('sales.print.jewelRates', { rates: [...seen.values()].join(' · ') }), old]

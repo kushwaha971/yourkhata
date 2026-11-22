@@ -96,7 +96,10 @@ export function CredentialsDialog({
       <UbDialog
         open
         onOpenChange={handleOpenChange}
-        title={t('team.access.addedTitle', { name: member.fullName, app: labelId ? t(labelId) : '' })}
+        title={t('team.access.addedTitle', {
+          name: member.fullName,
+          app: labelId ? t(labelId) : '',
+        })}
         closeLabel={t('common.action.close')}
         footer={<UbButton onClick={dismissCredentials}>{t('team.credentials.done')}</UbButton>}
       >

@@ -33,9 +33,9 @@ payments app its doors and owns nothing about a payment itself:
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
-from collections.abc import Callable
 
 from apps.common.exceptions import BusinessRuleViolation
 from apps.common.money import ZERO

@@ -350,12 +350,18 @@ def test_returning_medicine_takes_it_out_of_its_batch_and_a_void_puts_it_back(
     assert note.status_code == 201, note.json()
     assert Batch.objects.get(batch_no="DL1").qty == Decimal("6.000")
     assert on_hand(dolo) == Decimal("6.000")
-    voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Distributor refused"}, format="json")
+    voided = owner.post(
+        note_url(note.json()["data"]["id"], "void"),
+        {"reason": "Distributor refused"},
+        format="json",
+    )
     assert voided.status_code == 200, voided.json()
     assert Batch.objects.get(batch_no="DL1").qty == Decimal("10.000")
 
 
-def test_a_phone_tracked_by_imei_can_be_sent_back(owner: Any, make_supplier: Any, make_item: Any) -> None:
+def test_a_phone_tracked_by_imei_can_be_sent_back(
+    owner: Any, make_supplier: Any, make_item: Any
+) -> None:
     """A debit note re-checks its lines like a purchase; a phone's line must
     name its IMEIs, so a return of a phone could be refused outright."""
     phone = make_item("Redmi 13C", "8000.00", "GST18", tracking="serial")
@@ -372,8 +378,13 @@ def test_a_phone_tracked_by_imei_can_be_sent_back(owner: Any, make_supplier: Any
     # Find by IMEI says where it went (owner, 31 Oct: not "No phone with …").
     gone = Serial.objects.get(status=Serial.RETURNED).serial
     found = owner.get(f"/api/v1/serials/{gone}").json()["data"]
-    assert found["status"] == "returned" and found["returned"]["number"] == note.json()["data"]["number"]
-    voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Shop kept it"}, format="json")
+    assert (
+        found["status"] == "returned"
+        and found["returned"]["number"] == note.json()["data"]["number"]
+    )
+    voided = owner.post(
+        note_url(note.json()["data"]["id"], "void"), {"reason": "Shop kept it"}, format="json"
+    )
     assert voided.status_code == 200, voided.json()
     assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 2
 

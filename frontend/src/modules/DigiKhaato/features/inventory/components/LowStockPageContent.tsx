@@ -13,6 +13,7 @@ import {
   UbPageHeader,
   UbPageShell,
   UbCountLine,
+  UbDrawerLoading,
   UbStack,
   UbText,
 } from 'src/design-system';
@@ -46,7 +47,7 @@ import type { LowStockRow } from '../types/item.types';
 /* The choose sheet belongs to the chunk that opens it, not the list's first paint. */
 const LowStockChooseSheet = dynamic(
   () => import('./LowStockChooseSheet').then((m) => m.LowStockChooseSheet),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /* 09 §8.4 — the saved snackbar's View opens this, so every screen that
@@ -151,10 +152,7 @@ export function LowStockPageContent(): React.JSX.Element {
     [router]
   );
 
-  const columns = useMemo(
-    () => createLowStockColumns({ t, tier }),
-    [t, tier]
-  );
+  const columns = useMemo(() => createLowStockColumns({ t, tier }), [t, tier]);
 
   const labels = useMemo(
     () => ({

@@ -41,7 +41,9 @@ def clean_lines(tenant: Any, raw: Any, errors: dict) -> tuple[list[dict], Decima
             ids.append(None)
     items = {
         item.id: item
-        for item in Item.objects.select_related("unit").filter(tenant=tenant, pk__in=[i for i in ids if i], status="active", deleted_at__isnull=True)
+        for item in Item.objects.select_related("unit").filter(
+            tenant=tenant, pk__in=[i for i in ids if i], status="active", deleted_at__isnull=True
+        )
     }
     lines: list[dict] = []
     total = Decimal("0")

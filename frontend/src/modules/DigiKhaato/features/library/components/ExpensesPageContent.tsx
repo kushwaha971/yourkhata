@@ -86,7 +86,12 @@ export function ExpensesPageContent(): React.JSX.Element {
           subtitle={t('library.expense.subtitle')}
           actions={
             canManage && (
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setAdding(true)} className="max-lg:hidden">
+              <UbButton
+                variant="primary"
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => setAdding(true)}
+                className="max-lg:hidden"
+              >
                 {t('library.expense.add')}
               </UbButton>
             )
@@ -97,7 +102,11 @@ export function ExpensesPageContent(): React.JSX.Element {
           <Figure label={t('library.expense.thisMonth')} value={rupees(total)} tone="give" />
         </Figures>
         {lib.expenses.status === 'failed' && !lib.expenses.data ? (
-          <UbEmptyState variant="error" title={t('library.expense.loadError')} action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>} />
+          <UbEmptyState
+            variant="error"
+            title={t('library.expense.loadError')}
+            action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>}
+          />
         ) : !lib.expenses.data ? (
           <UbSkeleton variant="list" count={4} label={t('library.common.loading')} />
         ) : rows.length === 0 ? (
@@ -105,13 +114,21 @@ export function ExpensesPageContent(): React.JSX.Element {
             variant="firstUse"
             title={t('library.expense.none')}
             description={t('library.expense.noneBody')}
-            action={canManage ? <UbButton onClick={() => setAdding(true)}>{t('library.expense.add')}</UbButton> : undefined}
+            action={
+              canManage ? (
+                <UbButton onClick={() => setAdding(true)}>{t('library.expense.add')}</UbButton>
+              ) : undefined
+            }
           />
         ) : (
           <List testId="library-expenses-list">
             {rows.map((e) => (
               <UbBox as="li" key={e.id}>
-                <UbPressable onClick={canManage ? () => setRemoving(e) : undefined} disabled={!canManage} className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left">
+                <UbPressable
+                  onClick={canManage ? () => setRemoving(e) : undefined}
+                  disabled={!canManage}
+                  className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left"
+                >
                   <UbStack gap={0} className="min-w-0 flex-1">
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
                       {t(`library.expense.head.${e.head}`)}
@@ -129,7 +146,15 @@ export function ExpensesPageContent(): React.JSX.Element {
           </List>
         )}
       </UbStack>
-      {canManage && <UbFab label={t('library.expense.add')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setAdding(true)} />}
+      {canManage && (
+        <UbFab
+          label={t('library.expense.add')}
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          mobileOnly
+          extended
+          onClick={() => setAdding(true)}
+        />
+      )}
       {adding && (
         <ExpenseSheet
           onClose={() => setAdding(false)}
@@ -146,12 +171,23 @@ export function ExpensesPageContent(): React.JSX.Element {
         description={t('library.expense.removeBody')}
         closeLabel={t('library.common.close')}
         footer={
-          <UbButton variant="destructive" busy={busy} disabled={!reason.trim()} onClick={() => void remove()}>
+          <UbButton
+            variant="destructive"
+            busy={busy}
+            disabled={!reason.trim()}
+            onClick={() => void remove()}
+          >
             {t('library.payment.remove')}
           </UbButton>
         }
       >
-        <UbTextInput aria-label={t('library.payment.reason')} placeholder={t('library.payment.reason')} value={reason} onChange={setReason} autoFocus />
+        <UbTextInput
+          aria-label={t('library.payment.reason')}
+          placeholder={t('library.payment.reason')}
+          value={reason}
+          onChange={setReason}
+          autoFocus
+        />
       </UbDialog>
     </UbPageShell>
   );

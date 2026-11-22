@@ -49,7 +49,9 @@ export function SiteDrawer({
       if (!values.partyId || !values.name.trim()) return;
       setBusy(true);
       try {
-        onSaved(await createSite({ party_id: values.partyId, name: values.name.trim() }, key.current));
+        onSaved(
+          await createSite({ party_id: values.partyId, name: values.name.trim() }, key.current)
+        );
       } catch (thrown) {
         const details = (thrown as ApiErrorShape).details as Record<string, string[]> | undefined;
         // Another try is another site: a refused name must not replay this key.
@@ -98,7 +100,12 @@ export function SiteDrawer({
         </UbField>
         <UbField name="name" label={t('sales.site.name')}>
           {(field) => (
-            <UbTextInput {...field} value={field.value as string} maxLength={120} placeholder={t('sales.site.namePlaceholder')} />
+            <UbTextInput
+              {...field}
+              value={field.value as string}
+              maxLength={120}
+              placeholder={t('sales.site.namePlaceholder')}
+            />
           )}
         </UbField>
       </UbForm>

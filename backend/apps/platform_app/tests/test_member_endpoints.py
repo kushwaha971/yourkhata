@@ -363,8 +363,7 @@ def test_a_mobile_another_login_holds_is_a_400_on_the_field_not_a_500(
     assert error["code"] == "validation_error"
     assert error["details"] == {
         "mobile": [
-            "This mobile number is already used by another login. "
-            "Use a different number."
+            "This mobile number is already used by another login. " "Use a different number."
         ],
         # L6 -- the stable code the client localises by; without it the Hindi
         # UI could only show the English sentence above.

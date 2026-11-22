@@ -80,7 +80,10 @@ export function AddMemberDialog({
   }, [members.addOpen, teamApp]);
   const defaultGroup = groups?.groups.find((g) => g.isDefault)?.id ?? 'none';
 
-  const defaults = useMemo(() => ({ fullName: '', role: DEFAULT_INVITE_ROLE, mobile: '', groupId: 'none' }), []);
+  const defaults = useMemo(
+    () => ({ fullName: '', role: DEFAULT_INVITE_ROLE, mobile: '', groupId: 'none' }),
+    []
+  );
 
   const form = useForm<AddMemberFormValues>({
     resolver: yupResolver(addMemberSchema),

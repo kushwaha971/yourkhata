@@ -30,7 +30,9 @@ def test_the_doctor_and_patient_ride_with_the_bill_and_clear_when_blank(
 
     url = reverse("v1:sales-invoice-detail", args=[doc_id])
     version = made.json()["data"]["version"]
-    cleared = owner.patch(url, {"rx_doctor": "", "rx_patient": "", "version": version}, format="json")
+    cleared = owner.patch(
+        url, {"rx_doctor": "", "rx_patient": "", "version": version}, format="json"
+    )
     assert cleared.status_code == 200, cleared.json()
     assert cleared.json()["data"]["rx"] is None
 
@@ -58,7 +60,12 @@ def test_the_schedule_h_register_lists_scheduled_sales_with_their_prescription(
     azithral = make_item("Azithral 500", "119.00", "GST5", stock="10")
     Item.objects.filter(pk=azithral.id).update(schedule="H")
     soap = make_item("Lifebuoy", "40.00", "GST18", stock="10")
-    with_rx = draft(owner, lines=[{"item_id": str(azithral.id), "qty": "1"}], rx_doctor="Dr. S. Kulkarni", rx_patient="Meena Jadhav").json()["data"]
+    with_rx = draft(
+        owner,
+        lines=[{"item_id": str(azithral.id), "qty": "1"}],
+        rx_doctor="Dr. S. Kulkarni",
+        rx_patient="Meena Jadhav",
+    ).json()["data"]
     without = draft(owner, lines=[{"item_id": str(azithral.id), "qty": "2"}]).json()["data"]
     plain = draft(owner, lines=[{"item_id": str(soap.id), "qty": "1"}]).json()["data"]
     for doc in (with_rx, without, plain):

@@ -82,13 +82,26 @@ def create_karigar(*, ctx: Ctx, data: dict) -> dict:
         errors["name"] = ["Keep the name under 120 characters."]
     elif Karigar.objects.filter(tenant=ctx.tenant, name__iexact=name).exists():
         errors["name"] = ["You already have a karigar with this name."]
-    limit = _dec(data.get("wastage_limit_pct"), "wastage_limit_pct", errors, required=False, places=2, minimum=ZERO) or ZERO
+    limit = (
+        _dec(
+            data.get("wastage_limit_pct"),
+            "wastage_limit_pct",
+            errors,
+            required=False,
+            places=2,
+            minimum=ZERO,
+        )
+        or ZERO
+    )
     if limit > 100 and "wastage_limit_pct" not in errors:
         errors["wastage_limit_pct"] = ["The limit is a percentage up to 100."]
     if errors:
         raise ValidationFailed(errors, "Check the karigar.")
     row = Karigar.objects.create(
-        tenant=ctx.tenant, name=name, mobile=str(data.get("mobile") or "").strip()[:15], wastage_limit_pct=limit
+        tenant=ctx.tenant,
+        name=name,
+        mobile=str(data.get("mobile") or "").strip()[:15],
+        wastage_limit_pct=limit,
     )
     return karigar_view(row, [])
 
@@ -102,7 +115,9 @@ def issue_gold(*, ctx: Ctx, karigar_id: Any, data: dict) -> tuple[KarigarLot, bo
     if karigar is None:
         raise NotFound("No such karigar.")
     errors: dict[str, list[str]] = {}
-    weight = _dec(data.get("weight_g"), "weight_g", errors, required=True, places=3, minimum=Decimal("0.001"))
+    weight = _dec(
+        data.get("weight_g"), "weight_g", errors, required=True, places=3, minimum=Decimal("0.001")
+    )
     purity = data.get("purity")
     if purity not in PURITIES:
         errors["purity"] = ["Choose the purity."]
@@ -120,7 +135,11 @@ def issue_gold(*, ctx: Ctx, karigar_id: Any, data: dict) -> tuple[KarigarLot, bo
         client_key = uuid.UUID(str(data.get("client_key")))
     except ValueError:
         client_key = uuid.uuid4()
-    same = KarigarLot.objects.filter(tenant=ctx.tenant, client_key=client_key).select_related("karigar", "order").first()
+    same = (
+        KarigarLot.objects.filter(tenant=ctx.tenant, client_key=client_key)
+        .select_related("karigar", "order")
+        .first()
+    )
     if same is not None:
         return same, False
     lot = KarigarLot.objects.create(
@@ -148,9 +167,13 @@ def receive_gold(*, ctx: Ctx, lot_id: Any, data: dict) -> KarigarLot:
     if lot is None:
         raise NotFound("No such lot.")
     if lot.received_g is not None:
-        raise BusinessRuleViolation("karigar_lot_received", "This gold is already received back.", details={})
+        raise BusinessRuleViolation(
+            "karigar_lot_received", "This gold is already received back.", details={}
+        )
     errors: dict[str, list[str]] = {}
-    received = _dec(data.get("received_g"), "received_g", errors, required=True, places=3, minimum=ZERO)
+    received = _dec(
+        data.get("received_g"), "received_g", errors, required=True, places=3, minimum=ZERO
+    )
     if received is not None and "received_g" not in errors and received > lot.issued_g:
         errors["received_g"] = [f"More than the {lot.issued_g:.3f} g given. Check the weight."]
     if errors:
@@ -190,7 +213,12 @@ def make_tag(*, ctx: Ctx, lot_id: Any, data: dict) -> dict:
         item = None
     if item is None:
         errors["item_id"] = ["Choose the item."]
-    labour = _dec(data.get("labour_per_g"), "labour_per_g", errors, required=False, places=2, minimum=ZERO) or ZERO
+    labour = (
+        _dec(
+            data.get("labour_per_g"), "labour_per_g", errors, required=False, places=2, minimum=ZERO
+        )
+        or ZERO
+    )
     if errors:
         raise ValidationFailed(errors, "Check the tag details.")
     tag = add_tag(ctx=ctx, item=item, data=data.get("tag") or {}, labour_per_g=labour)
@@ -219,7 +247,9 @@ def _received_lot(*, ctx: Ctx, lot_id: Any) -> KarigarLot:
     if lot is None:
         raise NotFound("No such lot.")
     if lot.received_g is None:
-        raise BusinessRuleViolation("karigar_lot_not_back", "Receive this gold back first.", details={})
+        raise BusinessRuleViolation(
+            "karigar_lot_not_back", "Receive this gold back first.", details={}
+        )
     return lot
 
 
@@ -255,18 +285,35 @@ def correct_lot(*, ctx: Ctx, lot_id: Any, data: dict) -> dict:
     errors: dict[str, list[str]] = {}
     issued = lot.issued_g
     if "issued_g" in data:
-        issued = _dec(data.get("issued_g"), "issued_g", errors, required=True, places=3, minimum=Decimal("0.001")) or issued
+        issued = (
+            _dec(
+                data.get("issued_g"),
+                "issued_g",
+                errors,
+                required=True,
+                places=3,
+                minimum=Decimal("0.001"),
+            )
+            or issued
+        )
     received = lot.received_g
     if "received_g" in data:
         if lot.received_g is None:
             errors["received_g"] = ["This gold is not back yet."]
         else:
-            got = _dec(data.get("received_g"), "received_g", errors, required=True, places=3, minimum=ZERO)
+            got = _dec(
+                data.get("received_g"), "received_g", errors, required=True, places=3, minimum=ZERO
+            )
             received = got if got is not None else received
     purity = data.get("purity", lot.purity)
     if purity not in PURITIES:
         errors["purity"] = ["Choose the purity."]
-    if received is not None and "received_g" not in errors and "issued_g" not in errors and received > issued:
+    if (
+        received is not None
+        and "received_g" not in errors
+        and "issued_g" not in errors
+        and received > issued
+    ):
         errors["received_g"] = [f"More than the {issued:.3f} g given. Check the weight."]
     if errors:
         raise ValidationFailed(errors, "Check the weight.")
@@ -289,7 +336,9 @@ def remove_lot(*, ctx: Ctx, lot_id: Any) -> None:
     lot = _locked_lot(ctx=ctx, lot_id=lot_id)
     if lot.tag_count:
         raise BusinessRuleViolation(
-            "karigar_lot_has_tags", "Tags were made from this gold, so it cannot be removed.", details={}
+            "karigar_lot_has_tags",
+            "Tags were made from this gold, so it cannot be removed.",
+            details={},
         )
     write_audit(
         ctx=ctx,
@@ -315,9 +364,21 @@ def update_karigar(*, ctx: Ctx, karigar_id: Any, data: dict) -> dict:
         errors["name"] = ["Enter the karigar's name."]
     elif len(name) > 120:
         errors["name"] = ["Keep the name under 120 characters."]
-    elif Karigar.objects.filter(tenant=ctx.tenant, name__iexact=name).exclude(pk=karigar.pk).exists():
+    elif (
+        Karigar.objects.filter(tenant=ctx.tenant, name__iexact=name).exclude(pk=karigar.pk).exists()
+    ):
         errors["name"] = ["You already have a karigar with this name."]
-    limit = _dec(data.get("wastage_limit_pct"), "wastage_limit_pct", errors, required=False, places=2, minimum=ZERO) or ZERO
+    limit = (
+        _dec(
+            data.get("wastage_limit_pct"),
+            "wastage_limit_pct",
+            errors,
+            required=False,
+            places=2,
+            minimum=ZERO,
+        )
+        or ZERO
+    )
     if limit > 100 and "wastage_limit_pct" not in errors:
         errors["wastage_limit_pct"] = ["The limit is a percentage up to 100."]
     if errors:

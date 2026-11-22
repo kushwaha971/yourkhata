@@ -57,67 +57,67 @@ export function HomePromises({
     ) : null;
   if (state.rows.length === 0) return null;
   const body = (
-      <UbStack gap={0} data-testid={embedded ? 'home-promises' : undefined}>
-        {!embedded && <UbStack gap={0} className="px-4 pt-4">
+    <UbStack gap={0} data-testid={embedded ? 'home-promises' : undefined}>
+      {!embedded && (
+        <UbStack gap={0} className="px-4 pt-4">
           <UbText as="h2" variant="h3">
             {t('homePromise.title')}
           </UbText>
           <UbText variant="caption" tone="secondary">
             {t('homePromise.basis')}
           </UbText>
-        </UbStack>}
-        <UbStack as="ul" gap={0} className="py-1">
-          {state.rows.map((promise) => {
-            const supplier = promise.role === 'supplier';
-            const due = promiseStillDue(promise);
-            const act = supplier
-              ? canPay && due
-              : canRemind && due && Boolean(promise.party.mobile);
-            return (
-              <UbStack
-                key={promise.id}
-                as="li"
-                direction="row"
-                align="center"
-                className="min-h-14 gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
-                data-testid="home-promise-row"
-              >
-                <UbStack gap={0} className="min-w-0 flex-1">
-                  <UbLink
-                    href={partyPath(promise.party.id, supplier ? 'supplier' : undefined)}
-                    underline={false}
-                    variant="inherit"
-                    className="ds-num whitespace-normal break-words text-[14px] font-medium leading-[1.45]"
-                  >
-                    {homePromiseTitle(t, promise, today, formatDate)}
-                  </UbLink>
-                  <UbText
-                    variant="inherit"
-                    tone={promise.daysLate ? 'warning' : 'tertiary'}
-                    className="ds-num text-[12.5px] leading-[1.45]"
-                  >
-                    {homePromiseCaption(t, promise)}
-                  </UbText>
-                </UbStack>
-                {act && (
-                  <UbButton
-                    variant="outlineNeutral"
-                    size="sm"
-                    className="ub-hit shrink-0"
-                    onClick={() => (supplier ? onPay(promise) : onRemind(promise))}
-                    aria-label={t(supplier ? 'homePromise.pay' : 'homePromise.remind', {
-                      name: promise.party.name,
-                    })}
-                    data-testid="home-promise-act"
-                  >
-                    {t(supplier ? 'reports.home.pay' : 'reports.home.remind')}
-                  </UbButton>
-                )}
-              </UbStack>
-            );
-          })}
         </UbStack>
+      )}
+      <UbStack as="ul" gap={0} className="py-1">
+        {state.rows.map((promise) => {
+          const supplier = promise.role === 'supplier';
+          const due = promiseStillDue(promise);
+          const act = supplier ? canPay && due : canRemind && due && Boolean(promise.party.mobile);
+          return (
+            <UbStack
+              key={promise.id}
+              as="li"
+              direction="row"
+              align="center"
+              className="min-h-14 gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
+              data-testid="home-promise-row"
+            >
+              <UbStack gap={0} className="min-w-0 flex-1">
+                <UbLink
+                  href={partyPath(promise.party.id, supplier ? 'supplier' : undefined)}
+                  underline={false}
+                  variant="inherit"
+                  className="ds-num whitespace-normal break-words text-[14px] font-medium leading-[1.45]"
+                >
+                  {homePromiseTitle(t, promise, today, formatDate)}
+                </UbLink>
+                <UbText
+                  variant="inherit"
+                  tone={promise.daysLate ? 'warning' : 'tertiary'}
+                  className="ds-num text-[12.5px] leading-[1.45]"
+                >
+                  {homePromiseCaption(t, promise)}
+                </UbText>
+              </UbStack>
+              {act && (
+                <UbButton
+                  variant="outlineNeutral"
+                  size="sm"
+                  className="ub-hit shrink-0"
+                  onClick={() => (supplier ? onPay(promise) : onRemind(promise))}
+                  aria-label={t(supplier ? 'homePromise.pay' : 'homePromise.remind', {
+                    name: promise.party.name,
+                  })}
+                  data-testid="home-promise-act"
+                >
+                  {t(supplier ? 'reports.home.pay' : 'reports.home.remind')}
+                </UbButton>
+              )}
+            </UbStack>
+          );
+        })}
       </UbStack>
+    </UbStack>
   );
   return embedded ? (
     body

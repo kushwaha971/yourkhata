@@ -25,8 +25,12 @@ def money(value: Decimal | None) -> str:
 
 def fee_of(student: Student, *, day: dt.date, due_soon_days: int) -> fees.FeeState:
     return fees.fee_state(
-        status=student.status, paid_to=student.paid_to, credit=student.credit,
-        monthly_fee=student.monthly_fee, joined_on=student.joined_on, today=day,
+        status=student.status,
+        paid_to=student.paid_to,
+        credit=student.credit,
+        monthly_fee=student.monthly_fee,
+        joined_on=student.joined_on,
+        today=day,
         due_soon_days=due_soon_days,
     )
 
@@ -53,7 +57,9 @@ def student_json(s: Student, state: fees.FeeState) -> dict:
     }
 
 
-def students_with_fee(tenant: Any, *, include_left: bool = False) -> list[tuple[Student, fees.FeeState]]:
+def students_with_fee(
+    tenant: Any, *, include_left: bool = False
+) -> list[tuple[Student, fees.FeeState]]:
     day = today(tenant)
     soon = settings_for(tenant).due_soon_days
     rows = Student.objects.filter(tenant=tenant).select_related("seat", "shift")
@@ -62,7 +68,9 @@ def students_with_fee(tenant: Any, *, include_left: bool = False) -> list[tuple[
     return [(s, fee_of(s, day=day, due_soon_days=soon)) for s in rows.order_by("name", "id")]
 
 
-def students(tenant: Any, *, q: str = "", fee: str = "all", shift: str = "", status: str = "current") -> dict:
+def students(
+    tenant: Any, *, q: str = "", fee: str = "all", shift: str = "", status: str = "current"
+) -> dict:
     pairs = students_with_fee(tenant, include_left=status in ("left", "all"))
     if status == "left":
         pairs = [p for p in pairs if p[0].status == StudentStatus.LEFT]
@@ -72,7 +80,8 @@ def students(tenant: Any, *, q: str = "", fee: str = "all", shift: str = "", sta
         needle = q.strip().lower()
         digits = "".join(ch for ch in needle if ch.isdigit())
         pairs = [
-            p for p in pairs
+            p
+            for p in pairs
             if needle in p[0].name.lower()
             or (digits and digits in p[0].mobile)
             or (digits and p[0].seat_id and str(p[0].seat.number) == digits)
@@ -90,21 +99,31 @@ def students(tenant: Any, *, q: str = "", fee: str = "all", shift: str = "", sta
 
 def shift_counts(tenant: Any) -> list[dict]:
     seats = Seat.objects.filter(tenant=tenant, active=True).count()
-    full = Student.objects.filter(tenant=tenant, shift__is_full_day=True, seat__isnull=False).exclude(
-        status=StudentStatus.LEFT
-    ).count()
+    full = (
+        Student.objects.filter(tenant=tenant, shift__is_full_day=True, seat__isnull=False)
+        .exclude(status=StudentStatus.LEFT)
+        .count()
+    )
     out = []
     for sh in Shift.objects.filter(tenant=tenant, active=True):
-        own = Student.objects.filter(tenant=tenant, shift=sh, seat__isnull=False).exclude(
-            status=StudentStatus.LEFT
-        ).count()
+        own = (
+            Student.objects.filter(tenant=tenant, shift=sh, seat__isnull=False)
+            .exclude(status=StudentStatus.LEFT)
+            .count()
+        )
         filled = own if sh.is_full_day else own + full
-        out.append({
-            "id": str(sh.pk), "name": sh.name, "full_day": sh.is_full_day,
-            "monthly_fee": money(sh.monthly_fee), "filled": filled, "seats": seats,
-            "starts_at": sh.starts_at.isoformat(timespec="minutes") if sh.starts_at else None,
-            "ends_at": sh.ends_at.isoformat(timespec="minutes") if sh.ends_at else None,
-        })
+        out.append(
+            {
+                "id": str(sh.pk),
+                "name": sh.name,
+                "full_day": sh.is_full_day,
+                "monthly_fee": money(sh.monthly_fee),
+                "filled": filled,
+                "seats": seats,
+                "starts_at": sh.starts_at.isoformat(timespec="minutes") if sh.starts_at else None,
+                "ends_at": sh.ends_at.isoformat(timespec="minutes") if sh.ends_at else None,
+            }
+        )
     return out
 
 
@@ -116,7 +135,9 @@ def seat_map(tenant: Any, *, shift_id: str) -> dict:
     soon = settings_for(tenant).due_soon_days
     holders: dict[int, Student] = {}
     if shift is not None:
-        rows = Student.objects.filter(tenant=tenant, seat__isnull=False).exclude(status=StudentStatus.LEFT)
+        rows = Student.objects.filter(tenant=tenant, seat__isnull=False).exclude(
+            status=StudentStatus.LEFT
+        )
         if not shift.is_full_day:
             rows = rows.filter(Q(shift=shift) | Q(shift__is_full_day=True))
         else:
@@ -127,10 +148,12 @@ def seat_map(tenant: Any, *, shift_id: str) -> dict:
     seats = []
     for seat in Seat.objects.filter(tenant=tenant, active=True):
         s = holders.get(seat.number)
-        seats.append({
-            "number": seat.number,
-            "student": student_json(s, fee_of(s, day=day, due_soon_days=soon)) if s else None,
-        })
+        seats.append(
+            {
+                "number": seat.number,
+                "student": student_json(s, fee_of(s, day=day, due_soon_days=soon)) if s else None,
+            }
+        )
     filled = sum(1 for x in seats if x["student"])
     return {
         "shift_id": str(shift.pk) if shift else None,
@@ -147,7 +170,11 @@ def month_start(day: dt.date) -> dt.date:
 
 def collected(tenant: Any, start: dt.date, end: dt.date) -> tuple[Decimal, int]:
     agg = Payment.objects.filter(
-        tenant=tenant, status=RowStatus.LIVE, removes__isnull=True, paid_on__gte=start, paid_on__lte=end
+        tenant=tenant,
+        status=RowStatus.LIVE,
+        removes__isnull=True,
+        paid_on__gte=start,
+        paid_on__lte=end,
     ).aggregate(total=Sum("amount"), n=Count("id"))
     return agg["total"] or ZERO, agg["n"]
 
@@ -158,13 +185,22 @@ def home(tenant: Any) -> dict:
     pairs = students_with_fee(tenant)
     week_end = day + dt.timedelta(days=7)
     due_week = [
-        (s, st) for s, st in pairs
-        if st.status in (FeeStatus.SOON, FeeStatus.PART) and st.paid_to <= week_end and st.paid_to >= day
+        (s, st)
+        for s, st in pairs
+        if st.status in (FeeStatus.SOON, FeeStatus.PART)
+        and st.paid_to <= week_end
+        and st.paid_to >= day
     ]
-    over = [(s, st) for s, st in pairs if st.status in (FeeStatus.OVER, FeeStatus.PART) and st.days_late > 0]
+    over = [
+        (s, st)
+        for s, st in pairs
+        if st.status in (FeeStatus.OVER, FeeStatus.PART) and st.days_late > 0
+    ]
     total, n = collected(tenant, month_start(day), day)
     seats = Seat.objects.filter(tenant=tenant, active=True).count()
-    seated = Student.objects.filter(tenant=tenant, seat__isnull=False).exclude(status=StudentStatus.LEFT)
+    seated = Student.objects.filter(tenant=tenant, seat__isnull=False).exclude(
+        status=StudentStatus.LEFT
+    )
     order = {FeeStatus.OVER: 0, FeeStatus.PART: 1, FeeStatus.SOON: 2, FeeStatus.HOLD: 3}
     needs = sorted(
         [(s, st) for s, st in pairs if st.status in order],
@@ -195,8 +231,21 @@ def fees_page(tenant: Any, *, fee: str = "over") -> dict:
     day = today(tenant)
     total, _n = collected(tenant, month_start(day), day)
     pairs = students_with_fee(tenant)
-    to_come = sum((st.due for _s, st in pairs if st.status in (FeeStatus.OVER, FeeStatus.SOON, FeeStatus.PART)), ZERO)
-    order = {FeeStatus.OVER: 0, FeeStatus.PART: 1, FeeStatus.SOON: 2, FeeStatus.HOLD: 3, FeeStatus.PAID: 4}
+    to_come = sum(
+        (
+            st.due
+            for _s, st in pairs
+            if st.status in (FeeStatus.OVER, FeeStatus.SOON, FeeStatus.PART)
+        ),
+        ZERO,
+    )
+    order = {
+        FeeStatus.OVER: 0,
+        FeeStatus.PART: 1,
+        FeeStatus.SOON: 2,
+        FeeStatus.HOLD: 3,
+        FeeStatus.PAID: 4,
+    }
     rows = sorted(data["rows"], key=lambda p: (order[p[1].status], -p[1].days_late, p[0].name))
     return {
         "rows": [student_json(s, st) for s, st in rows],
@@ -226,24 +275,34 @@ def attendance_month(student: Student, month: dt.date) -> list[str]:
     end = (start + dt.timedelta(days=32)).replace(day=1)
     return [
         d.isoformat()
-        for d in Attendance.objects.filter(student=student, day__gte=start, day__lt=end).values_list("day", flat=True)
+        for d in Attendance.objects.filter(
+            student=student, day__gte=start, day__lt=end
+        ).values_list("day", flat=True)
     ]
 
 
 def attendance_day(tenant: Any, day: dt.date) -> list[Attendance]:
     return list(
-        Attendance.objects.filter(tenant=tenant, day=day).select_related("student", "student__seat").order_by("in_at")
+        Attendance.objects.filter(tenant=tenant, day=day)
+        .select_related("student", "student__seat")
+        .order_by("in_at")
     )
 
 
 def money_report(tenant: Any, *, start: dt.date, end: dt.date) -> dict:
     fees_in, n = collected(tenant, start, end)
-    exp = Expense.objects.filter(tenant=tenant, status=RowStatus.LIVE, spent_on__gte=start, spent_on__lte=end)
+    exp = Expense.objects.filter(
+        tenant=tenant, status=RowStatus.LIVE, spent_on__gte=start, spent_on__lte=end
+    )
     out = exp.aggregate(t=Sum("amount"))["t"] or ZERO
     heads = {r["head"]: money(r["t"]) for r in exp.values("head").annotate(t=Sum("amount"))}
     return {
-        "from": start.isoformat(), "to": end.isoformat(),
-        "fees": money(fees_in), "payments": n, "expenses": money(out), "net": money(fees_in - out),
+        "from": start.isoformat(),
+        "to": end.isoformat(),
+        "fees": money(fees_in),
+        "payments": n,
+        "expenses": money(out),
+        "net": money(fees_in - out),
         "heads": heads,
     }
 
@@ -262,15 +321,26 @@ def books(tenant: Any, q: str = "", code: str = "") -> list[dict]:
         by_book.setdefault(i.book_id, []).append(i)
     for b in rows:
         out_now = by_book.get(b.pk, [])
-        out.append({
-            "id": str(b.pk), "title": b.title, "author": b.author, "copies": b.copies, "note": b.note, "code": b.code,
-            "out": [
-                {"id": str(i.pk), "student_id": str(i.student_id), "student": i.student.name,
-                 "given_on": i.given_on.isoformat()}
-                for i in out_now
-            ],
-            "left": b.copies - len(out_now),
-        })
+        out.append(
+            {
+                "id": str(b.pk),
+                "title": b.title,
+                "author": b.author,
+                "copies": b.copies,
+                "note": b.note,
+                "code": b.code,
+                "out": [
+                    {
+                        "id": str(i.pk),
+                        "student_id": str(i.student_id),
+                        "student": i.student.name,
+                        "given_on": i.given_on.isoformat(),
+                    }
+                    for i in out_now
+                ],
+                "left": b.copies - len(out_now),
+            }
+        )
     return out
 
 

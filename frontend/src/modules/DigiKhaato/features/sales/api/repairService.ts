@@ -9,7 +9,11 @@ export type CameWith = (typeof CAME_WITH)[number];
 export interface RepairJob {
   readonly id: string;
   readonly number: string;
-  readonly party: { readonly id: string; readonly name: string; readonly mobile: string | null } | null;
+  readonly party: {
+    readonly id: string;
+    readonly name: string;
+    readonly mobile: string | null;
+  } | null;
   readonly walkInName: string | null;
   readonly walkInMobile: string | null;
   readonly phoneModel: string;
@@ -74,7 +78,11 @@ export const listRepairs = async (
 ): Promise<RepairList> => {
   const res = await api.get<{ data: Wire[]; meta: { counts: RepairList['counts'] } }>(
     '/sales/repairs',
-    ubConfig({ params: { q: filters.q || undefined, stage: filters.stage }, signal, suppressErrorSnackbar: true })
+    ubConfig({
+      params: { q: filters.q || undefined, stage: filters.stage },
+      signal,
+      suppressErrorSnackbar: true,
+    })
   );
   return { rows: res.data.data.map(toJob), counts: res.data.meta.counts };
 };

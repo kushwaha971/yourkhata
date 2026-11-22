@@ -41,8 +41,7 @@ preloadGridTable();
 
 const PriceListFormDialog = dynamic(
   () => import('./PriceListFormDialog').then((m) => m.PriceListFormDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -72,7 +71,11 @@ const createListColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<P
     /* The grid's own open control wraps the first cell, so the name is text:
        a link inside it was a link inside a button. */
     cell: (row) => (
-      <UbText as="span" variant={tier === 'cards' ? 'body-sm-medium' : 'body-sm'} className="break-words">
+      <UbText
+        as="span"
+        variant={tier === 'cards' ? 'body-sm-medium' : 'body-sm'}
+        className="break-words"
+      >
         {row.name}
       </UbText>
     ),
@@ -190,7 +193,12 @@ export function PriceListsPageContent(): React.JSX.Element {
   const exportLists = () => {
     const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const head = ['name', 'for', 'items', 'rule'].map((key) => t(`priceLists.col.${key}`));
-    const body = all.map((row) => [row.name, forLabel(row, t), itemsLabel(row, t), ruleLabel(row, t)]);
+    const body = all.map((row) => [
+      row.name,
+      forLabel(row, t),
+      itemsLabel(row, t),
+      ruleLabel(row, t),
+    ]);
     saveBlob(
       new Blob([[head, ...body].map((line) => line.map(cell).join(',')).join('\r\n')], {
         type: 'text/csv;charset=utf-8',

@@ -27,7 +27,12 @@ from apps.sales.constants import ESTIMATE_TAB_STATUSES, DocumentStatus
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
 from apps.sales.permissions import EstimateConvertPermissions, EstimatePermissions
-from apps.sales.selectors.documents import ORDERING_FIELDS, apply_tab, detail_queryset, list_documents
+from apps.sales.selectors.documents import (
+    ORDERING_FIELDS,
+    apply_tab,
+    detail_queryset,
+    list_documents,
+)
 from apps.sales.serializers.document import DocumentReadSerializer, ShareLinkSerializer
 from apps.sales.serializers.flows import (
     EstimateWriteSerializer,
@@ -43,7 +48,6 @@ from apps.sales.views.common import created, draft_created, ok, tabbed_list
 KINDS = service.ESTIMATE_KINDS
 
 
-
 EXPORT_COLUMNS = (
     ExportColumn("number", lambda d: d.number or ""),
     ExportColumn("date", lambda d: csv_date(d.document_date)),
@@ -51,6 +55,7 @@ EXPORT_COLUMNS = (
     ExportColumn("amount", lambda d: d.grand_total, numeric=True),
     ExportColumn("status", lambda d: d.status),
 )
+
 
 class EstimateViewSet(
     CsvExportMixin,

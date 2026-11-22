@@ -114,7 +114,11 @@ export interface PurchaseBillLine {
   /** D P3 — IMEI / serial numbers on the line. */
   readonly serials?: readonly string[];
   /** D P4 — the line's batch. */
-  readonly batches?: readonly { readonly batchNo: string; readonly expiry: string | null; readonly mrp: string | null }[];
+  readonly batches?: readonly {
+    readonly batchNo: string;
+    readonly expiry: string | null;
+    readonly mrp: string | null;
+  }[];
   readonly unitCost: string;
   readonly discountType: PurchaseDiscountType | null;
   readonly discountValue: string | null;

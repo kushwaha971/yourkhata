@@ -18,7 +18,6 @@ restock, which is when the goods came back.
 
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import Any
 
 from apps.common.context import Ctx

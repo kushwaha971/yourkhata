@@ -20,7 +20,7 @@ import type { UbCardSlot, UbColumnPriority, UbDataGridColumn, UbGridTier } from 
  */
 export const COMPACT_PRIORITY_CUTOFF: UbColumnPriority = 2;
 
-export const visibleColumns = <TRow,>(
+export const visibleColumns = <TRow>(
   columns: readonly UbDataGridColumn<TRow>[],
   tier: UbGridTier,
   compactCutoff: UbColumnPriority = COMPACT_PRIORITY_CUTOFF
@@ -39,15 +39,13 @@ export const visibleColumns = <TRow,>(
  * Ties are broken by the author's order, so two priority-3 columns drop
  * right-to-left rather than in whatever order `sort` felt like.
  */
-export const dropOrder = <TRow,>(
-  columns: readonly UbDataGridColumn<TRow>[]
-): readonly string[] =>
+export const dropOrder = <TRow>(columns: readonly UbDataGridColumn<TRow>[]): readonly string[] =>
   columns
     .map((column, index) => ({ id: column.id, priority: column.priority, index }))
     .sort((a, b) => b.priority - a.priority || b.index - a.index)
     .map((entry) => entry.id);
 
-export const cardSlotOf = <TRow,>(column: UbDataGridColumn<TRow>): UbCardSlot =>
+export const cardSlotOf = <TRow>(column: UbDataGridColumn<TRow>): UbCardSlot =>
   column.cardSlot ?? 'meta';
 
 export interface UbCardModel<TRow> {
@@ -66,14 +64,10 @@ export interface UbCardModel<TRow> {
  */
 export const MAX_CARD_META = 2;
 
-export const cardModel = <TRow,>(
-  columns: readonly UbDataGridColumn<TRow>[]
-): UbCardModel<TRow> => {
+export const cardModel = <TRow>(columns: readonly UbDataGridColumn<TRow>[]): UbCardModel<TRow> => {
   const title = columns.find((column) => cardSlotOf(column) === 'title') ?? null;
   const trailing = columns.find((column) => cardSlotOf(column) === 'trailing') ?? null;
-  const meta = columns
-    .filter((column) => cardSlotOf(column) === 'meta')
-    .slice(0, MAX_CARD_META);
+  const meta = columns.filter((column) => cardSlotOf(column) === 'meta').slice(0, MAX_CARD_META);
   return { title, trailing, meta };
 };
 
@@ -98,7 +92,7 @@ export const fillTemplate = (
  * `hideable` on the column overrides both directions, for the screen that knows
  * something the priority number does not.
  */
-export const isHideable = <TRow,>(column: UbDataGridColumn<TRow>): boolean =>
+export const isHideable = <TRow>(column: UbDataGridColumn<TRow>): boolean =>
   column.hideable ?? column.priority > 1;
 
 /**
@@ -128,7 +122,7 @@ export const isHideable = <TRow,>(column: UbDataGridColumn<TRow>): boolean =>
  * to make room for the checkbox column, so the 48 px is spread across every
  * column in proportion rather than taken out of one.
  */
-export const columnWidths = <TRow,>(
+export const columnWidths = <TRow>(
   columns: readonly UbDataGridColumn<TRow>[]
 ): readonly string[] => {
   const shares = columns.map((column) => column.widthShare ?? 0);

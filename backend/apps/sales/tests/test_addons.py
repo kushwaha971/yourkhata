@@ -25,7 +25,11 @@ def test_two_cold_coffees_with_ice_cream_are_two_times_150(
         track_stock=False,
         addons=[{"name": "Ice cream", "price": "30"}, {"name": "Less sugar", "price": "0"}],
     )
-    made = draft(owner, party_id=str(make_party().id), lines=[line(coffee, "2", addons=[{"name": "ice cream"}])])
+    made = draft(
+        owner,
+        party_id=str(make_party().id),
+        lines=[line(coffee, "2", addons=[{"name": "ice cream"}])],
+    )
     assert made.status_code == 201, made.json()
     doc = made.json()["data"]
     only = doc["lines"][0]
@@ -35,8 +39,21 @@ def test_two_cold_coffees_with_ice_cream_are_two_times_150(
     assert issue(owner, doc["id"], version=doc["version"]).status_code == 200
 
 
-def test_an_add_on_the_item_does_not_have_is_refused(owner: Any, make_item: Any, make_party: Any) -> None:
-    coffee = make_item("Cold coffee", "120.00", "GST5", stock=None, track_stock=False, addons=[{"name": "Ice cream", "price": "30"}])
-    made = draft(owner, party_id=str(make_party().id), lines=[line(coffee, "1", addons=[{"name": "Gold leaf"}])])
+def test_an_add_on_the_item_does_not_have_is_refused(
+    owner: Any, make_item: Any, make_party: Any
+) -> None:
+    coffee = make_item(
+        "Cold coffee",
+        "120.00",
+        "GST5",
+        stock=None,
+        track_stock=False,
+        addons=[{"name": "Ice cream", "price": "30"}],
+    )
+    made = draft(
+        owner,
+        party_id=str(make_party().id),
+        lines=[line(coffee, "1", addons=[{"name": "Gold leaf"}])],
+    )
     assert made.status_code == 400
     assert "lines.0.addons" in made.json()["error"]["details"]

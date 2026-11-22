@@ -81,7 +81,9 @@ const partyService = jest.requireMock('../api/partyService') as {
 
 const mockPush = jest.fn();
 let mockPersonSearch = '';
-afterEach(() => { mockPersonSearch = ''; });
+afterEach(() => {
+  mockPersonSearch = '';
+});
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(mockPersonSearch),
@@ -594,14 +596,35 @@ describe('opened from the Shop (DEC-019)', () => {
   /** BP-09: the person reminder must use the customer role, not the unrelated Udhaar amount. */
   it('opens a Shop reminder and reads only its book history', async () => {
     shopSession();
-    partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY,
-      balance: '2300.00', shopBalance: '400.00', isSupplier: true,
-      shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
-        supplierBalance: '600.00', supplierDue: '600.00', supplierCredit: '0.00',
-        daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null },
-    } });
-    reminderService.previewReminder.mockResolvedValue({ partyId: ID, book: 'shop',
-      balance: '1000.00', text: 'Shop bill amount 1000', smsText: 'Shop bill amount 1000', warnings: [] });
+    partyService.getParty.mockResolvedValue({
+      ...RESULT,
+      party: {
+        ...PARTY,
+        balance: '2300.00',
+        shopBalance: '400.00',
+        isSupplier: true,
+        shop: {
+          customerBalance: '1000.00',
+          customerDue: '1000.00',
+          customerCredit: '0.00',
+          supplierBalance: '600.00',
+          supplierDue: '600.00',
+          supplierCredit: '0.00',
+          daysOverdue: 42,
+          oldestDueOn: '2026-09-01',
+          lastActivityAt: null,
+          lastActivityKind: null,
+        },
+      },
+    });
+    reminderService.previewReminder.mockResolvedValue({
+      partyId: ID,
+      book: 'shop',
+      balance: '1000.00',
+      text: 'Shop bill amount 1000',
+      smsText: 'Shop bill amount 1000',
+      warnings: [],
+    });
     const user = userEvent.setup();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     await screen.findByText('Ramesh Traders');
@@ -611,7 +634,9 @@ describe('opened from the Shop (DEC-019)', () => {
     expect(await within(dialog).findByDisplayValue('Shop bill amount 1000')).toBeInTheDocument();
     expect(reminderService.previewReminder).toHaveBeenCalledWith(ID, expect.anything(), 'shop');
     expect(reminderService.listReminders).toHaveBeenCalledWith(
-      { partyId: ID, book: 'shop', page: 1, pageSize: 5 }, expect.anything());
+      { partyId: ID, book: 'shop', page: 1, pageSize: 5 },
+      expect.anything()
+    );
   }, 15000);
 
   /**
@@ -619,18 +644,42 @@ describe('opened from the Shop (DEC-019)', () => {
    * in "Mark received", which records the money, so an accountant (who reads
    * payments but cannot record one) was offered a step the server refuses.
    */
-  it.each([['payments.payment.read', false], ['payments.payment.write', true]] as const)(
-    'offers Collect by UPI only to a role that may record the money (%s)', async (code, offered) => {
+  it.each([
+    ['payments.payment.read', false],
+    ['payments.payment.write', true],
+  ] as const)(
+    'offers Collect by UPI only to a role that may record the money (%s)',
+    async (code, offered) => {
       shopSession();
       const current = store.getState().session;
       if (!current.user) throw new Error('Expected signed-in fixture');
-      store.dispatch(sessionLoaded({ ...current, user: current.user,
-        enabledModules: [...current.enabledModules, 'payments'],
-        permissions: [...current.permissions.filter((c) => !c.startsWith('payments.')), code] }));
-      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, shopBalance: '400.00',
-        shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
-          supplierBalance: '0.00', supplierDue: '0.00', supplierCredit: '0.00',
-          daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null } } });
+      store.dispatch(
+        sessionLoaded({
+          ...current,
+          user: current.user,
+          enabledModules: [...current.enabledModules, 'payments'],
+          permissions: [...current.permissions.filter((c) => !c.startsWith('payments.')), code],
+        })
+      );
+      partyService.getParty.mockResolvedValue({
+        ...RESULT,
+        party: {
+          ...PARTY,
+          shopBalance: '400.00',
+          shop: {
+            customerBalance: '1000.00',
+            customerDue: '1000.00',
+            customerCredit: '0.00',
+            supplierBalance: '0.00',
+            supplierDue: '0.00',
+            supplierCredit: '0.00',
+            daysOverdue: 42,
+            oldestDueOn: '2026-09-01',
+            lastActivityAt: null,
+            lastActivityKind: null,
+          },
+        },
+      });
       const user = userEvent.setup();
       renderWithProviders(<PartyDetailPageContent id={ID} />);
       await screen.findByText('Ramesh Traders');
@@ -640,16 +689,23 @@ describe('opened from the Shop (DEC-019)', () => {
       const item = screen.queryByRole('button', { name: 'Collect by UPI' });
       if (offered) expect(item).toBeInTheDocument();
       else expect(item).not.toBeInTheDocument();
-    }, 15000);
+    },
+    15000
+  );
 
   /** Person revamp: the main payment action is reachable without opening overflow. */
   it('puts role-specific actions on the Shop page and preserves the selected billing person', async () => {
     shopSession();
     const current = store.getState().session;
     if (!current.user) throw new Error('Expected signed-in fixture');
-    store.dispatch(sessionLoaded({ ...current, user: current.user,
-      enabledModules: [...current.enabledModules, 'payments'],
-      permissions: [...current.permissions, 'payments.payment.write'] }));
+    store.dispatch(
+      sessionLoaded({
+        ...current,
+        user: current.user,
+        enabledModules: [...current.enabledModules, 'payments'],
+        permissions: [...current.permissions, 'payments.payment.write'],
+      })
+    );
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     await screen.findByTestId('shop-person-overview');
     const dock = screen.getByTestId('shop-person-dock');
@@ -659,12 +715,33 @@ describe('opened from the Shop (DEC-019)', () => {
   });
 
   /** Owner: Customers, Suppliers and Udhaar are separate tasks, even for one contact. */
-  it.each([['', '₹1,000.00', '₹600.00'], ['from=suppliers', '₹600.00', '₹1,000.00']])(
-    'shows only the selected role amount for a dual-role person (%s)', async (query, shown, hidden) => {
+  it.each([
+    ['', '₹1,000.00', '₹600.00'],
+    ['from=suppliers', '₹600.00', '₹1,000.00'],
+  ])(
+    'shows only the selected role amount for a dual-role person (%s)',
+    async (query, shown, hidden) => {
       mockPersonSearch = query;
       shopSession();
-      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, isSupplier: true,
-        shop: { customerBalance: '1000.00', supplierBalance: '600.00', customerDue: '1000.00', customerCredit: '0', supplierDue: '600', supplierCredit: '0', daysOverdue: 42, oldestDueOn: null, lastActivityAt: null, lastActivityKind: null } } });
+      partyService.getParty.mockResolvedValue({
+        ...RESULT,
+        party: {
+          ...PARTY,
+          isSupplier: true,
+          shop: {
+            customerBalance: '1000.00',
+            supplierBalance: '600.00',
+            customerDue: '1000.00',
+            customerCredit: '0',
+            supplierDue: '600',
+            supplierCredit: '0',
+            daysOverdue: 42,
+            oldestDueOn: null,
+            lastActivityAt: null,
+            lastActivityKind: null,
+          },
+        },
+      });
       renderWithProviders(<PartyDetailPageContent id={ID} />);
       const overview = await screen.findByTestId('shop-person-overview');
       expect(within(overview).getByText(shown)).toBeInTheDocument();
@@ -673,7 +750,8 @@ describe('opened from the Shop (DEC-019)', () => {
       expect(within(overview).queryByText('As a supplier')).not.toBeInTheDocument();
       await openMenu(userEvent.setup());
       expect(screen.queryByRole('link', { name: 'Statement' })).not.toBeInTheDocument();
-    });
+    }
+  );
 
   it('offers no Gave money / Got money, and reads the Shop’s lines', async () => {
     shopSession();

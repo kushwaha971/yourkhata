@@ -164,11 +164,16 @@ const SHOP_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
 const KHATA_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
   keys: URL_KEYS,
   read: (params) => ({
-    ...Object.fromEntries(Object.entries(readFilters(params)).filter(([key]) => ['q', 'status', 'balance', 'ordering'].includes(key))),
+    ...Object.fromEntries(
+      Object.entries(readFilters(params)).filter(([key]) =>
+        ['q', 'status', 'balance', 'ordering'].includes(key)
+      )
+    ),
     ...(params.get('balance') === 'all' ||
     (params.get('status') === 'archived' && !params.has('balance')) ||
     (params.get('status') === 'archived' && params.get('balance') === 'due')
-      ? { balance: '' as const } : {}),
+      ? { balance: '' as const }
+      : {}),
   }),
   write: (filters, defaults) => {
     const params = new URLSearchParams(writeListQuery(URL_KEYS, filters, defaults));
@@ -186,5 +191,15 @@ export interface UsePartyListUrlOptions {
 
 export function usePartyListUrl({ filters, defaults, onSeed }: UsePartyListUrlOptions): void {
   const pathname = usePathname();
-  useListUrl({ codec: pathname === '/khata' ? KHATA_LIST_CODEC : defaults.book === 'shop' ? SHOP_LIST_CODEC : PARTY_LIST_CODEC, filters, defaults, onSeed });
+  useListUrl({
+    codec:
+      pathname === '/khata'
+        ? KHATA_LIST_CODEC
+        : defaults.book === 'shop'
+          ? SHOP_LIST_CODEC
+          : PARTY_LIST_CODEC,
+    filters,
+    defaults,
+    onSeed,
+  });
 }

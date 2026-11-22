@@ -61,7 +61,12 @@ function PartyQuickSearchBase({
       setOpen(false);
       search.clear();
       const party = search.results.find((row) => row.id === id);
-      router.push(partyPath(id, book === 'shop' && party?.isSupplier && !party.isCustomer ? 'supplier' : undefined));
+      router.push(
+        partyPath(
+          id,
+          book === 'shop' && party?.isSupplier && !party.isCustomer ? 'supplier' : undefined
+        )
+      );
       onNavigate?.();
     },
     [router, search, onNavigate, book]
@@ -194,13 +199,15 @@ function PartyQuickSearchBase({
                       </UbText>
                     )}
                   </UbBox>
-                  {book !== 'shop' && <UbAmount
-                    value={party.balance}
-                    tone={view.tone}
-                    sign={view.sign}
-                    label={t(view.labelId)}
-                    size="sm"
-                  />}
+                  {book !== 'shop' && (
+                    <UbAmount
+                      value={party.balance}
+                      tone={view.tone}
+                      sign={view.sign}
+                      label={t(view.labelId)}
+                      size="sm"
+                    />
+                  )}
                 </UbBox>
               );
             })

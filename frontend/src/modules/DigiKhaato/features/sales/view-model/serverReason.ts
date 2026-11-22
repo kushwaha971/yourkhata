@@ -1,7 +1,6 @@
 import type { ApiErrorShape } from 'src/types/api.types';
 import { fieldErrorEntries } from 'src/utils/apiError';
 
-
 /**
  * The server's own reason for a refused save or issue (owner, 27 Oct 2026):
  * a 400 says "Please check the highlighted fields." and puts the real reason

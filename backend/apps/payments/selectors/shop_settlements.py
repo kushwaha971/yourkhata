@@ -36,9 +36,11 @@ def settlement_view(settlement: ShopSettlement) -> dict:
         "after": settlement.after,
         "created_at": settlement.created_at.isoformat(),
         # A name, never an email: the history is read at the counter.
-        "created_by": (getattr(actor, "full_name", None) or getattr(actor, "name", None) or None)
-        if actor
-        else None,
+        "created_by": (
+            (getattr(actor, "full_name", None) or getattr(actor, "name", None) or None)
+            if actor
+            else None
+        ),
         "voided_at": settlement.voided_at.isoformat() if settlement.voided_at else None,
         "void_reason": settlement.void_reason,
     }

@@ -237,7 +237,9 @@ describe('partyService write path', () => {
      * A6 / DEC-019. Without `opening_book` the server posts the opening in the
      * Udhaar book, which is what every old balance typed on the Shop form did.
      */
-    const post = jest.spyOn(api, 'post').mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
+    const post = jest
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
     await createParty({ ...FORM_VALUES, openingAmount: '1500.00', openingBook: 'shop' }, 'k-o1');
     expect(post.mock.calls[0]?.[1]).toHaveProperty('opening_book', 'shop');
     await createParty({ ...FORM_VALUES, openingAmount: '1500.00' }, 'k-o2');
@@ -250,8 +252,13 @@ describe('partyService write path', () => {
      * form has no such switch, so before this every supplier was saved opted
      * in to reminders nobody asked about. A customer still sends both.
      */
-    const post = jest.spyOn(api, 'post').mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
-    await createParty({ ...FORM_VALUES, isCustomer: false, isSupplier: true, smsOptIn: true }, 'k-s');
+    const post = jest
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
+    await createParty(
+      { ...FORM_VALUES, isCustomer: false, isSupplier: true, smsOptIn: true },
+      'k-s'
+    );
     const body = post.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(body).not.toHaveProperty('sms_opt_in');
     expect(body).not.toHaveProperty('consent_source');

@@ -215,14 +215,18 @@ class LedgerEntry(TenantModel, ImmutableModel):
             models.UniqueConstraint(
                 fields=["party"],
                 condition=models.Q(
-                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.MAIN
+                    entry_type=EntryType.OPENING,
+                    status=EntryStatus.POSTED,
+                    bucket=LedgerBucket.MAIN,
                 ),
                 name="uq_ledger_one_opening_per_party",
             ),
             models.UniqueConstraint(
                 fields=["party", "direction"],
                 condition=models.Q(
-                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.SHOP
+                    entry_type=EntryType.OPENING,
+                    status=EntryStatus.POSTED,
+                    bucket=LedgerBucket.SHOP,
                 ),
                 name="uq_ledger_one_shop_opening_per_side",
             ),

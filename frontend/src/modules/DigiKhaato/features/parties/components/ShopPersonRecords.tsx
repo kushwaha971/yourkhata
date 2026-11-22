@@ -52,16 +52,50 @@ export function ShopPersonRecords({
   const key = `${partyId}:${supplier}:${payments}:${page}:${refresh}:${retry}`;
   useEffect(() => {
     const query = { tab: 'unpaid' as const, partyId, dateFrom: '', dateTo: '', q: '', page };
-    const request = payments ? dispatch(fetchPayments({ partyId, bucket: 'shop', status: 'recorded', tradeRole: supplier ? 'supplier' : 'customer', preset: 'all', dateFrom: '', dateTo: '', tab: supplier ? 'out' : 'in', mode: null, q: '', page })) : supplier
-      ? dispatch(fetchPurchaseBillList(query))
-      : dispatch(fetchInvoices({ ...query, book: 'shop' }));
+    const request = payments
+      ? dispatch(
+          fetchPayments({
+            partyId,
+            bucket: 'shop',
+            status: 'recorded',
+            tradeRole: supplier ? 'supplier' : 'customer',
+            preset: 'all',
+            dateFrom: '',
+            dateTo: '',
+            tab: supplier ? 'out' : 'in',
+            mode: null,
+            q: '',
+            page,
+          })
+        )
+      : supplier
+        ? dispatch(fetchPurchaseBillList(query))
+        : dispatch(fetchInvoices({ ...query, book: 'shop' }));
     void request.then((action) => {
-      if(fetchPayments.fulfilled.match(action)) {
-        setAnswer({ key, rows: action.payload.rows.map(row=>({ id: row.id, number: row.number, documentDate: row.paymentDate, amount: row.amount })), total: action.payload.total, pageSize: action.payload.pageSize });
-      } else if (fetchInvoices.fulfilled.match(action) || fetchPurchaseBillList.fulfilled.match(action)) {
+      if (fetchPayments.fulfilled.match(action)) {
         setAnswer({
           key,
-          rows: action.payload.rows.map(row => ({ id: row.id, number: row.number, documentDate: row.documentDate, amount: row.amountDue })),
+          rows: action.payload.rows.map((row) => ({
+            id: row.id,
+            number: row.number,
+            documentDate: row.paymentDate,
+            amount: row.amount,
+          })),
+          total: action.payload.total,
+          pageSize: action.payload.pageSize,
+        });
+      } else if (
+        fetchInvoices.fulfilled.match(action) ||
+        fetchPurchaseBillList.fulfilled.match(action)
+      ) {
+        setAnswer({
+          key,
+          rows: action.payload.rows.map((row) => ({
+            id: row.id,
+            number: row.number,
+            documentDate: row.documentDate,
+            amount: row.amountDue,
+          })),
           total: action.payload.total,
           pageSize: action.payload.pageSize,
         });
@@ -70,7 +104,15 @@ export function ShopPersonRecords({
     return () => request.abort();
   }, [dispatch, partyId, supplier, payments, page, refresh, retry, key]);
   const ready = answer?.key === key;
-  const title = t(payments ? supplier ? 'parties.person.paidSupplier' : 'parties.person.receivedCustomer' : supplier ? 'parties.person.supplierBills' : 'parties.person.customerBills');
+  const title = t(
+    payments
+      ? supplier
+        ? 'parties.person.paidSupplier'
+        : 'parties.person.receivedCustomer'
+      : supplier
+        ? 'parties.person.supplierBills'
+        : 'parties.person.customerBills'
+  );
   return (
     <UbStack gap={3}>
       <UbSectionHeading title={title} />
@@ -117,7 +159,15 @@ export function ShopPersonRecords({
               </UbStack>
               <UbAmount
                 value={row.amount}
-                label={t(payments ? supplier ? 'parties.person.paid' : 'parties.person.received' : supplier ? 'parties.person.pay' : 'parties.person.receive')}
+                label={t(
+                  payments
+                    ? supplier
+                      ? 'parties.person.paid'
+                      : 'parties.person.received'
+                    : supplier
+                      ? 'parties.person.pay'
+                      : 'parties.person.receive'
+                )}
                 tone={supplier ? 'payable' : 'receivable'}
                 sign="none"
                 size="sm"

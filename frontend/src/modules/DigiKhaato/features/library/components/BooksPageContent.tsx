@@ -50,14 +50,21 @@ const BookDrawer = dynamic(() => import('./BookDrawer').then((m) => m.BookDrawer
 });
 
 /** One book: who has its copies; give one to a student, or take one back. */
-function BookSheet({ book, onClose, onChanged }: Readonly<{ book: Book; onClose: () => void; onChanged: () => void }>) {
+function BookSheet({
+  book,
+  onClose,
+  onChanged,
+}: Readonly<{ book: Book; onClose: () => void; onChanged: () => void }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const today = todayInTenantTz();
   const [search, setSearch] = useState('');
   const q = useDebounce(search.trim(), 200);
   // Kept with the search it answers, so an old answer never shows under a new search.
-  const [answer, setAnswer] = useState<{ q: string; rows: readonly Student[] }>({ q: '', rows: [] });
+  const [answer, setAnswer] = useState<{ q: string; rows: readonly Student[] }>({
+    q: '',
+    rows: [],
+  });
   const found = q && answer.q === q ? answer.rows : [];
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -72,14 +79,24 @@ function BookSheet({ book, onClose, onChanged }: Readonly<{ book: Book; onClose:
     return () => controller.abort();
   }, [q]);
 
-  const act = async (id: string, run: () => Promise<void>, done: string, params: Record<string, string>) => {
+  const act = async (
+    id: string,
+    run: () => Promise<void>,
+    done: string,
+    params: Record<string, string>
+  ) => {
     setBusy(id);
     try {
       await run();
       dispatch(showSnackbar({ severity: 'success', id: done, params }));
       onChanged();
     } catch (e) {
-      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'library.books.error').message ?? t('library.books.error') }));
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          message: toApiError(e, 'library.books.error').message ?? t('library.books.error'),
+        })
+      );
     } finally {
       setBusy(null);
     }
@@ -106,7 +123,12 @@ function BookSheet({ book, onClose, onChanged }: Readonly<{ book: Book; onClose:
           <List>
             {book.out.map((o) => (
               <UbBox as="li" key={o.id}>
-                <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2">
+                <UbStack
+                  direction="row"
+                  align="center"
+                  gap={3}
+                  className="min-h-14 border-b border-border-hairline px-4 py-2"
+                >
                   <UbStack gap={0} className="min-w-0 flex-1">
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
                       {o.student}
@@ -120,7 +142,14 @@ function BookSheet({ book, onClose, onChanged }: Readonly<{ book: Book; onClose:
                       size="sm"
                       variant="outlineNeutral"
                       busy={busy === o.id}
-                      onClick={() => void act(o.id, () => takeBack(o.id, `${o.id}-back`), 'library.books.backDone', { name: o.student })}
+                      onClick={() =>
+                        void act(
+                          o.id,
+                          () => takeBack(o.id, `${o.id}-back`),
+                          'library.books.backDone',
+                          { name: o.student }
+                        )
+                      }
                       data-testid="library-book-back"
                     >
                       {t('library.books.takeBack')}
@@ -136,14 +165,24 @@ function BookSheet({ book, onClose, onChanged }: Readonly<{ book: Book; onClose:
             <UbText variant="inherit" className="font-semibold">
               {t('library.books.giveTo')}
             </UbText>
-            <UbSearchInput value={search} onChange={setSearch} placeholder={t('library.counter.search')} aria-label={t('library.books.giveTo')} />
+            <UbSearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder={t('library.counter.search')}
+              aria-label={t('library.books.giveTo')}
+            />
             {found.length > 0 && (
               <List>
                 {found.map((s) => (
                   <UbBox as="li" key={s.id}>
                     <UbPressable
                       onClick={() =>
-                        void act(s.id, () => giveBook(book.id, s.id, `${book.id}-${s.id}-${Date.now()}`), 'library.books.giveDone', { title: book.title, name: s.name })
+                        void act(
+                          s.id,
+                          () => giveBook(book.id, s.id, `${book.id}-${s.id}-${Date.now()}`),
+                          'library.books.giveDone',
+                          { title: book.title, name: s.name }
+                        )
                       }
                       className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-border-hairline px-4 py-2 text-left"
                       data-testid="library-book-give"
@@ -196,7 +235,10 @@ export function BooksPageContent(): React.JSX.Element {
   const [camera, setCamera] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState<{ code: string } | null>(null);
-  const scanTitle: Scan = useMemo(() => ({ title: t('library.books.scan.title'), hint: t('library.books.scan.hint') }), [t]);
+  const scanTitle: Scan = useMemo(
+    () => ({ title: t('library.books.scan.title'), hint: t('library.books.scan.hint') }),
+    [t]
+  );
 
   const load = useCallback(() => dispatch(fetchBooks({ q })), [dispatch, q]);
   useEffect(() => {
@@ -217,7 +259,9 @@ export function BooksPageContent(): React.JSX.Element {
           await dispatch(fetchBooks({ q }));
           setOpenId(hit.id);
         } else {
-          dispatch(showSnackbar({ severity: 'info', id: 'library.books.scan.new', params: { code } }));
+          dispatch(
+            showSnackbar({ severity: 'info', id: 'library.books.scan.new', params: { code } })
+          );
           setAdding({ code });
         }
       } catch {
@@ -237,7 +281,12 @@ export function BooksPageContent(): React.JSX.Element {
           subtitle={t('library.books.subtitle')}
           actions={
             canWrite && (
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setAdding({ code: '' })} className="max-lg:hidden">
+              <UbButton
+                variant="primary"
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => setAdding({ code: '' })}
+                className="max-lg:hidden"
+              >
                 {t('library.books.add')}
               </UbButton>
             )
@@ -252,10 +301,18 @@ export function BooksPageContent(): React.JSX.Element {
             aria-label={t('library.books.search')}
             className="flex-1"
           />
-          <UbScanButton label={t('library.books.scan.open')} onClick={() => setCamera(true)} data-testid="library-books-scan" />
+          <UbScanButton
+            label={t('library.books.scan.open')}
+            onClick={() => setCamera(true)}
+            data-testid="library-books-scan"
+          />
         </UbStack>
         {lib.books.status === 'failed' && !lib.books.data ? (
-          <UbEmptyState variant="error" title={t('library.books.error')} action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>} />
+          <UbEmptyState
+            variant="error"
+            title={t('library.books.error')}
+            action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>}
+          />
         ) : !lib.books.data ? (
           <UbSkeleton variant="list" count={5} label={t('library.common.loading')} />
         ) : books.length === 0 ? (
@@ -266,7 +323,13 @@ export function BooksPageContent(): React.JSX.Element {
               variant="firstUse"
               title={t('library.books.none')}
               description={t('library.books.noneBody')}
-              action={canWrite ? <UbButton onClick={() => setAdding({ code: '' })}>{t('library.books.add')}</UbButton> : undefined}
+              action={
+                canWrite ? (
+                  <UbButton onClick={() => setAdding({ code: '' })}>
+                    {t('library.books.add')}
+                  </UbButton>
+                ) : undefined
+              }
             />
           )
         ) : (
@@ -283,13 +346,24 @@ export function BooksPageContent(): React.JSX.Element {
                       {b.title}
                     </UbText>
                     <UbText variant="inherit" truncate className="text-[12.5px] text-text-tertiary">
-                      {[b.author, b.out.length ? t('library.books.withNames', { names: b.out.map((o) => o.student).join(', ') }) : null]
+                      {[
+                        b.author,
+                        b.out.length
+                          ? t('library.books.withNames', {
+                              names: b.out.map((o) => o.student).join(', '),
+                            })
+                          : null,
+                      ]
                         .filter(Boolean)
                         .join(' · ') || t('library.books.allIn')}
                     </UbText>
                   </UbStack>
                   <UbStatusBadge
-                    label={b.left > 0 ? t('library.books.leftOf', { left: b.left, copies: b.copies }) : t('library.books.allOut')}
+                    label={
+                      b.left > 0
+                        ? t('library.books.leftOf', { left: b.left, copies: b.copies })
+                        : t('library.books.allOut')
+                    }
                     tone={b.left > 0 ? 'success' : 'warning'}
                   />
                 </UbPressable>
@@ -298,11 +372,28 @@ export function BooksPageContent(): React.JSX.Element {
           </List>
         )}
       </UbStack>
-      {canWrite && <UbFab label={t('library.books.add')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setAdding({ code: '' })} />}
-      {camera && (
-        <UbScanSheet open onClose={() => setCamera(false)} onCode={(c) => void onCode(c)} title={scanTitle.title} hint={scanTitle.hint} labels={labels} />
+      {canWrite && (
+        <UbFab
+          label={t('library.books.add')}
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          mobileOnly
+          extended
+          onClick={() => setAdding({ code: '' })}
+        />
       )}
-      {open && <BookSheet book={open} onClose={() => setOpenId(null)} onChanged={() => void load()} />}
+      {camera && (
+        <UbScanSheet
+          open
+          onClose={() => setCamera(false)}
+          onCode={(c) => void onCode(c)}
+          title={scanTitle.title}
+          hint={scanTitle.hint}
+          labels={labels}
+        />
+      )}
+      {open && (
+        <BookSheet book={open} onClose={() => setOpenId(null)} onChanged={() => void load()} />
+      )}
       {adding && (
         <BookDrawer
           book={null}

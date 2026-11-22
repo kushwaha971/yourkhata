@@ -38,7 +38,7 @@ const MasterFormDialog = dynamic(
   () => import('./MasterFormDialog').then((m) => m.MasterFormDialog),
   {
     ssr: false,
-  loading: () => <UbDialogLoading />,
+    loading: () => <UbDialogLoading />,
   }
 );
 
@@ -219,7 +219,12 @@ export function InventoryMastersPageContent(): React.JSX.Element {
     );
     const body = masters.categories
       .flatMap((row) => [row, ...row.children])
-      .map((row) => [row.name, String(row.itemCount), row.stockValue ?? '', usualGstLabel(row.taxCode, t)]);
+      .map((row) => [
+        row.name,
+        String(row.itemCount),
+        row.stockValue ?? '',
+        usualGstLabel(row.taxCode, t),
+      ]);
     saveBlob(
       new Blob([[head, ...body].map((line) => line.map(cell).join(',')).join('\r\n')], {
         type: 'text/csv;charset=utf-8',
@@ -238,7 +243,11 @@ export function InventoryMastersPageContent(): React.JSX.Element {
   );
 
   const categorySection = (
-    <UbStack gap={3} data-testid="masters-categories" className={tab === 'categories' ? undefined : 'hidden'}>
+    <UbStack
+      gap={3}
+      data-testid="masters-categories"
+      className={tab === 'categories' ? undefined : 'hidden'}
+    >
       {masters.categoriesLoading && masters.categories.length === 0 ? (
         <UbSkeleton variant="list" />
       ) : masters.categories.length === 0 ? (
@@ -273,7 +282,13 @@ export function InventoryMastersPageContent(): React.JSX.Element {
               aria-hidden
             >
               {(['name', 'items', 'value', 'gst'] as const).map((key) => (
-                <UbText as="span" key={key} variant="caption" tone="secondary" className="text-[13px] font-semibold">
+                <UbText
+                  as="span"
+                  key={key}
+                  variant="caption"
+                  tone="secondary"
+                  className="text-[13px] font-semibold"
+                >
                   {t(`inventory.masters.category.column.${key}`)}
                 </UbText>
               ))}
@@ -391,24 +406,23 @@ export function InventoryMastersPageContent(): React.JSX.Element {
           ) : undefined
         }
         renderMobileActions={(actions) => (
-            <UbPageHeaderMobileActions
-              actions={actions}
-              mobile={{
-                menuLabel: t('common.action.moreActions'),
-                closeLabel: t('common.action.close'),
-                primaryPlacement: 'header',
-                primary:
-                  onCategories && masters.canWrite
-                    ? {
-                        label: t('inventory.masters.category.add'),
-                        icon: <Plus className="h-6 w-6" aria-hidden />,
-                        onClick: () => setAdding({ kind: 'category', seed: '' }),
-                      }
-                    : undefined,
-              }}
-            />
-          )
-        }
+          <UbPageHeaderMobileActions
+            actions={actions}
+            mobile={{
+              menuLabel: t('common.action.moreActions'),
+              closeLabel: t('common.action.close'),
+              primaryPlacement: 'header',
+              primary:
+                onCategories && masters.canWrite
+                  ? {
+                      label: t('inventory.masters.category.add'),
+                      icon: <Plus className="h-6 w-6" aria-hidden />,
+                      onClick: () => setAdding({ kind: 'category', seed: '' }),
+                    }
+                  : undefined,
+            }}
+          />
+        )}
       />
       <UbStack gap={4}>
         {categorySection}

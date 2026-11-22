@@ -260,58 +260,58 @@ export function InvoicesListPageContent(): React.JSX.Element {
   /* The design's desktop register: search and period sit inside the table's
      card, under the count line. A phone keeps them above its cards. */
   const tools = (
-            <UbStack
-              direction="row"
-              align="center"
-              className="flex-wrap gap-3"
-              data-testid="invoice-register-toolbar"
-            >
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <>
-                  <UbPeriodSelect<InvoicePreset>
-                    presets={presets}
-                    value={filters.preset}
-                    customValue="custom"
-                    from={filters.dateFrom}
-                    to={filters.dateTo}
-                    max={list.today}
-                    onChange={(preset, from, to) => {
-                      if (preset === 'custom' && from && to) list.setRange(from, to);
-                      else list.setPreset(preset);
-                    }}
-                    labels={{
-                      period: t('sales.period.label'),
-                      from: t('sales.period.from'),
-                      to: t('sales.period.to'),
-                      apply: t('common.action.apply'),
-                      close: t('common.action.close'),
-                    }}
-                  />
-                  {originSpec && (
-                    <UbFilterSelect
-                      spec={originSpec}
-                      value={filters.originModule ?? ''}
-                      onChange={(next) => list.setOriginModule(next || null)}
-                      closeLabel={t('common.action.close')}
-                    />
-                  )}
-                </>
-              )}
-            </UbStack>
+    <UbStack
+      direction="row"
+      align="center"
+      className="flex-wrap gap-3"
+      data-testid="invoice-register-toolbar"
+    >
+      {searchBox}
+      {phone ? (
+        <UbFilterSheet
+          compact
+          specs={phoneSpecs}
+          values={phoneValues}
+          onApply={applyPhone}
+          labels={{
+            title: t('common.filters.title'),
+            apply: t('common.action.apply'),
+            reset: t('common.action.reset'),
+            close: t('common.action.close'),
+          }}
+        />
+      ) : (
+        <>
+          <UbPeriodSelect<InvoicePreset>
+            presets={presets}
+            value={filters.preset}
+            customValue="custom"
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            max={list.today}
+            onChange={(preset, from, to) => {
+              if (preset === 'custom' && from && to) list.setRange(from, to);
+              else list.setPreset(preset);
+            }}
+            labels={{
+              period: t('sales.period.label'),
+              from: t('sales.period.from'),
+              to: t('sales.period.to'),
+              apply: t('common.action.apply'),
+              close: t('common.action.close'),
+            }}
+          />
+          {originSpec && (
+            <UbFilterSelect
+              spec={originSpec}
+              value={filters.originModule ?? ''}
+              onChange={(next) => list.setOriginModule(next || null)}
+              closeLabel={t('common.action.close')}
+            />
+          )}
+        </>
+      )}
+    </UbStack>
   );
   const grid = (
     <UbDataGrid

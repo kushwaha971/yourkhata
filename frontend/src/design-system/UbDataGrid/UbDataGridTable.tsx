@@ -154,7 +154,7 @@ function UbDataGridTableBase<TRow>({
    * product is built for is unaffected. Rows are memoised where it counts:
    * `columns` is a module-level factory memoised by the feature (§19.9.4).
    */
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // eslint-disable-next-line react-hooks/incompatible-library -- accepted, see the note above
   const table = useReactTable<TRow>({
     // `rows` is readonly by contract (R-TS-5); TanStack takes a mutable array
     // and never writes to it.
@@ -400,7 +400,10 @@ function UbDataGridTableBase<TRow>({
                   return (
                     <td
                       key={cell.id}
-                      className={cn(register ? REGISTER_TD : GRID_TD, ALIGN[column?.align ?? 'start'])}
+                      className={cn(
+                        register ? REGISTER_TD : GRID_TD,
+                        ALIGN[column?.align ?? 'start']
+                      )}
                     >
                       {/* The first cell carries the open control, and only the
                           first: one named control per row. Wrapping every cell

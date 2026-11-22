@@ -149,9 +149,7 @@ export const createPartyColumns = ({
               ? t('parties.list.status.archived')
               : undefined
           }
-          contact={
-compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
-          }
+          contact={compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined}
           tags={party.tags}
           reserveTagLane={!compactShop && hasTags}
           maxTags={tagChipsPerRow}
@@ -175,7 +173,9 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
         <PartyBalanceCell
           balance={party.balance}
           labels={balanceLabels}
-          labelHidden={hideBalanceLabel || (phoneCards && compactShop && Number(party.balance) !== 0)}
+          labelHidden={
+            hideBalanceLabel || (phoneCards && compactShop && Number(party.balance) !== 0)
+          }
         />
       ),
     },
@@ -261,9 +261,7 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
     widthShare: 16,
     cell: (party) => {
       const age = shopAgeView(party, t, supplier);
-      return (
-        <PartyMetaCell text={age.label} wrap />
-      );
+      return <PartyMetaCell text={age.label} wrap />;
     },
   };
   const actions: UbDataGridColumn<Party> = {
@@ -290,7 +288,9 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
   return [
     ...columns.filter((column) => column.id === 'name' || column.id === 'balance'),
     late,
-    ...columns.filter((column) => column.id === 'contact' || (column.id === 'status' && !narrowTable)),
+    ...columns.filter(
+      (column) => column.id === 'contact' || (column.id === 'status' && !narrowTable)
+    ),
     actions,
   ];
 };

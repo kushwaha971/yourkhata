@@ -2,7 +2,6 @@ import { resetAllFeatureState } from 'src/redux/actions';
 
 import { makeDocument } from '../testing/salesFixtures';
 
-
 import { editorReset, invoiceEditorReducer } from './invoiceEditorSlice';
 import { fetchInvoice, saveInvoiceDraft, type SaveDraftArg } from './salesThunk';
 

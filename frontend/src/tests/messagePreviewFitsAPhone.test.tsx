@@ -44,7 +44,10 @@ describe('A page grid of rows never grows to its longest row', () => {
   ];
 
   it.each(PAGES)('%s gives its two-part grid a column that may shrink on a phone', (file) => {
-    const grids = readFileSync(join(FEATURES, file), 'utf8').match(/className="grid [^"]*lg:\[grid-template-columns:[^"]*"/g) ?? [];
+    const grids =
+      readFileSync(join(FEATURES, file), 'utf8').match(
+        /className="grid [^"]*lg:\[grid-template-columns:[^"]*"/g
+      ) ?? [];
     expect(grids.length).toBeGreaterThan(0);
     for (const grid of grids) expect(grid).toContain('grid-cols-[minmax(0,1fr)]');
   });

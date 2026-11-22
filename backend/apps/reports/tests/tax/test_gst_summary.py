@@ -20,13 +20,7 @@ import pytest
 from django.db import connection
 from django.urls import reverse
 
-from apps.reports.tests.tax.builders import (
-    KARNATAKA_GSTIN,
-    RAMESH_GSTIN,
-    bill,
-    party,
-    sale,
-)
+from apps.reports.tests.tax.builders import KARNATAKA_GSTIN, RAMESH_GSTIN, bill, party, sale
 from apps.reports.views.tax_params import parse_period
 
 pytestmark = pytest.mark.django_db

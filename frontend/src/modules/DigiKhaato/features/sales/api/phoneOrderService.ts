@@ -67,19 +67,30 @@ export const listPhoneOrders = async (
 ): Promise<PhoneOrderList> => {
   const res = await api.get<{ data: Wire[]; meta: { counts: PhoneOrderList['counts'] } }>(
     '/sales/phone-orders',
-    ubConfig({ params: { q: filters.q || undefined, stage: filters.stage }, signal, suppressErrorSnackbar: true })
+    ubConfig({
+      params: { q: filters.q || undefined, stage: filters.stage },
+      signal,
+      suppressErrorSnackbar: true,
+    })
   );
   return { rows: res.data.data.map(toOrder), counts: res.data.meta.counts };
 };
 
 export const getPhoneOrder = async (id: string, signal?: AbortSignal): Promise<PhoneOrder> => {
-  const res = await api.get<{ data: Wire }>(`/sales/phone-orders/${id}`, ubConfig({ signal, suppressErrorSnackbar: true }));
+  const res = await api.get<{ data: Wire }>(
+    `/sales/phone-orders/${id}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
   return toOrder(res.data.data);
 };
 
 export interface PhoneOrderDraft {
   readonly partyId: string;
-  readonly lines: readonly { readonly item_id: string; readonly qty: string; readonly rate?: string }[];
+  readonly lines: readonly {
+    readonly item_id: string;
+    readonly qty: string;
+    readonly rate?: string;
+  }[];
   readonly listText: string;
   /** `YYYY-MM-DDTHH:mm` on the shop's clock, or '' for no time. */
   readonly deliverBy: string;
@@ -88,7 +99,10 @@ export interface PhoneOrderDraft {
 }
 
 /** `clientKey` is made once per open form, so a double tap is one order. */
-export const createPhoneOrder = async (v: PhoneOrderDraft, clientKey: string): Promise<PhoneOrder> => {
+export const createPhoneOrder = async (
+  v: PhoneOrderDraft,
+  clientKey: string
+): Promise<PhoneOrder> => {
   const res = await api.post<{ data: Wire }>('/sales/phone-orders', {
     client_key: clientKey,
     party_id: v.partyId || null,
@@ -122,7 +136,10 @@ export const readPhoneList = async (text: string): Promise<ReadList> => {
  * word is a brand as often as a good ("Aashirvaad Atta"), and "aashirvaad" is
  * not what the packer looks for.
  */
-export const itemsSummary = (lines: readonly PhoneOrderLine[], items: (count: number) => string): string => {
+export const itemsSummary = (
+  lines: readonly PhoneOrderLine[],
+  items: (count: number) => string
+): string => {
   const names = lines.slice(0, 3).map((l) => l.name.toLowerCase());
   return `${items(lines.length)} · ${names.join(', ')}${lines.length > 3 ? '…' : ''}`;
 };

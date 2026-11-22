@@ -88,9 +88,7 @@ describe('UbAmount', () => {
      * owes ₹282.90 read "−₹282.90 · You will give" on the list and on the khata
      * page. Two mechanisms, one silently overruling the other.
      */
-    const { container } = render(
-      <UbAmount value="-282.90" tone="payable" label="You will give" />
-    );
+    const { container } = render(<UbAmount value="-282.90" tone="payable" label="You will give" />);
 
     expect(container.querySelector('[aria-hidden="true"]')?.textContent).toBe('₹282.90');
   });

@@ -52,7 +52,6 @@ function LegalPageContentBase({ titleId }: Readonly<LegalPageContentProps>) {
           </UbText>
         </UbStack>
       </UbBox>
-
     </UbStack>
   );
 }

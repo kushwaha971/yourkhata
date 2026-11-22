@@ -40,7 +40,13 @@ type Show = 'active' | 'closed';
 
 const stateOf = (l: Loan) =>
   l.status === 'closed'
-    ? { word: l.closeReason === 'written_off' ? 'lending.loan.writtenOffShort' : 'lending.loan.paidUpShort', tone: l.closeReason === 'written_off' ? ('error' as const) : ('success' as const) }
+    ? {
+        word:
+          l.closeReason === 'written_off'
+            ? 'lending.loan.writtenOffShort'
+            : 'lending.loan.paidUpShort',
+        tone: l.closeReason === 'written_off' ? ('error' as const) : ('success' as const),
+      }
     : Number(l.late) > 0
       ? { word: 'lending.stop.late', tone: 'error' as const }
       : { word: 'lending.loan.onTime', tone: 'success' as const };
@@ -67,8 +73,15 @@ export function LoansPageContent(): React.JSX.Element {
 
   const body = (() => {
     if (lend.loans.status === 'failed' && !lend.loans.data)
-      return <UbEmptyState variant="error" title={t('lending.loans.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />;
-    if (!lend.loans.data) return <UbSkeleton variant="list" count={6} label={t('lending.common.loading')} />;
+      return (
+        <UbEmptyState
+          variant="error"
+          title={t('lending.loans.error')}
+          action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>}
+        />
+      );
+    if (!lend.loans.data)
+      return <UbSkeleton variant="list" count={6} label={t('lending.common.loading')} />;
     if (rows.length === 0)
       return q ? (
         <UbEmptyState variant="filtered" title={t('lending.loans.noMatch')} />
@@ -76,7 +89,13 @@ export function LoansPageContent(): React.JSX.Element {
         <UbEmptyState
           variant="firstUse"
           title={t(`lending.loans.none.${show}`)}
-          action={show === 'active' && canLend ? <UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton> : undefined}
+          action={
+            show === 'active' && canLend ? (
+              <UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>
+                {t('lending.today.newLoan')}
+              </UbButton>
+            ) : undefined
+          }
         />
       );
     return (
@@ -86,7 +105,10 @@ export function LoansPageContent(): React.JSX.Element {
             const st = stateOf(l);
             return (
               <UbBox as="li" key={l.id}>
-                <UbPressable onClick={() => open(l.id)} className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left">
+                <UbPressable
+                  onClick={() => open(l.id)}
+                  className="flex min-h-14 w-full items-center gap-3 border-b border-border-hairline px-4 py-3 text-left"
+                >
                   <UbAvatar name={l.borrower} size="sm" />
                   <UbStack gap={0} className="min-w-0 flex-1">
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
@@ -125,7 +147,10 @@ export function LoansPageContent(): React.JSX.Element {
               return (
                 <UbBox as="tr" key={l.id}>
                   <UbBox as="td">
-                    <UbPressable onClick={() => open(l.id)} className="flex w-auto items-center gap-2.5 text-left">
+                    <UbPressable
+                      onClick={() => open(l.id)}
+                      className="flex w-auto items-center gap-2.5 text-left"
+                    >
                       <UbAvatar name={l.borrower} size="sm" />
                       <UbText variant="inherit" className="font-semibold">
                         {l.borrower}
@@ -166,14 +191,24 @@ export function LoansPageContent(): React.JSX.Element {
           title={t('lending.loans.title')}
           actions={
             canLend ? (
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="max-lg:hidden lg:h-10 lg:text-[14px]">
+              <UbButton
+                variant="primary"
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => router.push(LENDING_ROUTES.newLoan)}
+                className="max-lg:hidden lg:h-10 lg:text-[14px]"
+              >
                 {t('lending.today.newLoan')}
               </UbButton>
             ) : undefined
           }
           renderMobileActions={() => null}
         />
-        <UbSearchInput value={search} onChange={setSearch} placeholder={t('lending.loans.search')} aria-label={t('lending.loans.search')} />
+        <UbSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('lending.loans.search')}
+          aria-label={t('lending.loans.search')}
+        />
         <UbChoiceChips
           ariaLabel={t('lending.loans.show')}
           value={show}
@@ -186,7 +221,15 @@ export function LoansPageContent(): React.JSX.Element {
         />
         {body}
       </UbStack>
-      {canLend && <UbFab label={t('lending.today.newLoan')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => router.push(LENDING_ROUTES.newLoan)} />}
+      {canLend && (
+        <UbFab
+          label={t('lending.today.newLoan')}
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          mobileOnly
+          extended
+          onClick={() => router.push(LENDING_ROUTES.newLoan)}
+        />
+      )}
     </UbPageShell>
   );
 }

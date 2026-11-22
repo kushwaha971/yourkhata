@@ -12,10 +12,9 @@ from typing import Any
 
 from apps.common.permissions_registry import permissions_for
 from apps.platform_app import branding as branding_rules
+from apps.platform_app.selectors.business_words import business_block
 from apps.platform_app.selectors.memberships import live_sessions_of, memberships_of
 
-
-from apps.platform_app.selectors.business_words import business_block
 
 def user_block(user: Any, *, is_new: bool = False) -> dict:
     """PLT-01 FR-5. `has_password` exists so the client knows to offer "set one".
@@ -87,7 +86,9 @@ def tenant_rows(user: Any) -> list[dict]:
 def apps_per_business(user: Any) -> list[dict]:
     """`GET /memberships/apps` — for each business, the apps this person can open
     there: the Apps screen lists places under each app (owner, 12 Nov 2026)."""
-    return [{"tenant_id": str(m.tenant_id), "apps": _apps_here(m)} for m in memberships_of(user=user)]
+    return [
+        {"tenant_id": str(m.tenant_id), "apps": _apps_here(m)} for m in memberships_of(user=user)
+    ]
 
 
 def _apps_here(membership: Any) -> list[str]:
@@ -200,10 +201,9 @@ def build(
     """The whole envelope payload. `membership=None` → no active tenant."""
     from django.conf import settings
 
-    from apps.platform_app.services.entitlements import plan_limits_payload
-
     from apps.platform_app import apps_registry
     from apps.platform_app.selectors.landing import resolve_landing
+    from apps.platform_app.services.entitlements import plan_limits_payload
 
     tenants = tenant_rows(user)
     permissions = sorted(permissions_for(membership)) if membership is not None else []

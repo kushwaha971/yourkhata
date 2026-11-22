@@ -286,9 +286,13 @@ describe('the line table on a desktop (design §A4 dBill)', () => {
       expect(screen.queryByTestId('scan-help')).toBeNull();
       await userEvent.type(search, '8901234567890{Enter}');
       expect(await screen.findByText('Scanner connected · beep on')).toBeInTheDocument();
-      expect(within(screen.getByTestId('scan-help')).getByText('What the scanner does')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('scan-help')).getByText('What the scanner does')
+      ).toBeInTheDocument();
       await waitFor(() =>
-        expect(document.getElementById('lines.0.qty')?.closest('[data-scan-note="+1 scanned"]')).not.toBeNull()
+        expect(
+          document.getElementById('lines.0.qty')?.closest('[data-scan-note="+1 scanned"]')
+        ).not.toBeNull()
       );
     } finally {
       window.matchMedia = original;
@@ -915,7 +919,10 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     expect(screen.getByRole('combobox', { name: 'Search items to add' })).toHaveFocus();
     expect(document.getElementById('lines.1.qty')).toBeNull();
     // The next good scan clears it.
-    await userEvent.type(screen.getByRole('combobox', { name: 'Search items to add' }), '8901234567890{Enter}');
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search items to add' }),
+      '8901234567890{Enter}'
+    );
     await waitFor(() => expect(screen.queryByTestId('scan-not-found')).toBeNull());
   });
 

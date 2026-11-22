@@ -28,8 +28,7 @@ import { DeviceCard } from './DeviceCard';
 
 const RenameDeviceDialog = dynamic(
   () => import('./RenameDeviceDialog').then((module) => module.RenameDeviceDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

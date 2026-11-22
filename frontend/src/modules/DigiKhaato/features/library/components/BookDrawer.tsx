@@ -5,7 +5,16 @@ import { useId, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
-import { UbButton, UbDrawer, UbField, UbForm, UbScanButton, UbScanSheet, UbStack, UbTextInput } from 'src/design-system';
+import {
+  UbButton,
+  UbDrawer,
+  UbField,
+  UbForm,
+  UbScanButton,
+  UbScanSheet,
+  UbStack,
+  UbTextInput,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -28,7 +37,12 @@ export function BookDrawer({
   code,
   onClose,
   onSaved,
-}: Readonly<{ book: Book | null; code: string; onClose: () => void; onSaved: () => void }>): React.JSX.Element {
+}: Readonly<{
+  book: Book | null;
+  code: string;
+  onClose: () => void;
+  onSaved: () => void;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const formId = useId();
@@ -52,12 +66,21 @@ export function BookDrawer({
     try {
       await saveBook(values, book?.id ?? null, key);
       rotate();
-      dispatch(showSnackbar({ severity: 'success', id: 'library.books.saved', params: { title: values.title } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: 'library.books.saved',
+          params: { title: values.title },
+        })
+      );
       onSaved();
     } catch (e) {
       const err = toApiError(e, 'library.books.saveError');
       if (err.code === 'code_in_use') form.setError('code', { message: err.message ?? '' });
-      else dispatch(showSnackbar({ severity: 'error', message: err.message ?? t('library.books.saveError') }));
+      else
+        dispatch(
+          showSnackbar({ severity: 'error', message: err.message ?? t('library.books.saveError') })
+        );
     } finally {
       setSaving(false);
     }
@@ -70,26 +93,52 @@ export function BookDrawer({
       closeLabel={t('library.common.close')}
       keyboardAware
       footer={
-        <UbButton type="submit" form={formId} busy={saving} size="lg" data-testid="library-book-save">
+        <UbButton
+          type="submit"
+          form={formId}
+          busy={saving}
+          size="lg"
+          data-testid="library-book-save"
+        >
           {t('library.common.save')}
         </UbButton>
       }
     >
       <UbForm id={formId} form={form} onSubmit={save}>
         <UbField name="title" label={t('library.books.titleLabel')} required>
-          {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />}
+          {(field) => (
+            <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />
+          )}
         </UbField>
-        <UbField name="author" label={t('library.books.author')} optionalLabel={t('library.common.optional')}>
+        <UbField
+          name="author"
+          label={t('library.books.author')}
+          optionalLabel={t('library.common.optional')}
+        >
           {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" />}
         </UbField>
         <UbField name="copies" label={t('library.books.copies')} required>
           {(field) => <UbTextInput {...field} value={field.value as string} inputMode="numeric" />}
         </UbField>
-        <UbField name="code" label={t('library.books.code')} hint={t('library.books.codeHint')} optionalLabel={t('library.common.optional')}>
+        <UbField
+          name="code"
+          label={t('library.books.code')}
+          hint={t('library.books.codeHint')}
+          optionalLabel={t('library.common.optional')}
+        >
           {(field) => (
             <UbStack direction="row" gap={2}>
-              <UbTextInput {...field} value={field.value as string} autoComplete="off" className="flex-1" />
-              <UbScanButton label={t('library.books.scan.open')} onClick={() => setCamera(true)} data-testid="library-book-code-scan" />
+              <UbTextInput
+                {...field}
+                value={field.value as string}
+                autoComplete="off"
+                className="flex-1"
+              />
+              <UbScanButton
+                label={t('library.books.scan.open')}
+                onClick={() => setCamera(true)}
+                data-testid="library-book-code-scan"
+              />
             </UbStack>
           )}
         </UbField>

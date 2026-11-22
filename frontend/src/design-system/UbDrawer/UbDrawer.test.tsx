@@ -172,7 +172,11 @@ describe('design §A5: one spacing scale for drawers and sheets', () => {
       </>
     );
     const footer = screen.getByRole('button', { name: 'Pay later' }).parentElement as HTMLElement;
-    expect(footer).toHaveClass('[&>button]:min-w-0', '[&>button]:whitespace-normal', 'lg:[&>button]:whitespace-nowrap');
+    expect(footer).toHaveClass(
+      '[&>button]:min-w-0',
+      '[&>button]:whitespace-normal',
+      'lg:[&>button]:whitespace-nowrap'
+    );
   });
 
   /** Prevents a header that packs 24 px all round instead of the design's row (`.shead`). */

@@ -54,7 +54,10 @@ export function PartLevelRow({
         ariaLabel={name}
         disabled={disabled}
         className={part.levels.length === 2 ? 'max-w-[180px]' : undefined}
-        options={part.levels.map((level) => ({ value: level, label: t(`team.access.level.${level}`) }))}
+        options={part.levels.map((level) => ({
+          value: level,
+          label: t(`team.access.level.${level}`),
+        }))}
       />
     </UbStack>
   );

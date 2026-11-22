@@ -165,7 +165,9 @@ def test_a_held_draft_says_when_it_was_last_saved(owner: Any) -> None:
     times with nothing to tell them apart. A list row now carries
     `updated_at`, so each says when it was last touched."""
     url = reverse("v1:sales-invoice-list")
-    made = owner.post(url, {"client_draft_key": "held-1", "document_date": "2026-10-16"}, format="json")
+    made = owner.post(
+        url, {"client_draft_key": "held-1", "document_date": "2026-10-16"}, format="json"
+    )
     assert made.status_code == 201, made.data
     rows = owner.get(url, {"tab": "draft"}).json()["data"]
     row = next(r for r in rows if r["id"] == made.data["data"]["id"])

@@ -30,7 +30,11 @@ class SalesDocument(TenantModel):
     )
     #: G7 — the contractor's site this bill is for.
     site = models.ForeignKey(
-        "sales.ContractorSite", on_delete=models.RESTRICT, null=True, blank=True, related_name="documents"
+        "sales.ContractorSite",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="documents",
     )
     party = models.ForeignKey(
         "parties.Party",
@@ -340,7 +344,9 @@ class CustomOrder(TenantModel):
 
     number = models.CharField(max_length=16)
     client_key = models.UUIDField()
-    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="custom_orders")
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, related_name="custom_orders"
+    )
     what = models.CharField(max_length=200)
     approx_weight_g = QuantityField(null=True, blank=True)
     purity = models.CharField(max_length=12)
@@ -351,7 +357,9 @@ class CustomOrder(TenantModel):
     fixed_rate = MoneyField(null=True, blank=True)
     status = models.CharField(max_length=12, default=OPEN)
     #: Who will make it, chosen on the form; gold issued says who holds gold.
-    karigar = models.ForeignKey("sales.Karigar", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
+    karigar = models.ForeignKey(
+        "sales.Karigar", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders"
+    )
     #: G3's design photo (a `files_attachment`).
     photo_id = models.UUIDField(null=True, blank=True)
     #: The bill that delivered this order, once there is one.
@@ -364,7 +372,9 @@ class CustomOrder(TenantModel):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_custom_order_number"),
-            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_custom_order_client_key"),
+            models.UniqueConstraint(
+                fields=["tenant", "client_key"], name="uq_custom_order_client_key"
+            ),
         ]
 
 
@@ -393,7 +403,9 @@ class KarigarLot(TenantModel):
     """
 
     karigar = models.ForeignKey(Karigar, on_delete=models.RESTRICT, related_name="lots")
-    order = models.ForeignKey(CustomOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name="lots")
+    order = models.ForeignKey(
+        CustomOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name="lots"
+    )
     client_key = models.UUIDField()
     purity = models.CharField(max_length=12)
     issued_g = QuantityField()
@@ -412,7 +424,11 @@ class KarigarLot(TenantModel):
         verbose_name = "karigar lot"
         verbose_name_plural = "karigar lots"
         ordering = ["issued_on", "created_at"]
-        constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "client_key"], name="uq_karigar_lot_client_key"
+            )
+        ]
 
 
 class Scheme(TenantModel):
@@ -501,7 +517,11 @@ class RepairJob(TenantModel):
     number = models.CharField(max_length=16)
     client_key = models.UUIDField()
     party = models.ForeignKey(
-        "parties.Party", on_delete=models.RESTRICT, null=True, blank=True, related_name="repair_jobs"
+        "parties.Party",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="repair_jobs",
     )
     walk_in_name = models.CharField(max_length=120, blank=True, default="")
     walk_in_mobile = models.CharField(max_length=16, blank=True, default="")
@@ -527,7 +547,9 @@ class RepairJob(TenantModel):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_repair_job_number"),
-            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_repair_job_client_key"),
+            models.UniqueConstraint(
+                fields=["tenant", "client_key"], name="uq_repair_job_client_key"
+            ),
         ]
 
 
@@ -557,7 +579,11 @@ class CafeOrder(TenantModel):
     #: "12" for Token 12 (counted from 1 each day), the table's name, or ADV-0001.
     number = models.CharField(max_length=16)
     party = models.ForeignKey(
-        "parties.Party", on_delete=models.RESTRICT, null=True, blank=True, related_name="cafe_orders"
+        "parties.Party",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="cafe_orders",
     )
     #: [{item_id, name, qty, rate, note}] — what was asked for, priced when taken.
     lines = models.JSONField(default=list, blank=True)
@@ -578,7 +604,9 @@ class CafeOrder(TenantModel):
         verbose_name_plural = "cafe orders"
         ordering = ["created_at"]
         constraints = [
-            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_cafe_order_client_key"),
+            models.UniqueConstraint(
+                fields=["tenant", "client_key"], name="uq_cafe_order_client_key"
+            ),
         ]
 
 
@@ -599,7 +627,9 @@ class PhoneOrder(TenantModel):
 
     number = models.CharField(max_length=16)
     client_key = models.UUIDField()
-    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="phone_orders")
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, related_name="phone_orders"
+    )
     #: [{item_id, name, qty, rate, unit}] — what to pack, priced when taken.
     lines = models.JSONField(default=list, blank=True)
     #: The list as the customer wrote it, kept so nothing they asked for is lost.
@@ -621,5 +651,7 @@ class PhoneOrder(TenantModel):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_phone_order_number"),
-            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_phone_order_client_key"),
+            models.UniqueConstraint(
+                fields=["tenant", "client_key"], name="uq_phone_order_client_key"
+            ),
         ]

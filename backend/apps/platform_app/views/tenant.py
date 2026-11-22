@@ -36,24 +36,23 @@ from apps.platform_app.selectors.memberships import (
 from apps.platform_app.serializers.auth import AcceptInvitationSerializer
 from apps.platform_app.serializers.tenant import (
     ANY_STATUS,
+    MEMBER_LIST_STATUSES,
     InvitationCreateSerializer,
     InvitationListQuerySerializer,
     InvitationReadSerializer,
-    MEMBER_LIST_STATUSES,
     MemberCreateSerializer,
     MemberReadSerializer,
-    MemberUpdateSerializer,
     MembershipPatchSerializer,
     MembershipReadSerializer,
+    MemberUpdateSerializer,
     TenantCreateSerializer,
     TenantReadSerializer,
     TenantUpdateSerializer,
     tenant_read_payload,
 )
-from apps.platform_app.services import credentials as credentials_service
-from apps.platform_app.services import entitlements
-from apps.platform_app.services import member_admin
 from apps.platform_app.services import access_groups as access_service
+from apps.platform_app.services import credentials as credentials_service
+from apps.platform_app.services import entitlements, member_admin
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import onboarding as onboarding_service
 from apps.platform_app.services import sessions as session_service
@@ -635,7 +634,11 @@ class MemberListCreateView(APIView):
                 # The same shape as a new member's answer, so the dialog that
                 # follows needs no second path: no password, `added_to_app` set.
                 issued = credentials_service.IssuedCredentials(
-                    user=member.user, membership=member, password="", expires_at=None, created_user=False
+                    user=member.user,
+                    membership=member,
+                    password="",
+                    expires_at=None,
+                    created_user=False,
                 )
                 return StandardResponse.ok({**_credentials_payload(issued), "added_to_app": app})
         with transaction.atomic():
@@ -852,12 +855,16 @@ class AccessGroupListView(APIView):
 
     def get(self, request: Any) -> Any:
         tenant = _tenant_or_refuse(request)
-        return StandardResponse.ok(access_service.groups_payload(tenant, request.query_params.get("app")))
+        return StandardResponse.ok(
+            access_service.groups_payload(tenant, request.query_params.get("app"))
+        )
 
     def post(self, request: Any) -> Any:
         tenant = _tenant_or_refuse(request)
         return StandardResponse.created(
-            access_service.create_group(tenant=tenant, data=request.data, ctx=Ctx.from_request(request))
+            access_service.create_group(
+                tenant=tenant, data=request.data, ctx=Ctx.from_request(request)
+            )
         )
 
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 from django.db import migrations, models
 
 
-def forwards(apps, schema_editor):  # noqa: ANN001, ANN201
+def forwards(apps, schema_editor):  # noqa: ANN001, ANN201 — reason: the signature Django gives a migration function
     Tenant = apps.get_model("platform", "Tenant")
     Expense = apps.get_model("expenses", "Expense")
     for tenant in Tenant.objects.exclude(enabled_modules__contains=["sales"]):

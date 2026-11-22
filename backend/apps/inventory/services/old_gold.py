@@ -30,16 +30,22 @@ def price(*, tenant: Any, raw: Any, errors: dict, path: str = "old_gold") -> dic
         errors[path] = ["Enter the old gold's weight and purity."]
         return None
     local: dict[str, list[str]] = {}
-    weight = _dec(raw.get("weight_g"), "weight_g", local, required=True, places=3, minimum=Decimal("0.001"))
+    weight = _dec(
+        raw.get("weight_g"), "weight_g", local, required=True, places=3, minimum=Decimal("0.001")
+    )
     purity = raw.get("purity")
     if purity not in PURITIES:
         local["purity"] = ["Choose the tested purity."]
-    less = _dec(raw.get("less_pct"), "less_pct", local, required=False, places=2, minimum=Decimal("0")) or Decimal("0")
+    less = _dec(
+        raw.get("less_pct"), "less_pct", local, required=False, places=2, minimum=Decimal("0")
+    ) or Decimal("0")
     if less > 100 and "less_pct" not in local:
         local["less_pct"] = ["The deduction is a percentage up to 100."]
     rate = None
     if raw.get("rate") not in (None, ""):
-        rate = _dec(raw.get("rate"), "rate", local, required=False, places=2, minimum=Decimal("0.01"))
+        rate = _dec(
+            raw.get("rate"), "rate", local, required=False, places=2, minimum=Decimal("0.01")
+        )
     elif purity in PURITIES:
         rate = rate_today(tenant=tenant, purity=purity)
         if rate is None:
@@ -96,7 +102,11 @@ def take_in(*, ctx: Any, document: Any) -> dict | None:
             "context": "old_gold",
             "meta": {"document_id": str(document.id), "document_number": document.number},
             "allocations": [
-                {"document_type": "sales_document", "document_id": str(document.id), "amount": str(min(value, document.grand_total))}
+                {
+                    "document_type": "sales_document",
+                    "document_id": str(document.id),
+                    "amount": str(min(value, document.grand_total)),
+                }
             ],
         },
         walk_in_document_id=document.id if walk_in else None,
@@ -139,7 +149,11 @@ def stock(*, tenant: Any) -> list[dict]:
 
     from apps.inventory.models import OldGold
 
-    rows = OldGold.objects.filter(tenant=tenant).values("purity").annotate(grams=Sum("weight_g"), worth=Sum("value"))
+    rows = (
+        OldGold.objects.filter(tenant=tenant)
+        .values("purity")
+        .annotate(grams=Sum("weight_g"), worth=Sum("value"))
+    )
     return [
         {"purity": r["purity"], "weight_g": f"{r['grams']:.3f}", "value": f"{r['worth']:.2f}"}
         for r in rows.order_by("purity")

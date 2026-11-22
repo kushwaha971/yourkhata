@@ -82,7 +82,8 @@ export const fetchReminderHistory = createAsyncThunk<
 });
 
 /** QUERY. LED-06 FR-6 — the khata's history strip. */
-export type PartyReminderQuery = string | { readonly partyId: string; readonly book: 'main' | 'shop' };
+export type PartyReminderQuery =
+  string | { readonly partyId: string; readonly book: 'main' | 'shop' };
 /** Context is part of the cache identity; the same person has independent books. */
 export const partyReminderKey = (arg: PartyReminderQuery): string =>
   typeof arg === 'string' ? arg : `${arg.book}:${arg.partyId}`;

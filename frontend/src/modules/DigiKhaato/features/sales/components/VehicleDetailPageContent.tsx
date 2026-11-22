@@ -28,7 +28,9 @@ import { formatInr } from 'src/utils/money';
 import { getVehicle, type VehicleDetail } from '../api/vehicleService';
 
 /** G8 — one vehicle (design dVehicle): its bills, what it spent, its mechanic's dues. */
-export function VehicleDetailPageContent({ number }: Readonly<{ number: string }>): React.JSX.Element {
+export function VehicleDetailPageContent({
+  number,
+}: Readonly<{ number: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const { can } = usePermissions();
   const isPhone = useIsMobileLayer();
@@ -54,7 +56,9 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
     const text = search.trim().toLowerCase();
     const rows = vehicle?.bill_rows ?? [];
     return text
-      ? rows.filter((b) => `${b.number} ${b.parts} ${b.mechanic ?? ''}`.toLowerCase().includes(text))
+      ? rows.filter((b) =>
+          `${b.number} ${b.parts} ${b.mechanic ?? ''}`.toLowerCase().includes(text)
+        )
       : rows;
   }, [vehicle, search]);
 
@@ -88,10 +92,20 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
     params.set('party', vehicle.owner_id);
     params.set('partyName', vehicle.owner);
   }
-  const partsHref = vehicle.model ? `${ROUTES.SALES_PARTS_FIT}?fits=${encodeURIComponent(vehicle.model)}` : ROUTES.SALES_PARTS_FIT;
+  const partsHref = vehicle.model
+    ? `${ROUTES.SALES_PARTS_FIT}?fits=${encodeURIComponent(vehicle.model)}`
+    : ROUTES.SALES_PARTS_FIT;
   const tiles = [
-    { label: t('sales.vehicle.bills'), value: String(vehicle.bills), note: t('sales.vehicle.since', { date: formatBusinessDate(vehicle.since) }) },
-    { label: t('sales.vehicle.spent'), value: formatInr(vehicle.spent), note: t('sales.vehicle.spentNote') },
+    {
+      label: t('sales.vehicle.bills'),
+      value: String(vehicle.bills),
+      note: t('sales.vehicle.since', { date: formatBusinessDate(vehicle.since) }),
+    },
+    {
+      label: t('sales.vehicle.spent'),
+      value: formatInr(vehicle.spent),
+      note: t('sales.vehicle.spentNote'),
+    },
     // Design dVehicle: "Last oil change · 12 Aug · Castrol 20W-40 1 L", from its own bills.
     {
       label: t('sales.vehicle.lastOil'),
@@ -99,41 +113,58 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
       note: vehicle.last_oil?.item ?? t('sales.vehicle.noOil'),
     },
     ...(vehicle.garage
-      ? [{ label: t('sales.vehicle.mechanicDues'), value: formatInr(vehicle.garage.due), note: vehicle.garage.name, tone: 'get' as const }]
+      ? [
+          {
+            label: t('sales.vehicle.mechanicDues'),
+            value: formatInr(vehicle.garage.due),
+            note: vehicle.garage.name,
+            tone: 'get' as const,
+          },
+        ]
       : []),
   ];
 
   const actions = isPhone ? (
     <UbBox className="grid grid-cols-2 gap-2">
-          <UbActionLink href={partsHref} variant="outlineNeutral" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
-            {t('sales.vehicle.partsFit')}
-          </UbActionLink>
-          {can('sales.invoice.write') && (
-            <UbActionLink
-              href={`${ROUTES.SALES_INVOICES}/new?${params.toString()}`}
-              variant="primary"
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              data-testid="vehicle-new-bill"
-            >
-              {t('sales.vehicle.newBill')}
-            </UbActionLink>
-          )}
+      <UbActionLink
+        href={partsHref}
+        variant="outlineNeutral"
+        icon={<Wrench className="h-4 w-4" aria-hidden />}
+        data-testid="vehicle-parts"
+      >
+        {t('sales.vehicle.partsFit')}
+      </UbActionLink>
+      {can('sales.invoice.write') && (
+        <UbActionLink
+          href={`${ROUTES.SALES_INVOICES}/new?${params.toString()}`}
+          variant="primary"
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          data-testid="vehicle-new-bill"
+        >
+          {t('sales.vehicle.newBill')}
+        </UbActionLink>
+      )}
     </UbBox>
   ) : (
     <UbStack direction="row" gap={2}>
-          <UbActionLink href={partsHref} variant="outlineNeutral" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
-            {t('sales.vehicle.partsFit')}
-          </UbActionLink>
-          {can('sales.invoice.write') && (
-            <UbActionLink
-              href={`${ROUTES.SALES_INVOICES}/new?${params.toString()}`}
-              variant="primary"
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              data-testid="vehicle-new-bill"
-            >
-              {t('sales.vehicle.newBill')}
-            </UbActionLink>
-          )}
+      <UbActionLink
+        href={partsHref}
+        variant="outlineNeutral"
+        icon={<Wrench className="h-4 w-4" aria-hidden />}
+        data-testid="vehicle-parts"
+      >
+        {t('sales.vehicle.partsFit')}
+      </UbActionLink>
+      {can('sales.invoice.write') && (
+        <UbActionLink
+          href={`${ROUTES.SALES_INVOICES}/new?${params.toString()}`}
+          variant="primary"
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          data-testid="vehicle-new-bill"
+        >
+          {t('sales.vehicle.newBill')}
+        </UbActionLink>
+      )}
     </UbStack>
   );
 
@@ -173,19 +204,38 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
             </UbStack>
           ))}
         </UbBox>
-        <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.vehicle.searchBills')} aria-label={t('sales.vehicle.searchBills')} />
+        <UbSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('sales.vehicle.searchBills')}
+          aria-label={t('sales.vehicle.searchBills')}
+        />
         {isPhone ? (
           <UbCard>
             <UbStack gap={3} data-testid="vehicle-bills">
               {shown.map((bill) => (
-                <UbActionLink key={bill.id} href={`${ROUTES.SALES_INVOICES}/${bill.id}`} variant="ghost" className="h-auto w-full py-1 text-left [&>*]:w-full" data-testid="vehicle-bill">
+                <UbActionLink
+                  key={bill.id}
+                  href={`${ROUTES.SALES_INVOICES}/${bill.id}`}
+                  variant="ghost"
+                  className="h-auto w-full py-1 text-left [&>*]:w-full"
+                  data-testid="vehicle-bill"
+                >
                   <UbStack direction="row" gap={2} className="w-full items-center justify-between">
                     <UbStack gap={0} className="min-w-0">
-                      <UbText variant="body-sm" className="font-semibold">{bill.number} · {formatBusinessDate(bill.date)}</UbText>
-                      <UbText variant="caption" tone="secondary" className="line-clamp-2">{bill.parts}</UbText>
-                      <UbText variant="caption" tone="secondary">{bill.mechanic ?? t('sales.vehicle.self')}</UbText>
+                      <UbText variant="body-sm" className="font-semibold">
+                        {bill.number} · {formatBusinessDate(bill.date)}
+                      </UbText>
+                      <UbText variant="caption" tone="secondary" className="line-clamp-2">
+                        {bill.parts}
+                      </UbText>
+                      <UbText variant="caption" tone="secondary">
+                        {bill.mechanic ?? t('sales.vehicle.self')}
+                      </UbText>
                     </UbStack>
-                    <UbText variant="body-sm" className="shrink-0 font-semibold">{formatInr(bill.total)}</UbText>
+                    <UbText variant="body-sm" className="shrink-0 font-semibold">
+                      {formatInr(bill.total)}
+                    </UbText>
                   </UbStack>
                 </UbActionLink>
               ))}
@@ -206,7 +256,9 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
               'data-testid': 'vehicle-bill',
               cells: [
                 formatBusinessDate(bill.date),
-                <UbLink key="bill" href={`${ROUTES.SALES_INVOICES}/${bill.id}`}>{bill.number}</UbLink>,
+                <UbLink key="bill" href={`${ROUTES.SALES_INVOICES}/${bill.id}`}>
+                  {bill.number}
+                </UbLink>,
                 bill.parts,
                 bill.mechanic ?? t('sales.vehicle.self'),
                 formatInr(bill.total),

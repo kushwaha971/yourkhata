@@ -192,7 +192,9 @@ class DeleteCodeView(APIView):
     def post(self, request: Any) -> Any:
         _owner_tenant(request)
         issued = delete_service.send_delete_code(
-            user=request.user, ip=request.META.get("REMOTE_ADDR"), request_id=getattr(request, "request_id", None)
+            user=request.user,
+            ip=request.META.get("REMOTE_ADDR"),
+            request_id=getattr(request, "request_id", None),
         )
         return StandardResponse.ok(
             {

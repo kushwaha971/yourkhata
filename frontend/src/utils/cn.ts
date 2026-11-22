@@ -17,7 +17,9 @@ import {
  * Add a name here in the same change that adds it to the tailwind config.
  */
 const semanticFontSize = (value: string): boolean =>
-  /^(?:display|h[12]|title|amount(?:-lg)?|body(?:-sm)?|option|caption|button(?:-sm|-lg)?)$/.test(value);
+  /^(?:display|h[12]|title|amount(?:-lg)?|body(?:-sm)?|option|caption|button(?:-sm|-lg)?)$/.test(
+    value
+  );
 
 const CUSTOM_RADII = ['xs', 'pill', 'card', 'control'] as const;
 

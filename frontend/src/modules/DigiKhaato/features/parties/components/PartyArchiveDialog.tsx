@@ -199,10 +199,12 @@ function PartyArchiveDialogBase({
           /* Nothing to do here but close: the next step is in the module that
              holds the records, and the sentence above names it. */
           <>
-          <UbButton variant="secondary" onClick={onClose} autoFocus>
-            {t('common.action.close')}
-          </UbButton>
-          {shop && openRecords?.module === 'sales' && onRecordPayment && <UbButton onClick={onRecordPayment}>{t('parties.person.openPayment')}</UbButton>}
+            <UbButton variant="secondary" onClick={onClose} autoFocus>
+              {t('common.action.close')}
+            </UbButton>
+            {shop && openRecords?.module === 'sales' && onRecordPayment && (
+              <UbButton onClick={onRecordPayment}>{t('parties.person.openPayment')}</UbButton>
+            )}
           </>
         ) : isWriteOff ? (
           <>
@@ -298,7 +300,9 @@ function PartyArchiveDialogBase({
                   : 'parties.list.balance.payable'
               )}
             />
-            <UbText variant="body-sm">{t(shop ? 'parties.person.archiveOtherBook' : 'parties.archive.blocked.body')}</UbText>
+            <UbText variant="body-sm">
+              {t(shop ? 'parties.person.archiveOtherBook' : 'parties.archive.blocked.body')}
+            </UbText>
             <UbText variant="caption" tone="tertiary">
               {t(
                 blocked.loanOpen

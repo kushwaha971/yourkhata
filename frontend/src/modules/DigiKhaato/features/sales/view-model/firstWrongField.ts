@@ -1,7 +1,6 @@
 import type { InvoiceFormValues } from './invoiceForm';
 import type { FieldErrors } from 'react-hook-form';
 
-
 /**
  * Design §A4: "If a field is wrong, the message names it and scrolls to it."
  * The first wrong field in the order a merchant fills the bill: who it is for,

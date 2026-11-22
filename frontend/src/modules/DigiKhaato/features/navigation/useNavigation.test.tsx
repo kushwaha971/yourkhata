@@ -138,8 +138,19 @@ describe('one menu per app', () => {
     const sales = nav.sections.find((s) => s.key === 'sales')?.items.map((i) => i.key);
     // Part G's kind-only screens (feature-gated; this session names no features, so all show).
     expect(sales).toEqual([
-      'invoices', 'openOrders', 'phoneOrders', 'customOrders', 'repairs', 'oldGold', 'sites', 'vehicles', 'schemes',
-      'estimates', 'salesOrders', 'challans', 'creditNotes',
+      'invoices',
+      'openOrders',
+      'phoneOrders',
+      'customOrders',
+      'repairs',
+      'oldGold',
+      'sites',
+      'vehicles',
+      'schemes',
+      'estimates',
+      'salesOrders',
+      'challans',
+      'creditNotes',
     ]);
     expect(nav.shell.partySearch).toBe(true);
   });
@@ -149,22 +160,46 @@ describe('one menu per app', () => {
     expect(listed().shell.partySearch).toBeUndefined();
   });
 
-  it.each(['/khata', '/library/members', '/lending/loans'])('keeps global search out of %s while its page search stays local', (path) => {
-    /** Owner: Udhaar, Library and Lending use their own screen search, not the shell search. */
-    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/khata',order:95}], activeApp:path.startsWith('/khata')?'khata':path.startsWith('/library')?'library':'lending' });
-    mockPath = path;
-    expect(listed().shell.partySearch).not.toBe(true);
-    expect(listed().shell.commandSearch).not.toBe(true);
-  });
+  it.each(['/khata', '/library/members', '/lending/loans'])(
+    'keeps global search out of %s while its page search stays local',
+    (path) => {
+      /** Owner: Udhaar, Library and Lending use their own screen search, not the shell search. */
+      load({
+        apps: [
+          ...SERVER_APPS,
+          { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/khata', order: 95 },
+        ],
+        activeApp: path.startsWith('/khata')
+          ? 'khata'
+          : path.startsWith('/library')
+            ? 'library'
+            : 'lending',
+      });
+      mockPath = path;
+      expect(listed().shell.partySearch).not.toBe(true);
+      expect(listed().shell.commandSearch).not.toBe(true);
+    }
+  );
 
   it('the Money Book shows its own menu and nothing of the Shop', () => {
     /* Rebuilt 11 Nov 2026 to the design (Part I): People · Reminders · Report ·
        Old dues, and no Shop row — the owner: "no relation with shop". */
-    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/money-book',order:95}], activeApp:'khata' });
+    load({
+      apps: [
+        ...SERVER_APPS,
+        { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 },
+      ],
+      activeApp: 'khata',
+    });
     mockPath = '/money-book';
     const nav = listed();
     expect(nav.app).toBe('khata');
-    expect(keysOf(nav).slice(0, 4)).toEqual(['moneybookPeople', 'moneybookReminders', 'moneybookReport', 'moneybookOldDues']);
+    expect(keysOf(nav).slice(0, 4)).toEqual([
+      'moneybookPeople',
+      'moneybookReminders',
+      'moneybookReport',
+      'moneybookOldDues',
+    ]);
     expect(keysOf(nav)).not.toContain('aging');
     expect(keysOf(nav)).not.toContain('customers');
   });
@@ -186,7 +221,13 @@ describe('one menu per app', () => {
     // Money Book, the person's own, is listed after the server's apps (owner, 18 Nov 2026).
     expect(nav.apps.map((a) => a.code)).toEqual(['lending', 'khata']);
     // A reader sees the book; Lending settings needs `lending.settings.manage`.
-    expect(keysOf(nav)).toEqual(['lendingToday', 'lendingLoans', 'lendingBorrowers', 'lendingRoutes', 'lendingMessages']);
+    expect(keysOf(nav)).toEqual([
+      'lendingToday',
+      'lendingLoans',
+      'lendingBorrowers',
+      'lendingRoutes',
+      'lendingMessages',
+    ]);
   });
 });
 
@@ -286,7 +327,6 @@ describe('a body without apps (an old fixture)', () => {
   });
 });
 
-
 describe('B2 — rows follow the business (design E2 #6)', () => {
   /** Prevents: a kirana, medical store or jeweller seeing Sales orders,
    * Delivery challans and Purchase orders it never uses; or an older server
@@ -304,8 +344,12 @@ describe('B2 — rows follow the business (design E2 #6)', () => {
   it('shows them to a business that has it, and to an older server', () => {
     mockPath = '/dashboard';
     load({ activeApp: 'shop', features: ['orders'] });
-    expect(keysOf(listed())).toEqual(expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders']));
+    expect(keysOf(listed())).toEqual(
+      expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders'])
+    );
     load({ activeApp: 'shop', features: null });
-    expect(keysOf(listed())).toEqual(expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders']));
+    expect(keysOf(listed())).toEqual(
+      expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders'])
+    );
   });
 });

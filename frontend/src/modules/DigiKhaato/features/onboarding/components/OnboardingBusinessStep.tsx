@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
-
 import {
   UbCombobox,
   UbDivider,
@@ -255,7 +254,12 @@ export function OnboardingBusinessStep({
             <UbText as="p" variant="caption" tone="tertiary" className="text-[12.5px] md:hidden">
               {t('onboarding.pick.oneKindPhone')}
             </UbText>
-            <UbText as="p" variant="caption" tone="tertiary" className="hidden text-[12.5px] md:block">
+            <UbText
+              as="p"
+              variant="caption"
+              tone="tertiary"
+              className="hidden text-[12.5px] md:block"
+            >
               {t('onboarding.pick.oneKindDesktop')}
             </UbText>
           </>
@@ -265,7 +269,11 @@ export function OnboardingBusinessStep({
             no new screen (owner, 30 Oct). Picking a kind starts the switches
             from that kind; the owner can change any of them. */}
         {runsShop && !sellsWholesale && isOtherFamily && (
-          <OtherKindSection features={features} onFeatures={setFeatures} featuresFor={featuresFor} />
+          <OtherKindSection
+            features={features}
+            onFeatures={setFeatures}
+            featuresFor={featuresFor}
+          />
         )}
         {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
             features are that kind's and wholesale's together. */}

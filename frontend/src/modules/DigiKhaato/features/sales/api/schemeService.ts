@@ -36,9 +36,13 @@ export interface NewScheme {
 }
 
 export const listSchemes = async (q: string, signal?: AbortSignal): Promise<SchemeList> =>
-  (await api.get<{ data: SchemeList }>('/sales/schemes', ubConfig({ signal, params: { q } }))).data.data;
+  (await api.get<{ data: SchemeList }>('/sales/schemes', ubConfig({ signal, params: { q } }))).data
+    .data;
 
-export const runningSchemes = async (on: string, signal?: AbortSignal): Promise<readonly SchemeRow[]> =>
+export const runningSchemes = async (
+  on: string,
+  signal?: AbortSignal
+): Promise<readonly SchemeRow[]> =>
   (
     await api.get<{ data: SchemeRow[] }>(
       '/sales/schemes/running',
@@ -47,7 +51,13 @@ export const runningSchemes = async (on: string, signal?: AbortSignal): Promise<
   ).data.data;
 
 export const createScheme = async (body: NewScheme): Promise<SchemeRow> =>
-  (await api.post<{ data: SchemeRow }>('/sales/schemes', body, ubConfig({ suppressErrorSnackbar: true }))).data.data;
+  (
+    await api.post<{ data: SchemeRow }>(
+      '/sales/schemes',
+      body,
+      ubConfig({ suppressErrorSnackbar: true })
+    )
+  ).data.data;
 
 export const setSchemeActive = async (id: string, active: boolean): Promise<SchemeRow> =>
   (await api.patch<{ data: SchemeRow }>(`/sales/schemes/${id}`, { active })).data.data;

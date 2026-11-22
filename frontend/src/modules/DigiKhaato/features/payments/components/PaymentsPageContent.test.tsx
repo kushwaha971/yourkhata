@@ -124,9 +124,7 @@ it("asks for the Shop's own payments, never another app's", async () => {
 });
 
 it('says a cancelled payment is Cancelled, in words, on its card', async () => {
-  service.listPayments.mockImplementation(async () =>
-    page([{ ...ANITA, status: 'void' }])
-  );
+  service.listPayments.mockImplementation(async () => page([{ ...ANITA, status: 'void' }]));
   renderWithProviders(<PaymentsPageContent />);
   const card = (await screen.findAllByTestId('ub-grid-card'))[0];
   expect(within(card as HTMLElement).getByText(/Cancelled/)).toBeInTheDocument();

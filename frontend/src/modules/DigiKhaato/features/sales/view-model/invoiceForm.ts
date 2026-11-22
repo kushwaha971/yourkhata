@@ -301,23 +301,25 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   // G9 — a scheme's free line and discount are the server's, made again on
   // every save; the form holds only what the merchant typed.
   lines: doc.lines.some((line) => !(line.schemeCode && Number(line.unitPrice) === 0))
-    ? doc.lines.filter((line) => !(line.schemeCode && Number(line.unitPrice) === 0)).map((line) => ({
-        itemId: line.itemId,
-        description: line.description,
-        hsnSac: line.hsnSac ?? '',
-        qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
-        unitCode: line.unitCode,
-        serials: [...(line.serials ?? [])],
-        tracksSerial: line.tracksSerial === true,
-        addons: [...(line.addons ?? [])],
-        jewel: line.jewel ?? null,
-        allowDecimal: unitAllowsDecimal(line.unitCode),
-        unitPrice: line.unitPrice,
-        taxInclusive: line.taxInclusive,
-        discountType: line.schemeCode ? '' : (line.discountType ?? ''),
-        discountValue: line.schemeCode ? '' : (line.discountValue ?? ''),
-        taxCode: line.taxCode,
-      }))
+    ? doc.lines
+        .filter((line) => !(line.schemeCode && Number(line.unitPrice) === 0))
+        .map((line) => ({
+          itemId: line.itemId,
+          description: line.description,
+          hsnSac: line.hsnSac ?? '',
+          qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
+          unitCode: line.unitCode,
+          serials: [...(line.serials ?? [])],
+          tracksSerial: line.tracksSerial === true,
+          addons: [...(line.addons ?? [])],
+          jewel: line.jewel ?? null,
+          allowDecimal: unitAllowsDecimal(line.unitCode),
+          unitPrice: line.unitPrice,
+          taxInclusive: line.taxInclusive,
+          discountType: line.schemeCode ? '' : (line.discountType ?? ''),
+          discountValue: line.schemeCode ? '' : (line.discountValue ?? ''),
+          taxCode: line.taxCode,
+        }))
     : [emptyLine()],
   challanType: doc.links.challan?.type ?? 'other',
   transporter: doc.links.challan?.transporter ?? '',

@@ -37,7 +37,7 @@ export function FeedbackButton({
         // Vertical text, read bottom to top, without rotating the box: a 44 px
         // wide target whose height follows the words in any language. rotate-180
         // puts the rounded side (`rounded-r` before the turn) facing the page.
-        'fixed right-0 top-1/2 z-40 h-auto min-h-0 w-11 -translate-y-1/2 rounded-l-none rounded-r-[10px] px-0 py-4 [writing-mode:vertical-rl] rotate-180',
+        'fixed right-0 top-1/2 z-40 h-auto min-h-0 w-11 -translate-y-1/2 rotate-180 rounded-l-none rounded-r-[10px] px-0 py-4 [writing-mode:vertical-rl]',
         'bg-action text-text-inverse shadow-[0_8px_30px_-12px_rgb(10_9_11/0.35)] hover:brightness-95'
       )}
     >

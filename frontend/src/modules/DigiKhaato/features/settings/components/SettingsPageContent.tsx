@@ -22,7 +22,11 @@ import {
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveRole, selectActiveTenant, selectSessionUser } from 'src/redux/slice/sessionSlice';
+import {
+  selectActiveRole,
+  selectActiveTenant,
+  selectSessionUser,
+} from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
@@ -141,7 +145,13 @@ export function SettingsPageContent(): React.JSX.Element {
               {user?.name}
             </UbText>
             <UbText as="span" variant="caption" tone="tertiary" className="break-words">
-              {[user?.mobile ? formatPhoneForDisplay(user.mobile) : null, role ? t(`tenant.role.${role}`) : null, tenantName].filter(Boolean).join(' · ')}
+              {[
+                user?.mobile ? formatPhoneForDisplay(user.mobile) : null,
+                role ? t(`tenant.role.${role}`) : null,
+                tenantName,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </UbText>
           </UbStack>
           <UbText as="span" variant="body-medium" tone="primary" className="shrink-0">
@@ -152,14 +162,23 @@ export function SettingsPageContent(): React.JSX.Element {
         {groups
           .filter((group) => group.key !== 'you')
           .map((group) => (
-            <UbStack as="section" gap={2} key={group.key} aria-label={t(`settings.group.${group.key}`)}>
+            <UbStack
+              as="section"
+              gap={2}
+              key={group.key}
+              aria-label={t(`settings.group.${group.key}`)}
+            >
               <UbText as="h2" variant="label-caps" tone="secondary" className="px-1">
                 {t(`settings.group.${group.key}`)}
               </UbText>
               <UbPanel>
                 <UbStack as="ul" gap={0}>
                   {group.links.map((link) => (
-                    <UbBox as="li" key={link.key} className="border-b border-border-subtle last:border-0">
+                    <UbBox
+                      as="li"
+                      key={link.key}
+                      className="border-b border-border-subtle last:border-0"
+                    >
                       <UbLink
                         href={link.href}
                         variant="inherit"

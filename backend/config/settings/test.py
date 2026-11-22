@@ -7,7 +7,7 @@ marked `@pytest.mark.postgres`.
 
 from __future__ import annotations
 
-from .base import *  # noqa: F403
+from .base import *
 
 DEBUG = False
 ENV_NAME = "test"
@@ -17,21 +17,21 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 UB_JOBS_EAGER = True
 
-import tempfile  # noqa: E402
+import tempfile
 
 MEDIA_ROOT = tempfile.mkdtemp(prefix="ub-test-media-")
 
-DATABASES["default"]["ATOMIC_REQUESTS"] = False  # noqa: F405
+DATABASES["default"]["ATOMIC_REQUESTS"] = False
 # `lock_timeout` must stay short so the concurrency tests fail fast rather than hang.
 # JIT stays off here as everywhere else (tests/performance/test_no_jit.py).
-DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000 -c jit=off"}  # noqa: F405
+DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000 -c jit=off"}
 
-LOGGING = build_logging_config(level="CRITICAL", fmt="console")  # noqa: F405
+LOGGING = build_logging_config(level="CRITICAL", fmt="console")
 
 # Parallel worktrees each run pytest against their own throwaway database, so
 # two tracks testing at once never drop each other's test_<db> mid-run.
-DATABASES["default"]["TEST"] = {  # noqa: F405
-    "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")  # noqa: F405
+DATABASES["default"]["TEST"] = {
+    "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")
 }
 
 # Never a real message from the suite. `base` reads backend/.env, where the

@@ -126,9 +126,9 @@ def test_sum_money_is_exact_addition() -> None:
 # 3,333.33 × 3 = 9,999.99, and a merchant chases a customer for a paisa the
 # customer never owed, or writes it off by hand on every plan.
 
-import random  # noqa: E402
+import random  # noqa: E402 — reason: imports for the tests below this point
 
-from apps.common.money import round_amount, split_total  # noqa: E402
+from apps.common.money import round_amount, split_total  # noqa: E402 — reason: imports for the tests below this point
 
 
 @pytest.mark.parametrize(

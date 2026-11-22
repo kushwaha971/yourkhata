@@ -34,7 +34,9 @@ export function ShopPersonActions({
   return (
     <UbBox className="flex flex-wrap gap-2 max-lg:[&>*]:flex-1 [&>a]:h-auto [&>a]:min-h-10 [&>a]:whitespace-normal [&>a_span]:whitespace-normal [&>button]:h-auto [&>button]:min-h-10 [&>button]:whitespace-normal">
       {canPay && bill && (
-        <UbButton busy={opening} busyLabel={t('common.loading')} onClick={receive}>{t('parties.person.receiveAction')}</UbButton>
+        <UbButton busy={opening} busyLabel={t('common.loading')} onClick={receive}>
+          {t('parties.person.receiveAction')}
+        </UbButton>
       )}
       {canPay && !bill && (
         <UbButton variant="primary" busy={opening} busyLabel={t('common.loading')} onClick={pay}>

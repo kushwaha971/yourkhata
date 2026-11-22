@@ -162,7 +162,9 @@ def test_the_logo_is_served_under_the_token_and_dies_with_it(
     assert branding["logo_url"] == reverse("v1:public-document-logo", args=[token])
     image = anonymous_client.get(branding["logo_url"])
     assert image.status_code == 200 and image["Content-Type"] == "image/png"
-    assert image["Referrer-Policy"] == "no-referrer" and image["Cache-Control"] == "private, no-store"
+    assert (
+        image["Referrer-Policy"] == "no-referrer" and image["Cache-Control"] == "private, no-store"
+    )
 
     owner.post(invoice_url(doc["id"], "share-links/revoke"), {}, format="json")
     assert anonymous_client.get(branding["logo_url"]).status_code == 404
@@ -196,5 +198,7 @@ def test_a_customer_never_sees_what_the_shop_paid(
             return {k for value in node for k in keys(value)}
         return set()
 
-    leaked = {k for k in keys(body) if any(w in k for w in ("cost", "margin", "profit", "purchase"))}
+    leaked = {
+        k for k in keys(body) if any(w in k for w in ("cost", "margin", "profit", "purchase"))
+    }
     assert not leaked, leaked

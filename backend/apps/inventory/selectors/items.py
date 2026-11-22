@@ -160,7 +160,7 @@ def _year(raw: Any) -> int | None:
 
 
 def fits_year_ok(text: str, year: int) -> bool:
-    """"Splendor+ 2019–2024" fits 2021; "Splendor+ 2015" fits 2015 only; "Splendor+" fits any year."""
+    """ "Splendor+ 2019–2024" fits 2021; "Splendor+ 2015" fits 2015 only; "Splendor+" fits any year."""
     spans = [(int(a), int(b or a)) for a, b in _YEARS.findall(text or "")]
     return not spans or any(low <= year <= high for low, high in spans)
 
@@ -280,11 +280,11 @@ def lookup_by_barcode(
         # scan adds 1 box rather than 1 piece.
         from apps.inventory.models import ItemUnit
 
-        extra = (
-            ItemUnit.objects.filter(tenant=tenant, barcode=code).select_related("unit").first()
-        )
+        extra = ItemUnit.objects.filter(tenant=tenant, barcode=code).select_related("unit").first()
         if extra is not None:
-            found = base.filter(pk=extra.item_id).annotate(match_field=Value("unit_barcode")).first()
+            found = (
+                base.filter(pk=extra.item_id).annotate(match_field=Value("unit_barcode")).first()
+            )
             if found is not None:
                 found.scanned_unit = extra.unit.code
     return found
@@ -387,7 +387,9 @@ def _category_figures(*, tenant: Any, valuation: bool) -> tuple[dict, dict]:
             .exclude(item__category_id=None)
             .values("item__category_id")
             .annotate(
-                total=Sum(Round(ExpressionWrapper(F("on_hand") * F("avg_cost"), output_field=MONEY), 2))
+                total=Sum(
+                    Round(ExpressionWrapper(F("on_hand") * F("avg_cost"), output_field=MONEY), 2)
+                )
             )
         ):
             values[row["item__category_id"]] = row["total"] or Decimal("0.00")
@@ -418,6 +420,7 @@ def category_tree(*, tenant: Any, valuation: bool = False) -> list[dict]:
         if valuation:
             out["stock_value"] = str(values.get(row.id, Decimal("0.00")))
         return out
+
     children: dict[Any, list[dict]] = {}
     for row in rows:
         if row.parent_id:

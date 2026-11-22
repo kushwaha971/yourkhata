@@ -66,7 +66,9 @@ export function MessagesPageContent(): React.JSX.Element {
     if (!current) return undefined;
     const controller = new AbortController();
     messageText(current.id, kind, locale, controller.signal)
-      .then((m) => setText({ for: `${current.id}:${kind}:${locale}`, text: m.text, mobile: m.mobile }))
+      .then((m) =>
+        setText({ for: `${current.id}:${kind}:${locale}`, text: m.text, mobile: m.mobile })
+      )
       .catch(() => undefined);
     return () => controller.abort();
   }, [current, kind, locale]);
@@ -75,10 +77,18 @@ export function MessagesPageContent(): React.JSX.Element {
   const send = () => {
     if (!current || !shown) return;
     if (!shown.mobile) {
-      dispatch(showSnackbar({ severity: 'warning', id: 'lending.remind.noMobile', params: { name: current.borrower } }));
+      dispatch(
+        showSnackbar({
+          severity: 'warning',
+          id: 'lending.remind.noMobile',
+          params: { name: current.borrower },
+        })
+      );
     } else {
       window.open(whatsappHref(shown.mobile, shown.text), '_blank', 'noopener');
-      void recordMessage(current.id, kind, shown.text, `${current.id}-${kind}-${Date.now()}`).catch(() => undefined);
+      void recordMessage(current.id, kind, shown.text, `${current.id}-${kind}-${Date.now()}`).catch(
+        () => undefined
+      );
     }
     setEditing(false);
     setStep((s) => Math.min(s + 1, rows.length));
@@ -90,13 +100,22 @@ export function MessagesPageContent(): React.JSX.Element {
       : kind === 'due_today'
         ? t('lending.messages.dueToday')
         : t('lending.messages.dueTomorrow');
-  const amount = (l: Loan): string => rupees(kind === 'late' ? l.late : kind === 'due_today' ? l.dueToday : l.each);
+  const amount = (l: Loan): string =>
+    rupees(kind === 'late' ? l.late : kind === 'due_today' ? l.dueToday : l.each);
 
   const body = (() => {
     if (lend.remind.status === 'failed' && !lend.remind.data)
-      return <UbEmptyState variant="error" title={t('lending.messages.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />;
-    if (!lend.remind.data) return <UbSkeleton variant="list" count={4} label={t('lending.common.loading')} />;
-    if (rows.length === 0) return <UbEmptyState variant="filtered" title={t(`lending.messages.none.${kind}`)} />;
+      return (
+        <UbEmptyState
+          variant="error"
+          title={t('lending.messages.error')}
+          action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>}
+        />
+      );
+    if (!lend.remind.data)
+      return <UbSkeleton variant="list" count={4} label={t('lending.common.loading')} />;
+    if (rows.length === 0)
+      return <UbEmptyState variant="filtered" title={t(`lending.messages.none.${kind}`)} />;
     return (
       <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_380px]">
         <List testId="lending-remind-list">
@@ -117,7 +136,10 @@ export function MessagesPageContent(): React.JSX.Element {
                   </UbText>
                 </UbStack>
                 <UbStack gap={0} align="end" className="leading-[1.2]">
-                  <UbText variant="inherit" className={`ds-num text-[14px] font-bold ${kind === 'late' ? 'text-give' : ''}`}>
+                  <UbText
+                    variant="inherit"
+                    className={`ds-num text-[14px] font-bold ${kind === 'late' ? 'text-give' : ''}`}
+                  >
                     {amount(l)}
                   </UbText>
                   {kind === 'late' && (
@@ -132,7 +154,9 @@ export function MessagesPageContent(): React.JSX.Element {
         </List>
         <UbStack gap={2} data-testid="lending-remind-preview">
           <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
-            {current ? t('lending.messages.previewFor', { name: current.borrower }) : t('lending.messages.allDone')}
+            {current
+              ? t('lending.messages.previewFor', { name: current.borrower })
+              : t('lending.messages.allDone')}
           </UbText>
           {current && (
             <MessagePreview text={shown?.text ?? t('lending.common.loading')}>
@@ -150,14 +174,26 @@ export function MessagesPageContent(): React.JSX.Element {
             {t('lending.messages.oneAtATime')}
           </UbText>
           {canCollect && (
-          <UbStack direction="row" gap={2} className="max-lg:hidden">
-            <UbButton variant="secondary" onClick={() => setEditing((e) => !e)} disabled={!current}>
-              {t('lending.messages.editText')}
-            </UbButton>
-            <UbButton variant="primary" onClick={send} disabled={!shown} data-testid="lending-remind-send">
-              {t('lending.messages.whatsappStep', { n: Math.min(step + 1, rows.length), total: rows.length })}
-            </UbButton>
-          </UbStack>
+            <UbStack direction="row" gap={2} className="max-lg:hidden">
+              <UbButton
+                variant="secondary"
+                onClick={() => setEditing((e) => !e)}
+                disabled={!current}
+              >
+                {t('lending.messages.editText')}
+              </UbButton>
+              <UbButton
+                variant="primary"
+                onClick={send}
+                disabled={!shown}
+                data-testid="lending-remind-send"
+              >
+                {t('lending.messages.whatsappStep', {
+                  n: Math.min(step + 1, rows.length),
+                  total: rows.length,
+                })}
+              </UbButton>
+            </UbStack>
           )}
         </UbStack>
       </UbBox>
@@ -167,7 +203,10 @@ export function MessagesPageContent(): React.JSX.Element {
   return (
     <UbPageShell>
       <UbStack gap={3} className="pb-36 lg:pb-6">
-        <UbPageHeader title={t('lending.messages.title')} subtitle={t('lending.messages.subtitle')} />
+        <UbPageHeader
+          title={t('lending.messages.title')}
+          subtitle={t('lending.messages.subtitle')}
+        />
         <UbChoiceChips
           ariaLabel={t('lending.messages.show')}
           value={kind}
@@ -178,7 +217,12 @@ export function MessagesPageContent(): React.JSX.Element {
           }}
           options={KINDS.map((k) => ({
             value: k,
-            label: counts ? t('lending.messages.chipCount', { label: t(`lending.messages.kind.${k}`), count: counts[k] }) : t(`lending.messages.kind.${k}`),
+            label: counts
+              ? t('lending.messages.chipCount', {
+                  label: t(`lending.messages.kind.${k}`),
+                  count: counts[k],
+                })
+              : t(`lending.messages.kind.${k}`),
           }))}
           className="flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
         />
@@ -192,7 +236,13 @@ export function MessagesPageContent(): React.JSX.Element {
           <UbButton variant="secondary" size="lg" onClick={() => setEditing((e) => !e)}>
             {t('lending.messages.editText')}
           </UbButton>
-          <UbButton variant="primary" size="lg" onClick={send} disabled={!shown} data-testid="lending-remind-send-phone">
+          <UbButton
+            variant="primary"
+            size="lg"
+            onClick={send}
+            disabled={!shown}
+            data-testid="lending-remind-send-phone"
+          >
             {t('lending.messages.whatsappStep', { n: step + 1, total: rows.length })}
           </UbButton>
         </UbBottomBar>

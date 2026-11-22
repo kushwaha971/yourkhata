@@ -18,7 +18,11 @@ from apps.sales.services import vehicles
 
 class _View(APIView):
     def get_permissions(self) -> list[Any]:
-        return [IsAuthenticated(), ModuleEnabled(ModuleCode.SALES)(), HasPermission("sales.invoice.read")()]
+        return [
+            IsAuthenticated(),
+            ModuleEnabled(ModuleCode.SALES)(),
+            HasPermission("sales.invoice.read")(),
+        ]
 
     def initial(self, request: Any, *args: Any, **kwargs: Any) -> None:
         super().initial(request, *args, **kwargs)
@@ -31,10 +35,14 @@ class _View(APIView):
 class VehiclesView(_View):
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(
-            vehicles.list_vehicles(tenant=get_effective_tenant(request), q=request.query_params.get("q", ""))
+            vehicles.list_vehicles(
+                tenant=get_effective_tenant(request), q=request.query_params.get("q", "")
+            )
         )
 
 
 class VehicleDetailView(_View):
     def get(self, request: Any, number: str) -> Any:
-        return StandardResponse.ok(vehicles.vehicle_detail(tenant=get_effective_tenant(request), number=number))
+        return StandardResponse.ok(
+            vehicles.vehicle_detail(tenant=get_effective_tenant(request), number=number)
+        )

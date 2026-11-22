@@ -74,7 +74,7 @@ export function HomeBalanceLane({
           href={href}
           aria-label={`${t(supplier ? 'reports.dashboard.tile.toPay' : 'reports.dashboard.tile.toCollect')} ${formatInr(displayAmount)}`}
           underline={false}
-          className={`ds-num shrink-0 font-bold text-body-sm ${supplier ? 'text-give' : 'text-get'}`}
+          className={`ds-num shrink-0 text-body-sm font-bold ${supplier ? 'text-give' : 'text-get'}`}
         >
           {displayAmount === null ? null : formatInr(displayAmount)}
         </UbLink>

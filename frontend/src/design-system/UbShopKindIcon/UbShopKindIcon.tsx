@@ -47,12 +47,7 @@ const PATHS: Record<UbShopKind, React.JSX.Element> = {
       <path d="M18 31h4" strokeLinecap="round" />
     </g>
   ),
-  garments: (
-    <path
-      d="M14 5 5 10l3 8 4-2v19h16V16l4 2 3-8-9-5c-1 3-3 4-6 4s-5-1-6-4z"
-      {...STROKE}
-    />
-  ),
+  garments: <path d="M14 5 5 10l3 8 4-2v19h16V16l4 2 3-8-9-5c-1 3-3 4-6 4s-5-1-6-4z" {...STROKE} />,
   hardware: (
     <g {...STROKE} strokeLinecap="round">
       <path d="M22 6a8 8 0 0 0-8 10L6 24l4 4 8-8a8 8 0 0 0 10-8l-5 2-3-3 2-5z" />
@@ -96,7 +91,12 @@ export interface UbShopKindIconProps {
 
 function UbShopKindIconBase({ kind, className }: Readonly<UbShopKindIconProps>) {
   return (
-    <svg viewBox="0 0 40 40" aria-hidden focusable="false" className={cn('h-[34px] w-[34px]', className)}>
+    <svg
+      viewBox="0 0 40 40"
+      aria-hidden
+      focusable="false"
+      className={cn('h-[34px] w-[34px]', className)}
+    >
       {PATHS[kind]}
     </svg>
   );

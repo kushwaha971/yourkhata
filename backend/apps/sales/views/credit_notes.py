@@ -29,7 +29,12 @@ from apps.sales.constants import CREDIT_NOTE_TAB_STATUSES
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
 from apps.sales.permissions import CreditNotePermissions
-from apps.sales.selectors.documents import ORDERING_FIELDS, apply_tab, detail_queryset, list_documents
+from apps.sales.selectors.documents import (
+    ORDERING_FIELDS,
+    apply_tab,
+    detail_queryset,
+    list_documents,
+)
 from apps.sales.serializers.document import DocumentReadSerializer, ShareLinkSerializer
 from apps.sales.serializers.flows import (
     ApplyCreditSerializer,
@@ -70,7 +75,6 @@ def _issued_extra(result: dict) -> dict:
     return extra
 
 
-
 EXPORT_COLUMNS = (
     ExportColumn("number", lambda d: d.number or ""),
     ExportColumn("date", lambda d: csv_date(d.document_date)),
@@ -78,6 +82,7 @@ EXPORT_COLUMNS = (
     ExportColumn("amount", lambda d: d.grand_total, numeric=True),
     ExportColumn("against bill", lambda d: d.against.number if d.against_id else ""),
 )
+
 
 class CreditNoteViewSet(
     CsvExportMixin,
@@ -113,7 +118,9 @@ class CreditNoteViewSet(
         """The file is the screen: the tab narrows it as it narrows the list."""
         tab = self.request.query_params.get("tab") or "all"
         if tab not in CREDIT_NOTE_TAB_STATUSES:
-            raise ValidationFailed({"tab": [f"Choose one of {', '.join(CREDIT_NOTE_TAB_STATUSES)}."]})
+            raise ValidationFailed(
+                {"tab": [f"Choose one of {', '.join(CREDIT_NOTE_TAB_STATUSES)}."]}
+            )
         return apply_tab(
             self.filter_queryset(self.get_queryset()),
             tab,

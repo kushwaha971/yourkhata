@@ -69,7 +69,11 @@ def list_vehicles(*, tenant: Any, q: str = "", limit: int = 200) -> dict:
     )
     vehicles = []
     for row in grouped:
-        bills = list(rows.filter(vno=row["vno"]).select_related("party").order_by("-document_date", "-created_at")[:20])
+        bills = list(
+            rows.filter(vno=row["vno"])
+            .select_related("party")
+            .order_by("-document_date", "-created_at")[:20]
+        )
         vehicles.append(
             {
                 "number": row["vno"],
@@ -100,7 +104,9 @@ def vehicle_detail(*, tenant: Any, number: Any, limit: int = 100) -> dict:
 
     vno = clean_number(number)
     rows = _bills(tenant).filter(vno=vno).select_related("party")
-    figures = rows.aggregate(bills=Count("id"), spent=Sum("grand_total"), since=Min("document_date"))
+    figures = rows.aggregate(
+        bills=Count("id"), spent=Sum("grand_total"), since=Min("document_date")
+    )
     if not figures["bills"]:
         raise NotFound("No bill has this vehicle number yet.")
     ordered = list(rows.prefetch_related("lines").order_by("-document_date", "-created_at")[:limit])
@@ -115,7 +121,11 @@ def vehicle_detail(*, tenant: Any, number: Any, limit: int = 100) -> dict:
             .first()
         )
         if party is not None:
-            garage = {"id": str(party.id), "name": party.name, "due": str(party.shop_balance or Decimal("0.00"))}
+            garage = {
+                "id": str(party.id),
+                "name": party.name,
+                "due": str(party.shop_balance or Decimal("0.00")),
+            }
     return {
         "number": vno,
         "model": _latest(ordered, "model"),

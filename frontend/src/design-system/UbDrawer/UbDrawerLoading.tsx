@@ -31,12 +31,7 @@ function UbDrawerLoadingBase(): React.JSX.Element {
   // Closing only hides this shape; the screen still asks for the real one.
   const [shown, setShown] = useState(true);
   return (
-    <UbDrawer
-      open={shown}
-      onOpenChange={setShown}
-      title={labels.loading}
-      closeLabel={labels.close}
-    >
+    <UbDrawer open={shown} onOpenChange={setShown} title={labels.loading} closeLabel={labels.close}>
       <UbStack gap={4} aria-busy data-ub-drawer-loading="">
         {/* `form`: a label and a field per row, the shape of every form drawer. */}
         <UbSkeleton variant="form" count={3} label={labels.loading} />

@@ -44,8 +44,7 @@ import { ReportPageShell } from './ReportPageShell';
 // downloads it.
 const DayBookRowSheetLazy = dynamic(
   () => import('./DayBookRowSheet').then((m) => m.DayBookRowSheet),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

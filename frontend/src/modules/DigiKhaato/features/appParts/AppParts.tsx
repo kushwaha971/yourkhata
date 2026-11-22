@@ -61,7 +61,10 @@ export function Card({
   return (
     <UbBox
       data-testid={testId}
-      className={cn('grid gap-2 rounded-[12px] border border-border-hairline bg-surface-card p-4', className)}
+      className={cn(
+        'grid gap-2 rounded-[12px] border border-border-hairline bg-surface-card p-4',
+        className
+      )}
     >
       {children}
     </UbBox>
@@ -107,7 +110,11 @@ export function Table({
   head,
   children,
   testId,
-}: Readonly<{ head: readonly { label: string; align?: 'right' }[]; children: ReactNode; testId?: string }>) {
+}: Readonly<{
+  head: readonly { label: string; align?: 'right' }[];
+  children: ReactNode;
+  testId?: string;
+}>) {
   return (
     <UbBox className="overflow-x-auto rounded-[12px] border border-border-hairline bg-surface-card">
       <UbBox
@@ -118,7 +125,11 @@ export function Table({
         <UbBox as="thead" className="bg-surface-sunken text-left text-[11.8px] text-text-secondary">
           <UbBox as="tr">
             {head.map((h, i) => (
-              <UbBox as="th" key={`${h.label}-${i}`} className={cn('font-semibold', h.align === 'right' && 'text-right')}>
+              <UbBox
+                as="th"
+                key={`${h.label}-${i}`}
+                className={cn('font-semibold', h.align === 'right' && 'text-right')}
+              >
                 {h.label}
               </UbBox>
             ))}
@@ -145,9 +156,19 @@ export function OwnerOnly({ title, body }: Readonly<{ title: string; body: strin
  * pasted link, a name typed without spaces) used to push the page wider than a
  * phone (QA audit, 13 Nov 2026). `children` replaces the bubble while editing.
  */
-export function MessagePreview({ text, children, className }: Readonly<{ text: string; children?: ReactNode; className?: string }>) {
+export function MessagePreview({
+  text,
+  children,
+  className,
+}: Readonly<{ text: string; children?: ReactNode; className?: string }>) {
   return (
-    <UbBox className={cn('grid min-w-0 grid-cols-[minmax(0,1fr)] rounded-[12px] bg-[#ECE5DD] p-3 dark:bg-surface-sunken', className)} data-testid="message-preview">
+    <UbBox
+      className={cn(
+        'grid min-w-0 grid-cols-[minmax(0,1fr)] rounded-[12px] bg-[#ECE5DD] p-3 dark:bg-surface-sunken',
+        className
+      )}
+      data-testid="message-preview"
+    >
       {children ?? (
         <UbText
           variant="inherit"

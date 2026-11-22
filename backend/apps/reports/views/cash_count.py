@@ -33,7 +33,9 @@ HISTORY_LIMIT = 30
 
 
 class CashCountWriteSerializer(serializers.Serializer):
-    counted_amount = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal("0"))
+    counted_amount = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0")
+    )
     note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
 
 

@@ -39,14 +39,20 @@ class PlainBodyMixin:
     def initial(self, request: Any, *args: Any, **kwargs: Any) -> None:
         super().initial(request, *args, **kwargs)  # type: ignore[misc]
         if _has_nul(dict(request.query_params.lists())):
-            raise ValidationFailed(details={"non_field_errors": [_("Remove the unusual characters and try again.")]})
+            raise ValidationFailed(
+                details={"non_field_errors": [_("Remove the unusual characters and try again.")]}
+            )
         if request.method in SAFE_METHODS:
             return
         if not isinstance(request.data, Mapping):
-            raise ValidationFailed(details={"non_field_errors": [_("Send the details as one form.")]})
+            raise ValidationFailed(
+                details={"non_field_errors": [_("Send the details as one form.")]}
+            )
         bad = [str(k) for k, v in request.data.items() if _has_nul(k) or _has_nul(v)]
         if bad:
-            raise ValidationFailed(details={k: [_("Remove the unusual characters and try again.")] for k in bad})
+            raise ValidationFailed(
+                details={k: [_("Remove the unusual characters and try again.")] for k in bad}
+            )
 
 
 def page_of(request: Any, *, size: int, size_max: int) -> tuple[int, int]:

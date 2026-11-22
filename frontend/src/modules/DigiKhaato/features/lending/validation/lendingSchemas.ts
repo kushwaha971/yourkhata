@@ -4,7 +4,13 @@ import * as Yup from 'yup';
 
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 
-import type { BorrowerValues, CollectValues, Frequency, NewLoanValues, PayMode } from '../types/lending.types';
+import type {
+  BorrowerValues,
+  CollectValues,
+  Frequency,
+  NewLoanValues,
+  PayMode,
+} from '../types/lending.types';
 
 const MODES: PayMode[] = ['cash', 'upi'];
 const FREQS: Frequency[] = ['daily', 'weekly', 'monthly'];

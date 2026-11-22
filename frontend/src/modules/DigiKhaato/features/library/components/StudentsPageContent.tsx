@@ -61,7 +61,8 @@ export function StudentsPageContent(): React.JSX.Element {
   const [search, setSearch] = useState(lib.studentsQuery.q ?? '');
   const q = useDebounce(search.trim(), 250);
   const [enrolling, setEnrolling] = useState(false);
-  const show: Show = lib.studentsQuery.status === 'left' ? 'left' : (lib.studentsQuery.fee ?? 'all');
+  const show: Show =
+    lib.studentsQuery.status === 'left' ? 'left' : (lib.studentsQuery.fee ?? 'all');
 
   const load = useCallback(
     (page = 1) =>
@@ -93,11 +94,23 @@ export function StudentsPageContent(): React.JSX.Element {
       value={show}
       revealSelected
       onChange={(v) =>
-        dispatch(setStudentsQuery(v === 'left' ? { status: 'left', fee: 'all', page: 1 } : { status: 'current', fee: v as FeeFilter, page: 1 }))
+        dispatch(
+          setStudentsQuery(
+            v === 'left'
+              ? { status: 'left', fee: 'all', page: 1 }
+              : { status: 'current', fee: v as FeeFilter, page: 1 }
+          )
+        )
       }
       options={SHOWS.map((v) => ({
         value: v,
-        label: v === 'left' || !counts ? t(`library.students.chip.${v}`) : t('library.students.chipCount', { label: t(`library.students.chip.${v}`), count: counts[v] }),
+        label:
+          v === 'left' || !counts
+            ? t(`library.students.chip.${v}`)
+            : t('library.students.chipCount', {
+                label: t(`library.students.chip.${v}`),
+                count: counts[v],
+              }),
       }))}
       className="flex-nowrap overflow-x-auto [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
     />
@@ -120,18 +133,23 @@ export function StudentsPageContent(): React.JSX.Element {
           title={t('library.students.empty.title')}
           description={t('library.students.empty.body')}
           action={
-            canWrite && <UbStack direction="row" gap={2} wrap>
-              <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setEnrolling(true)}>
-                {t('library.home.enrol')}
-              </UbButton>
-              <UbButton
-                variant="outlineNeutral"
-                icon={<FileUp className="h-4 w-4" aria-hidden />}
-                onClick={() => router.push(`${ROUTES.IMPORTS}?kind=students`)}
-              >
-                {t('library.students.import')}
-              </UbButton>
-            </UbStack>
+            canWrite && (
+              <UbStack direction="row" gap={2} wrap>
+                <UbButton
+                  icon={<Plus className="h-4 w-4" aria-hidden />}
+                  onClick={() => setEnrolling(true)}
+                >
+                  {t('library.home.enrol')}
+                </UbButton>
+                <UbButton
+                  variant="outlineNeutral"
+                  icon={<FileUp className="h-4 w-4" aria-hidden />}
+                  onClick={() => router.push(`${ROUTES.IMPORTS}?kind=students`)}
+                >
+                  {t('library.students.import')}
+                </UbButton>
+              </UbStack>
+            )
           }
         />
       );
@@ -157,7 +175,10 @@ export function StudentsPageContent(): React.JSX.Element {
                 <UbStack gap={0.5} align="end">
                   <FeeBadge fee={s.fee} t={t} />
                   {dueAmount(s) !== '—' && (
-                    <UbText variant="inherit" className="ds-num text-[12.5px] font-semibold text-give">
+                    <UbText
+                      variant="inherit"
+                      className="ds-num text-[12.5px] font-semibold text-give"
+                    >
                       {dueAmount(s)}
                     </UbText>
                   )}
@@ -229,20 +250,30 @@ export function StudentsPageContent(): React.JSX.Element {
       <UbStack gap={3} className="pb-24 lg:pb-6" data-testid="library-students-page">
         <UbPageHeader
           title={t('library.students.title')}
-          subtitle={counts ? t('library.students.subtitle', { count: counts.all, due: page?.due ?? '0' }) : undefined}
+          subtitle={
+            counts
+              ? t('library.students.subtitle', { count: counts.all, due: page?.due ?? '0' })
+              : undefined
+          }
           actions={
-            canWrite && <UbStack direction="row" gap={2} className="max-lg:hidden">
-              <UbButton
-                variant="outlineNeutral"
-                icon={<FileUp className="h-4 w-4" aria-hidden />}
-                onClick={() => router.push(`${ROUTES.IMPORTS}?kind=students`)}
-              >
-                {t('library.students.import')}
-              </UbButton>
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setEnrolling(true)}>
-                {t('library.home.enrol')}
-              </UbButton>
-            </UbStack>
+            canWrite && (
+              <UbStack direction="row" gap={2} className="max-lg:hidden">
+                <UbButton
+                  variant="outlineNeutral"
+                  icon={<FileUp className="h-4 w-4" aria-hidden />}
+                  onClick={() => router.push(`${ROUTES.IMPORTS}?kind=students`)}
+                >
+                  {t('library.students.import')}
+                </UbButton>
+                <UbButton
+                  variant="primary"
+                  icon={<Plus className="h-4 w-4" aria-hidden />}
+                  onClick={() => setEnrolling(true)}
+                >
+                  {t('library.home.enrol')}
+                </UbButton>
+              </UbStack>
+            )
           }
           renderMobileActions={() => null}
           className="max-lg:[&_[data-ub-page-subtitle]]:hidden"
@@ -261,7 +292,13 @@ export function StudentsPageContent(): React.JSX.Element {
         {body}
       </UbStack>
       {canWrite && (
-        <UbFab label={t('library.home.enrol')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setEnrolling(true)} />
+        <UbFab
+          label={t('library.home.enrol')}
+          icon={<Plus className="h-4 w-4" aria-hidden />}
+          mobileOnly
+          extended
+          onClick={() => setEnrolling(true)}
+        />
       )}
       {enrolling && (
         <EnrolDrawer

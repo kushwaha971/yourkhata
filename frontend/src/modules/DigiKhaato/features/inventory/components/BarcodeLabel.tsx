@@ -42,10 +42,18 @@ export function BarcodeLabel({
       data-testid="barcode-label"
     >
       {/* Sizes in mm so a label reads the same on screen and on 50 × 25 mm paper. */}
-      <UbText as="span" variant="inherit" className="truncate text-[2.6mm] font-semibold leading-[1.2] text-black">
+      <UbText
+        as="span"
+        variant="inherit"
+        className="truncate text-[2.6mm] font-semibold leading-[1.2] text-black"
+      >
         {business}
       </UbText>
-      <UbText as="span" variant="inherit" className="truncate text-[2.6mm] leading-[1.2] text-black">
+      <UbText
+        as="span"
+        variant="inherit"
+        className="truncate text-[2.6mm] leading-[1.2] text-black"
+      >
         {name}
       </UbText>
       {total > 0 && (
@@ -59,11 +67,19 @@ export function BarcodeLabel({
           <g fill="#000">{bars}</g>
         </svg>
       )}
-      <UbText as="span" variant="inherit" className="truncate text-[2.4mm] leading-[1.2] text-black">
+      <UbText
+        as="span"
+        variant="inherit"
+        className="truncate text-[2.4mm] leading-[1.2] text-black"
+      >
         {price ? `${code} · ${price}` : code}
       </UbText>
       {detail && (
-        <UbText as="span" variant="inherit" className="truncate text-[2.4mm] leading-[1.2] text-black">
+        <UbText
+          as="span"
+          variant="inherit"
+          className="truncate text-[2.4mm] leading-[1.2] text-black"
+        >
           {detail}
         </UbText>
       )}

@@ -37,28 +37,71 @@ jest.mock('src/hooks/usePermissions', () => ({
   }),
 }));
 
-const shortBook = jest.requireMock('modules/DigiKhaato/features/inventory/api/shortBookService') as { getShortBook: jest.Mock };
-const expiry = jest.requireMock('modules/DigiKhaato/features/inventory/api/expiryService') as { getExpiry: jest.Mock };
-const priceLists = jest.requireMock('modules/DigiKhaato/features/inventory/api/priceListService') as { listPriceLists: jest.Mock };
+const shortBook = jest.requireMock(
+  'modules/DigiKhaato/features/inventory/api/shortBookService'
+) as { getShortBook: jest.Mock };
+const expiry = jest.requireMock('modules/DigiKhaato/features/inventory/api/expiryService') as {
+  getExpiry: jest.Mock;
+};
+const priceLists = jest.requireMock(
+  'modules/DigiKhaato/features/inventory/api/priceListService'
+) as { listPriceLists: jest.Mock };
 
-const STAFF = ['inventory.item.read', 'inventory.stock.read', 'purchases.bill.read', 'purchases.bill.write'];
-const ACCOUNTANT = ['inventory.item.read', 'inventory.stock.read', 'purchases.bill.read', 'reports.export', 'reports.financial.read'];
+const STAFF = [
+  'inventory.item.read',
+  'inventory.stock.read',
+  'purchases.bill.read',
+  'purchases.bill.write',
+];
+const ACCOUNTANT = [
+  'inventory.item.read',
+  'inventory.stock.read',
+  'purchases.bill.read',
+  'reports.export',
+  'reports.financial.read',
+];
 const OWNER = [...STAFF, 'inventory.item.write', 'reports.export', 'reports.financial.read'];
 
 beforeEach(() => {
   shortBook.getShortBook.mockResolvedValue({
-    rows: [{ item: { id: 'i1', name: 'Crocin 650', unitCode: 'STRIP', salt: null }, reason: 'asked', askedCount: 2, onHand: '0', qty: '10', supplier: null, lastRate: null }],
+    rows: [
+      {
+        item: { id: 'i1', name: 'Crocin 650', unitCode: 'STRIP', salt: null },
+        reason: 'asked',
+        askedCount: 2,
+        onHand: '0',
+        qty: '10',
+        supplier: null,
+        lastRate: null,
+      },
+    ],
     counts: { items: 1, distributors: 0, askedToday: 1 },
   });
   expiry.getExpiry.mockResolvedValue({
-    rows: [{ item: { id: 'i1', name: 'Crocin 650' }, batchNo: 'B1', expiry: '2026-12-01', days: 18, qty: '4', value: null, supplier: 'Mehta Pharma', purchaseId: 'p1' }],
+    rows: [
+      {
+        item: { id: 'i1', name: 'Crocin 650' },
+        batchNo: 'B1',
+        expiry: '2026-12-01',
+        days: 18,
+        qty: '4',
+        value: null,
+        supplier: 'Mehta Pharma',
+        purchaseId: 'p1',
+      },
+    ],
     counts: { expired: 0, '30': 1, '60': 1, '90': 1 },
   });
-  priceLists.listPriceLists.mockResolvedValue([{ id: 'w1', name: 'Wholesale', adjustPercent: '-5.00', rateCount: 2, partyCount: 1 }]);
+  priceLists.listPriceLists.mockResolvedValue([
+    { id: 'w1', name: 'Wholesale', adjustPercent: '-5.00', rateCount: 2, partyCount: 1 },
+  ]);
 });
 
 describe('The Business app shows a member only what their role may do', () => {
-  it.each([['staff', STAFF], ['accountant', ACCOUNTANT]])('%s read the short book but are not offered Add', async (_role, codes) => {
+  it.each([
+    ['staff', STAFF],
+    ['accountant', ACCOUNTANT],
+  ])('%s read the short book but are not offered Add', async (_role, codes) => {
     granted = codes;
     renderWithProviders(<ShortBookPageContent />);
     expect((await screen.findAllByText('Crocin 650')).length).toBeGreaterThan(0);

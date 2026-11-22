@@ -109,7 +109,11 @@ def test_mobiles_normalise_to_e164_like_everywhere_else(raw: str) -> None:
 
 @pytest.mark.parametrize(
     "raw, stored",
-    [("+44 7911 123456", "+447911123456"), ("0044 7911 123456", "+447911123456"), ("+1 (415) 555-2671", "+14155552671")],
+    [
+        ("+44 7911 123456", "+447911123456"),
+        ("0044 7911 123456", "+447911123456"),
+        ("+1 (415) 555-2671", "+14155552671"),
+    ],
 )
 def test_another_countrys_mobile_imports_with_its_code(raw: str, stored: str) -> None:
     """Owner, 14 Nov 2026: any country. "Take the last ten digits" read every

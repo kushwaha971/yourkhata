@@ -32,7 +32,10 @@ const run =
   <A, R>(fail: string, call: (s: Service, arg: A, signal: AbortSignal) => Promise<R>) =>
   async (
     arg: A,
-    { signal, rejectWithValue }: { signal: AbortSignal; rejectWithValue: (e: ApiErrorShape) => unknown }
+    {
+      signal,
+      rejectWithValue,
+    }: { signal: AbortSignal; rejectWithValue: (e: ApiErrorShape) => unknown }
   ) => {
     try {
       return await call(await service(), arg, signal);
@@ -61,9 +64,15 @@ export const fetchStudent = createAsyncThunk<StudentDetail, { id: string; month?
   run('library.student.error', (s, a, signal) => s.getStudent(a.id, signal, a.month))
 );
 
-export const fetchPayments = createAsyncThunk<Payment[], { id: string; includeRemoved?: boolean }, Reject>(
+export const fetchPayments = createAsyncThunk<
+  Payment[],
+  { id: string; includeRemoved?: boolean },
+  Reject
+>(
   'library/payments',
-  run('library.student.error', (s, a, signal) => s.listPayments(a.id, Boolean(a.includeRemoved), signal))
+  run('library.student.error', (s, a, signal) =>
+    s.listPayments(a.id, Boolean(a.includeRemoved), signal)
+  )
 );
 
 export const fetchFees = createAsyncThunk<FeesPage, FeeFilter, Reject>(
@@ -80,9 +89,16 @@ export const collect = createAsyncThunk<
   { payment: Payment; student: Student; receipt: string },
   { studentId: string; values: CollectValues; key: string },
   Reject
->('library/collect', run('library.collect.error', (s, a) => s.collectFee(a.studentId, a.values, a.key)));
+>(
+  'library/collect',
+  run('library.collect.error', (s, a) => s.collectFee(a.studentId, a.values, a.key))
+);
 
-export const removePayment = createAsyncThunk<Student, { paymentId: string; reason: string; key: string }, Reject>(
+export const removePayment = createAsyncThunk<
+  Student,
+  { paymentId: string; reason: string; key: string },
+  Reject
+>(
   'library/removePayment',
   run('library.payment.removeError', (s, a) => s.removePayment(a.paymentId, a.reason, a.key))
 );
@@ -91,13 +107,21 @@ export const moveStudent = createAsyncThunk<
   Student,
   { id: string; seat: number | null; shiftId: string; key: string },
   Reject
->('library/move', run('library.move.error', (s, a) => s.moveStudent(a.id, { seat: a.seat, shiftId: a.shiftId }, a.key)));
+>(
+  'library/move',
+  run('library.move.error', (s, a) =>
+    s.moveStudent(a.id, { seat: a.seat, shiftId: a.shiftId }, a.key)
+  )
+);
 
 export const changeStatus = createAsyncThunk<
   Student,
   { id: string; action: 'hold' | 'resume' | 'leave'; key: string },
   Reject
->('library/status', run('library.student.statusError', (s, a) => s.setStudentStatus(a.id, a.action, a.key)));
+>(
+  'library/status',
+  run('library.student.statusError', (s, a) => s.setStudentStatus(a.id, a.action, a.key))
+);
 
 export const fetchAttendance = createAsyncThunk<AttendanceRow[], string, Reject>(
   'library/attendance',

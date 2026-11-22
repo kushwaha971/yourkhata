@@ -1,13 +1,10 @@
 """UX16 / DEC-019: automatic fee collection must retain its app at the API boundary."""
 
-from decimal import Decimal
 from typing import Any
 
 import pytest
-from django.test import override_settings
 
 from apps.payments.tests.conftest import cash_lines, pay
-from apps.sales.models import SalesDocument
 
 pytestmark = pytest.mark.django_db
 

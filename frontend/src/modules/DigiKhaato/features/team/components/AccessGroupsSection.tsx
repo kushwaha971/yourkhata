@@ -24,15 +24,21 @@ import type { AccessGroup, AccessGroupsPayload, AccessLevel } from '../types/acc
 // The access words ride with the screens that show them (owner, 14 Nov 2026).
 import 'src/i18n/catalogues/teamAccess';
 
-const AccessGroupDrawer = dynamic(() => import('./AccessGroupDrawer').then((m) => m.AccessGroupDrawer), {
-  ssr: false,
-  loading: () => <UbDrawerLoading />,
-});
+const AccessGroupDrawer = dynamic(
+  () => import('./AccessGroupDrawer').then((m) => m.AccessGroupDrawer),
+  {
+    ssr: false,
+    loading: () => <UbDrawerLoading />,
+  }
+);
 
 const GROUP_ICON = <Users aria-hidden className="h-4 w-4" />;
 const groupIcon = (): React.ReactNode => GROUP_ICON;
 
-type Editing = { group: AccessGroup | null; start: { name: string; levels: Readonly<Record<string, AccessLevel>> } };
+type Editing = {
+  group: AccessGroup | null;
+  start: { name: string; levels: Readonly<Record<string, AccessLevel>> };
+};
 
 /**
  * Team › Access groups for the OPEN app of the open business (design G1, G6).
@@ -62,7 +68,10 @@ export function AccessGroupsSection({ app }: Readonly<{ app: TeamApp }>): React.
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
   const parts = useMemo(() => data?.parts ?? [], [data]);
-  const allFull = useMemo(() => Object.fromEntries(parts.map((p) => [p.part, 'full' as AccessLevel])), [parts]);
+  const allFull = useMemo(
+    () => Object.fromEntries(parts.map((p) => [p.part, 'full' as AccessLevel])),
+    [parts]
+  );
   const openNew = useCallback(
     (fromExample: boolean) =>
       setEditing({
@@ -83,7 +92,8 @@ export function AccessGroupsSection({ app }: Readonly<{ app: TeamApp }>): React.
   );
 
   const groups = data?.groups ?? [];
-  const state: UbGridState = failed && !data ? 'error' : !data ? 'loading' : groups.length === 0 ? 'empty' : 'rows';
+  const state: UbGridState =
+    failed && !data ? 'error' : !data ? 'loading' : groups.length === 0 ? 'empty' : 'rows';
 
   return (
     <UbStack gap={3} className="pb-24 lg:pb-0" data-testid="access-groups">
@@ -94,7 +104,11 @@ export function AccessGroupsSection({ app }: Readonly<{ app: TeamApp }>): React.
           description={t('team.access.empty.body', { app: app.label })}
           action={
             <UbStack gap={2} className="w-full max-w-sm">
-              <UbButton onClick={() => openNew(true)} icon={<Plus className="h-4 w-4" aria-hidden />} data-testid="access-group-example">
+              <UbButton
+                onClick={() => openNew(true)}
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                data-testid="access-group-example"
+              >
                 {t('team.access.makeExample', { name: data?.suggested.name ?? '' })}
               </UbButton>
               <UbButton variant="outlineNeutral" onClick={() => openNew(false)}>
@@ -137,7 +151,12 @@ export function AccessGroupsSection({ app }: Readonly<{ app: TeamApp }>): React.
                 ),
               },
             }}
-            page={{ page: 1, pageSize: Math.max(groups.length, 1), total: groups.length, totalPages: 1 }}
+            page={{
+              page: 1,
+              pageSize: Math.max(groups.length, 1),
+              total: groups.length,
+              totalPages: 1,
+            }}
             onPageChange={() => undefined}
           />
           <UbText as="p" variant="caption" tone="secondary">

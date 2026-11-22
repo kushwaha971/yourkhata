@@ -68,14 +68,12 @@ const AccessGroupsSection = dynamic(
 
 const InviteMemberDialog = dynamic(
   () => import('./InviteMemberDialog').then((module) => module.InviteMemberDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const InviteLinkDialog = dynamic(
   () => import('./InviteLinkDialog').then((module) => module.InviteLinkDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -246,41 +244,41 @@ export function TeamPageContent(): React.JSX.Element {
       <MembersSection />
 
       {TEAM_FLAGS.emailInvites && (
-      <UbStack gap={2}>
-        <UbSectionHeading
-          title={t('team.tab.invitations')}
-          meta={t('team.list.count', { count: meta.total })}
-          aside={
-            <Can permission="platform.members.manage">
-              <UbButton
-                variant="secondary"
-                onClick={openInvite}
-                icon={<UserPlus aria-hidden className="h-4 w-4" />}
-                // Class C, online only: disabled rather than hidden (§19.10.4).
-                disabled={!canWrite}
-              >
-                {t('team.invite.action')}
-              </UbButton>
-            </Can>
-          }
-        />
+        <UbStack gap={2}>
+          <UbSectionHeading
+            title={t('team.tab.invitations')}
+            meta={t('team.list.count', { count: meta.total })}
+            aside={
+              <Can permission="platform.members.manage">
+                <UbButton
+                  variant="secondary"
+                  onClick={openInvite}
+                  icon={<UserPlus aria-hidden className="h-4 w-4" />}
+                  // Class C, online only: disabled rather than hidden (§19.10.4).
+                  disabled={!canWrite}
+                >
+                  {t('team.invite.action')}
+                </UbButton>
+              </Can>
+            }
+          />
 
-        <UbDataGrid
-          rows={rows}
-          columns={columns}
-          rowId={rowId}
-          rowName={rowName}
-          state={gridState}
-          labels={labels}
-          emptyStates={emptyStates}
-          caption={t('team.list.caption')}
-          cardAvatarIcon={inviteAvatar}
-          page={meta}
-          onPageChange={setPage}
-          onPageSizeChange={handlePageSize}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
-        />
-      </UbStack>
+          <UbDataGrid
+            rows={rows}
+            columns={columns}
+            rowId={rowId}
+            rowName={rowName}
+            state={gridState}
+            labels={labels}
+            emptyStates={emptyStates}
+            caption={t('team.list.caption')}
+            cardAvatarIcon={inviteAvatar}
+            page={meta}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+          />
+        </UbStack>
       )}
     </>
   );
@@ -324,7 +322,10 @@ export function TeamPageContent(): React.JSX.Element {
 
           {teamApp && (
             <UbStack direction="row">
-              <UbStatusBadge tone="info" label={t('team.access.context', { app: teamApp.label, business })} />
+              <UbStatusBadge
+                tone="info"
+                label={t('team.access.context', { app: teamApp.label, business })}
+              />
             </UbStack>
           )}
           {teamApp ? (
@@ -338,7 +339,11 @@ export function TeamPageContent(): React.JSX.Element {
                 { value: 'groups', label: t('team.access.tab.groups') },
               ]}
             >
-              {tab === 'groups' ? <AccessGroupsSection app={teamApp} /> : <UbStack gap={4}>{people}</UbStack>}
+              {tab === 'groups' ? (
+                <AccessGroupsSection app={teamApp} />
+              ) : (
+                <UbStack gap={4}>{people}</UbStack>
+              )}
             </UbChipTabs>
           ) : (
             people

@@ -25,7 +25,11 @@ export interface ShortBookRow {
 
 export interface ShortBook {
   readonly rows: readonly ShortBookRow[];
-  readonly counts: { readonly items: number; readonly distributors: number; readonly askedToday: number };
+  readonly counts: {
+    readonly items: number;
+    readonly distributors: number;
+    readonly askedToday: number;
+  };
 }
 
 interface RowWire {

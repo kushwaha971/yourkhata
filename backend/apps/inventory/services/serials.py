@@ -35,7 +35,9 @@ def _missing_message(item: Any, base_qty: Decimal, entered: int) -> str:
     return f"Enter {base_qty.normalize():f} IMEI / serial numbers ({entered} entered)."
 
 
-def parse(raw: Any, *, item: Any, base_qty: Decimal | None, path: str, errors: dict, strict: bool) -> list[str]:
+def parse(
+    raw: Any, *, item: Any, base_qty: Decimal | None, path: str, errors: dict, strict: bool
+) -> list[str]:
     """A line's serials: trimmed, upper-cased, unique; on a strict save, one per piece."""
     if not tracked(item):
         return []
@@ -68,7 +70,11 @@ def receive(*, ctx: Any, document: Any, rows: list[dict]) -> None:
         for serial in row.get("serials") or []:
             if not tracked(item):
                 continue
-            existing = Serial.objects.select_for_update().filter(tenant=ctx.tenant, item=item, serial=serial).first()
+            existing = (
+                Serial.objects.select_for_update()
+                .filter(tenant=ctx.tenant, item=item, serial=serial)
+                .first()
+            )
             if existing is not None and existing.status == Serial.IN_STOCK:
                 clash.append(serial)
                 continue
@@ -158,7 +164,9 @@ def find(*, tenant: Any, code: str) -> dict | None:
     from apps.sales.models import SalesDocument
 
     sale = (
-        SalesDocument.objects.filter(tenant=tenant, pk=row.sales_document_id).select_related("party").first()
+        SalesDocument.objects.filter(tenant=tenant, pk=row.sales_document_id)
+        .select_related("party")
+        .first()
         if row.sales_document_id
         else None
     )
@@ -194,7 +202,11 @@ def find(*, tenant: Any, code: str) -> dict | None:
         "serial": row.serial,
         "status": row.status,
         "returned": (
-            {"id": str(returned.id), "number": returned.number, "date": returned.document_date.isoformat()}
+            {
+                "id": str(returned.id),
+                "number": returned.number,
+                "date": returned.document_date.isoformat(),
+            }
             if returned is not None
             else None
         ),
@@ -228,4 +240,6 @@ def find(*, tenant: Any, code: str) -> dict | None:
 def refuse_if_untracked_serials(raw: Any, item: Any, path: str) -> None:
     """Serials sent for an item that does not track them are an error, not ignored."""
     if raw and not tracked(item):
-        raise ValidationFailed({f"{path}.serials": ["This item does not track IMEI / serial numbers."]})
+        raise ValidationFailed(
+            {f"{path}.serials": ["This item does not track IMEI / serial numbers."]}
+        )

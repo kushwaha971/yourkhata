@@ -12,10 +12,7 @@ import { useIntl } from 'react-intl';
  * the values record in particular, which quietly decides whether a component
  * can pass a number to an ICU plural.
  */
-export type TranslateFn = (
-  id: string,
-  values?: Record<string, string | number | Date>
-) => string;
+export type TranslateFn = (id: string, values?: Record<string, string | number | Date>) => string;
 
 export interface UseTranslationResult {
   readonly t: TranslateFn;

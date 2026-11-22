@@ -24,12 +24,7 @@ from typing import Any
 from apps.common.dates import tenant_today
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.common.money import q2
-from apps.dues.constants import (
-    OPEN_DUE_STATUSES,
-    SOURCE_ADJUSTMENT,
-    AdjustmentKind,
-    Component,
-)
+from apps.dues.constants import OPEN_DUE_STATUSES, SOURCE_ADJUSTMENT, AdjustmentKind, Component
 from apps.dues.models import DuesAdjustment, DuesDue, DuesDueComponent
 from apps.dues.services.settlement import _save, room
 

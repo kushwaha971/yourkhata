@@ -63,9 +63,13 @@ const mobileOf = (job: RepairJob): string | null => job.party?.mobile ?? job.wal
 const stageBadge = (job: RepairJob, t: TranslateFn): React.ReactNode => {
   if (job.status === 'open' && job.daysLate > 0)
     return <UbStatusBadge tone="error" label={t('sales.repair.late', { count: job.daysLate })} />;
-  const tone = { open: 'info', waiting: 'warning', ready: 'success', delivered: 'neutral', cancelled: 'neutral' }[
-    job.status
-  ] as 'info' | 'warning' | 'success' | 'neutral';
+  const tone = {
+    open: 'info',
+    waiting: 'warning',
+    ready: 'success',
+    delivered: 'neutral',
+    cancelled: 'neutral',
+  }[job.status] as 'info' | 'warning' | 'success' | 'neutral';
   return <UbStatusBadge tone={tone} label={t(`sales.repair.stage.${job.status}`)} />;
 };
 
@@ -100,23 +104,79 @@ const readyLink = (job: RepairJob, t: TranslateFn): string | null => {
 const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<RepairJob>[] => {
   if (tier === 'cards')
     return [
-      { id: 'job', header: t('sales.repair.col.job'), priority: 1, cardSlot: 'title', cell: (j) => `${j.number} · ${who(j, t)}` },
+      {
+        id: 'job',
+        header: t('sales.repair.col.job'),
+        priority: 1,
+        cardSlot: 'title',
+        cell: (j) => `${j.number} · ${who(j, t)}`,
+      },
       {
         id: 'phone',
         header: t('sales.repair.col.phone'),
         priority: 1,
         cardSlot: 'meta',
-        cell: (j) => `${j.phoneModel} · ${j.fault} · ${t('sales.repair.readyOn', { date: formatBusinessDate(j.readyBy) })}`,
+        cell: (j) =>
+          `${j.phoneModel} · ${j.fault} · ${t('sales.repair.readyOn', { date: formatBusinessDate(j.readyBy) })}`,
       },
-      { id: 'stage', header: t('sales.repair.col.stage'), priority: 1, cardSlot: 'trailing', cell: (j) => stageBadge(j, t) },
+      {
+        id: 'stage',
+        header: t('sales.repair.col.stage'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: (j) => stageBadge(j, t),
+      },
     ];
   return [
-    { id: 'job', header: t('sales.repair.col.job'), priority: 1, cardSlot: 'none', widthShare: 11, cell: (j) => j.number },
-    { id: 'customer', header: t('sales.repair.col.customer'), priority: 1, cardSlot: 'none', widthShare: 18, cell: (j) => who(j, t) },
-    { id: 'phone', header: t('sales.repair.col.phone'), priority: 1, cardSlot: 'none', widthShare: 27, cell: (j) => `${j.phoneModel} · ${j.fault}` },
-    { id: 'ready', header: t('sales.repair.col.readyBy'), priority: 2, cardSlot: 'none', widthShare: 12, cell: (j) => formatBusinessDate(j.readyBy) },
-    { id: 'estimate', header: t('sales.repair.col.estimate'), priority: 2, cardSlot: 'none', align: 'end', widthShare: 12, cell: (j) => formatInr(j.estimate) },
-    { id: 'stage', header: t('sales.repair.col.stage'), priority: 1, cardSlot: 'none', widthShare: 20, cell: (j) => stageBadge(j, t) },
+    {
+      id: 'job',
+      header: t('sales.repair.col.job'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 11,
+      cell: (j) => j.number,
+    },
+    {
+      id: 'customer',
+      header: t('sales.repair.col.customer'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 18,
+      cell: (j) => who(j, t),
+    },
+    {
+      id: 'phone',
+      header: t('sales.repair.col.phone'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 27,
+      cell: (j) => `${j.phoneModel} · ${j.fault}`,
+    },
+    {
+      id: 'ready',
+      header: t('sales.repair.col.readyBy'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 12,
+      cell: (j) => formatBusinessDate(j.readyBy),
+    },
+    {
+      id: 'estimate',
+      header: t('sales.repair.col.estimate'),
+      priority: 2,
+      cardSlot: 'none',
+      align: 'end',
+      widthShare: 12,
+      cell: (j) => formatInr(j.estimate),
+    },
+    {
+      id: 'stage',
+      header: t('sales.repair.col.stage'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 20,
+      cell: (j) => stageBadge(j, t),
+    },
   ];
 };
 
@@ -162,7 +222,13 @@ export function RepairsPageContent(): React.JSX.Element {
     async (job: RepairJob, status: RepairStage) => {
       setActing(null);
       await moveRepair(job.id, status);
-      dispatch(showSnackbar({ severity: 'success', id: `sales.repair.moved.${status}`, params: { number: job.number } }));
+      dispatch(
+        showSnackbar({
+          severity: 'success',
+          id: `sales.repair.moved.${status}`,
+          params: { number: job.number },
+        })
+      );
       setAttempt((n) => n + 1);
     },
     [dispatch]
@@ -176,18 +242,39 @@ export function RepairsPageContent(): React.JSX.Element {
         value,
         label:
           counts && value !== 'delivered'
-            ? t('sales.repair.chip.withCount', { label: t(`sales.repair.chip.${value}`), count: counts[value] })
+            ? t('sales.repair.chip.withCount', {
+                label: t(`sales.repair.chip.${value}`),
+                count: counts[value],
+              })
             : t(`sales.repair.chip.${value}`),
       })),
     [counts, t]
   );
   const rows = list?.rows ?? [];
-  const gridState: UbGridState = failed ? 'error' : !list ? 'loading' : rows.length === 0 ? (search ? 'filtered-empty' : 'empty') : 'rows';
+  const gridState: UbGridState = failed
+    ? 'error'
+    : !list
+      ? 'loading'
+      : rows.length === 0
+        ? search
+          ? 'filtered-empty'
+          : 'empty'
+        : 'rows';
   const searchBox = (
-    <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.repair.search')} aria-label={t('sales.repair.search')} />
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('sales.repair.search')}
+      aria-label={t('sales.repair.search')}
+    />
   );
   const newButton = canWrite && (
-    <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} iconOnly="mobile" onClick={() => setAdding(true)} data-testid="repair-new">
+    <UbButton
+      icon={<Plus className="h-4 w-4" aria-hidden />}
+      iconOnly="mobile"
+      onClick={() => setAdding(true)}
+      data-testid="repair-new"
+    >
       {t('sales.repair.new')}
     </UbButton>
   );
@@ -207,7 +294,11 @@ export function RepairsPageContent(): React.JSX.Element {
               closeLabel: t('common.action.close'),
               primaryPlacement: 'header',
               primary: canWrite
-                ? { label: t('sales.repair.new'), icon: <Plus className="h-6 w-6" aria-hidden />, onClick: () => setAdding(true) }
+                ? {
+                    label: t('sales.repair.new'),
+                    icon: <Plus className="h-6 w-6" aria-hidden />,
+                    onClick: () => setAdding(true),
+                  }
                 : undefined,
             }}
           />
@@ -286,7 +377,13 @@ export function RepairsPageContent(): React.JSX.Element {
             </UbText>
             {/* Nothing is sent by the product (DEC-012): this opens WhatsApp with the slip written. */}
             {slip && (
-              <UbActionLink href={slip} target="_blank" rel="noopener noreferrer" variant="primary" data-testid="repair-send-slip">
+              <UbActionLink
+                href={slip}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                data-testid="repair-send-slip"
+              >
                 {t('sales.repair.sendSlip')}
               </UbActionLink>
             )}
@@ -297,11 +394,19 @@ export function RepairsPageContent(): React.JSX.Element {
             )}
             {canWrite && LIVE.includes(acting.status) && (
               <>
-                <UbActionLink href={billHref(acting)} variant={slipFor === acting.id ? 'secondary' : 'primary'} data-testid="repair-bill">
+                <UbActionLink
+                  href={billHref(acting)}
+                  variant={slipFor === acting.id ? 'secondary' : 'primary'}
+                  data-testid="repair-bill"
+                >
                   {t('sales.repair.makeBill')}
                 </UbActionLink>
                 {acting.status !== 'ready' && (
-                  <UbButton variant="secondary" onClick={() => void move(acting, 'ready')} data-testid="repair-ready">
+                  <UbButton
+                    variant="secondary"
+                    onClick={() => void move(acting, 'ready')}
+                    data-testid="repair-ready"
+                  >
                     {t('sales.repair.markReady')}
                   </UbButton>
                 )}
@@ -316,7 +421,12 @@ export function RepairsPageContent(): React.JSX.Element {
                   </UbButton>
                 )}
                 {acting.status === 'ready' && ready && (
-                  <UbActionLink href={ready} target="_blank" rel="noopener noreferrer" variant="secondary">
+                  <UbActionLink
+                    href={ready}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="secondary"
+                  >
                     {t('sales.repair.tell')}
                   </UbActionLink>
                 )}
@@ -338,7 +448,13 @@ export function RepairsPageContent(): React.JSX.Element {
               setSlipFor(job.id);
               setActing(job);
             } else {
-              dispatch(showSnackbar({ severity: 'success', id: 'sales.repair.saved', params: { number: job.number } }));
+              dispatch(
+                showSnackbar({
+                  severity: 'success',
+                  id: 'sales.repair.saved',
+                  params: { number: job.number },
+                })
+              );
             }
             setAttempt((n) => n + 1);
           }}

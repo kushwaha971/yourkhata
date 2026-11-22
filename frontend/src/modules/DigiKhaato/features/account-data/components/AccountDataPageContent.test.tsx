@@ -175,7 +175,9 @@ describe('AccountDataPageContent', () => {
     await userEvent.click(first);
     await userEvent.keyboard('482916');
     await userEvent.type(screen.getByLabelText(/Type .*Sharma Kirana/), 'Sharma Kirana');
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete business' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete business' })
+    );
     await waitFor(() =>
       expect(service.requestDeletion).toHaveBeenCalledWith(
         expect.objectContaining({ challengeId: 'c1', code: '482916', confirmName: 'Sharma Kirana' })

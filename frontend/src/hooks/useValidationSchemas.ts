@@ -239,7 +239,9 @@ export const buildValidationSchemas = (
       // extra zero, E7) was told "Use up to two decimals" instead of "too large"
       // (Money Book round, 11 Nov). Only a plain number is judged by size here.
       .test('max', t('validation.amount.tooLarge'), (value) =>
-        value && /^\d+(\.\d+)?$/.test(value) ? Number(value) <= Number(options?.max ?? MAX_AMOUNT) : true
+        value && /^\d+(\.\d+)?$/.test(value)
+          ? Number(value) <= Number(options?.max ?? MAX_AMOUNT)
+          : true
       )
       .matches(REGEX.DECIMAL_2DP, t('validation.amount.format'))
       .test('positive', t('validation.amount.positive'), (value) => {

@@ -25,8 +25,7 @@ import type { UseAccountDataResult } from '../hooks/useAccountData';
 
 const DeleteBusinessDialog = dynamic(
   () => import('./DeleteBusinessDialog').then((module) => module.DeleteBusinessDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

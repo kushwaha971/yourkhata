@@ -37,7 +37,8 @@ export const LIBRARY_PATHS = {
   STUDENTS: '/library/students',
   STUDENT: (id: string) => `/library/students/${seg(id)}`,
   MOVE: (id: string) => `/library/students/${seg(id)}/move`,
-  STATUS: (id: string, action: 'hold' | 'resume' | 'leave') => `/library/students/${seg(id)}/${action}`,
+  STATUS: (id: string, action: 'hold' | 'resume' | 'leave') =>
+    `/library/students/${seg(id)}/${action}`,
   PAYMENTS: (id: string) => `/library/students/${seg(id)}/payments`,
   REMOVE_PAYMENT: (id: string) => `/library/payments/${seg(id)}/remove`,
   FEES: '/library/fees',
@@ -172,7 +173,11 @@ export async function getHome(signal?: AbortSignal): Promise<Home> {
 }
 
 export async function getSeats(shiftId: string, signal?: AbortSignal): Promise<SeatMap> {
-  const r = data<Wire>(await api.get(`${LIBRARY_PATHS.SEATS}${toQueryString({ shift: shiftId || undefined })}`, { signal }));
+  const r = data<Wire>(
+    await api.get(`${LIBRARY_PATHS.SEATS}${toQueryString({ shift: shiftId || undefined })}`, {
+      signal,
+    })
+  );
   return {
     shiftId: strOrNull(r.shift_id),
     seats: ((r.seats as Wire[]) ?? []).map((s) => ({
@@ -198,7 +203,11 @@ export async function saveShift(
   id?: string,
   idempotencyKey?: string
 ): Promise<void> {
-  const body = { name: values.name, monthly_fee: values.monthlyFee, is_full_day: Boolean(values.fullDay) };
+  const body = {
+    name: values.name,
+    monthly_fee: values.monthlyFee,
+    is_full_day: Boolean(values.fullDay),
+  };
   if (id) await api.patch(LIBRARY_PATHS.SHIFT(id), body);
   else await api.post(LIBRARY_PATHS.SHIFTS, body, key(idempotencyKey));
 }
@@ -234,8 +243,14 @@ export async function listStudents(q: StudentsQuery, signal?: AbortSignal): Prom
   };
 }
 
-export async function getStudent(id: string, signal?: AbortSignal, month?: string): Promise<StudentDetail> {
-  const r = data<Wire>(await api.get(`${LIBRARY_PATHS.STUDENT(id)}${toQueryString({ month })}`, { signal }));
+export async function getStudent(
+  id: string,
+  signal?: AbortSignal,
+  month?: string
+): Promise<StudentDetail> {
+  const r = data<Wire>(
+    await api.get(`${LIBRARY_PATHS.STUDENT(id)}${toQueryString({ month })}`, { signal })
+  );
   return {
     ...toStudent(r),
     paidThisYear: str(r.paid_this_year),
@@ -288,10 +303,16 @@ export async function setStudentStatus(
   action: 'hold' | 'resume' | 'leave',
   idempotencyKey: string
 ): Promise<Student> {
-  return toStudent(data<Wire>(await api.post(LIBRARY_PATHS.STATUS(id, action), {}, key(idempotencyKey))));
+  return toStudent(
+    data<Wire>(await api.post(LIBRARY_PATHS.STATUS(id, action), {}, key(idempotencyKey)))
+  );
 }
 
-export async function listPayments(id: string, includeRemoved: boolean, signal?: AbortSignal): Promise<Payment[]> {
+export async function listPayments(
+  id: string,
+  includeRemoved: boolean,
+  signal?: AbortSignal
+): Promise<Payment[]> {
   const r = await api.get(
     `${LIBRARY_PATHS.PAYMENTS(id)}${toQueryString({ include_removed: includeRemoved ? 'true' : undefined })}`,
     { signal }
@@ -305,8 +326,14 @@ const payBody = (v: CollectValues): Wire => ({
   ...(v.paidOn ? { paid_on: v.paidOn } : {}),
 });
 
-export async function previewFee(id: string, v: CollectValues, signal?: AbortSignal): Promise<FeePreview> {
-  const r = data<Wire>(await api.post(`${LIBRARY_PATHS.PAYMENTS(id)}?preview=true`, payBody(v), { signal }));
+export async function previewFee(
+  id: string,
+  v: CollectValues,
+  signal?: AbortSignal
+): Promise<FeePreview> {
+  const r = data<Wire>(
+    await api.post(`${LIBRARY_PATHS.PAYMENTS(id)}?preview=true`, payBody(v), { signal })
+  );
   return { months: num(r.months), paidTo: str(r.paid_to), credit: str(r.credit) };
 }
 
@@ -324,8 +351,14 @@ export async function collectFee(
   };
 }
 
-export async function removePayment(id: string, reason: string, idempotencyKey: string): Promise<Student> {
-  const r = data<Wire>(await api.post(LIBRARY_PATHS.REMOVE_PAYMENT(id), { reason }, key(idempotencyKey)));
+export async function removePayment(
+  id: string,
+  reason: string,
+  idempotencyKey: string
+): Promise<Student> {
+  const r = data<Wire>(
+    await api.post(LIBRARY_PATHS.REMOVE_PAYMENT(id), { reason }, key(idempotencyKey))
+  );
   return toStudent(r.student as Wire);
 }
 
@@ -347,7 +380,10 @@ export async function messageText(
   signal?: AbortSignal
 ): Promise<{ text: string; mobile: string }> {
   const r = data<Wire>(
-    await api.get(`${LIBRARY_PATHS.MESSAGE_TEXT}${toQueryString({ student: studentId, kind, lang })}`, { signal })
+    await api.get(
+      `${LIBRARY_PATHS.MESSAGE_TEXT}${toQueryString({ student: studentId, kind, lang })}`,
+      { signal }
+    )
   );
   return { text: str(r.text), mobile: str(r.mobile) };
 }
@@ -358,11 +394,17 @@ export async function recordMessage(
   text: string,
   idempotencyKey: string
 ): Promise<void> {
-  await api.post(LIBRARY_PATHS.MESSAGES, { student_id: studentId, kind, text }, key(idempotencyKey));
+  await api.post(
+    LIBRARY_PATHS.MESSAGES,
+    { student_id: studentId, kind, text },
+    key(idempotencyKey)
+  );
 }
 
 export async function listMessages(signal?: AbortSignal): Promise<MessageRow[]> {
-  const r = await api.get(`${LIBRARY_PATHS.MESSAGES}${toQueryString({ page_size: 100 })}`, { signal });
+  const r = await api.get(`${LIBRARY_PATHS.MESSAGES}${toQueryString({ page_size: 100 })}`, {
+    signal,
+  });
   return (r.data.data as Wire[]).map((m) => ({
     id: str(m.id),
     studentId: str(m.student_id),
@@ -374,7 +416,10 @@ export async function listMessages(signal?: AbortSignal): Promise<MessageRow[]> 
 }
 
 export async function listAttendance(day: string, signal?: AbortSignal): Promise<AttendanceRow[]> {
-  const r = await api.get(`${LIBRARY_PATHS.ATTENDANCE}${toQueryString({ day: day || undefined })}`, { signal });
+  const r = await api.get(
+    `${LIBRARY_PATHS.ATTENDANCE}${toQueryString({ day: day || undefined })}`,
+    { signal }
+  );
   return (r.data.data as Wire[]).map((a) => ({
     id: str(a.id),
     studentId: str(a.student_id),
@@ -385,12 +430,22 @@ export async function listAttendance(day: string, signal?: AbortSignal): Promise
   }));
 }
 
-export async function markAttendance(studentId: string, out: boolean, idempotencyKey: string): Promise<void> {
+export async function markAttendance(
+  studentId: string,
+  out: boolean,
+  idempotencyKey: string
+): Promise<void> {
   await api.post(LIBRARY_PATHS.ATTENDANCE, { student_id: studentId, out }, key(idempotencyKey));
 }
 
-export async function getMoney(from: string, to: string, signal?: AbortSignal): Promise<MoneyReport> {
-  const r = data<Wire>(await api.get(`${LIBRARY_PATHS.MONEY}${toQueryString({ from, to })}`, { signal }));
+export async function getMoney(
+  from: string,
+  to: string,
+  signal?: AbortSignal
+): Promise<MoneyReport> {
+  const r = data<Wire>(
+    await api.get(`${LIBRARY_PATHS.MONEY}${toQueryString({ from, to })}`, { signal })
+  );
   return {
     from: str(r.from),
     to: str(r.to),
@@ -402,7 +457,11 @@ export async function getMoney(from: string, to: string, signal?: AbortSignal): 
   };
 }
 
-export async function listExpenses(from: string, to: string, signal?: AbortSignal): Promise<Expense[]> {
+export async function listExpenses(
+  from: string,
+  to: string,
+  signal?: AbortSignal
+): Promise<Expense[]> {
   const r = await api.get(`${LIBRARY_PATHS.EXPENSES}${toQueryString({ from, to })}`, { signal });
   return (r.data.data as Wire[]).map(toExpense);
 }
@@ -415,14 +474,24 @@ export async function addExpense(
   return toExpense(data<Wire>(await api.post(LIBRARY_PATHS.EXPENSES, body, key(idempotencyKey))));
 }
 
-export async function removeExpense(id: string, reason: string, idempotencyKey: string): Promise<void> {
+export async function removeExpense(
+  id: string,
+  reason: string,
+  idempotencyKey: string
+): Promise<void> {
   await api.post(LIBRARY_PATHS.REMOVE_EXPENSE(id), { reason }, key(idempotencyKey));
 }
 
-export async function listBooks(q: { q?: string; code?: string }, signal?: AbortSignal): Promise<Book[]> {
-  const r = await api.get(`${LIBRARY_PATHS.BOOKS}${toQueryString({ q: q.q || undefined, code: q.code || undefined })}`, {
-    signal,
-  });
+export async function listBooks(
+  q: { q?: string; code?: string },
+  signal?: AbortSignal
+): Promise<Book[]> {
+  const r = await api.get(
+    `${LIBRARY_PATHS.BOOKS}${toQueryString({ q: q.q || undefined, code: q.code || undefined })}`,
+    {
+      signal,
+    }
+  );
   return (r.data.data as Wire[]).map(toBook);
 }
 
@@ -436,7 +505,11 @@ export async function saveBook(
   else await api.post(LIBRARY_PATHS.BOOKS, body, key(idempotencyKey));
 }
 
-export async function giveBook(bookId: string, studentId: string, idempotencyKey: string): Promise<void> {
+export async function giveBook(
+  bookId: string,
+  studentId: string,
+  idempotencyKey: string
+): Promise<void> {
   await api.post(LIBRARY_PATHS.GIVE(bookId), { student_id: studentId }, key(idempotencyKey));
 }
 
@@ -448,7 +521,11 @@ export async function getSettings(signal?: AbortSignal): Promise<LibrarySettings
   return toSettings(data<Wire>(await api.get(LIBRARY_PATHS.SETTINGS, { signal })));
 }
 
-export async function saveSettings(v: { signAs: string; upiId: string; dueSoonDays: string }): Promise<LibrarySettings> {
+export async function saveSettings(v: {
+  signAs: string;
+  upiId: string;
+  dueSoonDays: string;
+}): Promise<LibrarySettings> {
   const body = { sign_as: v.signAs, upi_id: v.upiId, due_soon_days: Number(v.dueSoonDays) };
   return toSettings(data<Wire>(await api.patch(LIBRARY_PATHS.SETTINGS, body)));
 }

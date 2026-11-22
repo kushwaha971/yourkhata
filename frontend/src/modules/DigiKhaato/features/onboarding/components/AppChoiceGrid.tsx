@@ -96,7 +96,10 @@ function AppChoiceGridBase({
             </UbBox>
             <Icon
               aria-hidden
-              className={cn('row-span-2 mt-px h-5 w-5', selected ? 'text-text-accent' : 'text-text-tertiary')}
+              className={cn(
+                'row-span-2 mt-px h-5 w-5',
+                selected ? 'text-text-accent' : 'text-text-tertiary'
+              )}
             />
             <UbText as="span" variant="body-sm-medium">
               {t(app.labelId)}

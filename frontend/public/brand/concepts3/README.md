@@ -23,12 +23,12 @@ The palette is the app's primary ramp in `src/styles/tokens/light.css`. "Bahi re
 
 The tile is a khata page: a pale indigo sheet with two faint ruled lines and a red margin rule. The K is written on the page in indigo ink, and its sweep underlines the total.
 
-| Role | Hex | Check |
-|---|---|---|
-| Page tile | `#F1F0FE` (primary-50) | |
-| K ink | `#3A36B8` (primary-600) | 7.8:1 on the page |
-| Ruled lines and tile edge | `#C6C4F9` (primary-200) | Decorative |
-| Margin rule | `#C8322B` bahi red | 4.7:1 on the page |
+| Role                      | Hex                     | Check             |
+| ------------------------- | ----------------------- | ----------------- |
+| Page tile                 | `#F1F0FE` (primary-50)  |                   |
+| K ink                     | `#3A36B8` (primary-600) | 7.8:1 on the page |
+| Ruled lines and tile edge | `#C6C4F9` (primary-200) | Decorative        |
+| Margin rule               | `#C8322B` bahi red      | 4.7:1 on the page |
 
 - **Strengths:** this is the most literal "ledger page" of the four, and the K is exactly the Concept 1 letter. It is the only light tile, so it stands out on a dark rail and on a phone home screen.
 - **Risks:** the pale tile needs its hairline edge to hold its shape on a white sidebar, and the in-context sheet shows it is weaker there. At 16 px the margin and the rule are single pixels, so they read as texture. The one-colour version is busy. A light tile does not keep the solid indigo block that the app uses today.
@@ -37,10 +37,10 @@ The tile is a khata page: a pale indigo sheet with two faint ruled lines and a r
 
 The K's stem is the ledger's spine. It runs the full height of the book, and a column of stitch holes runs down it. Two fanned lines behind the upper arm are the pages opening off the spine.
 
-| Role | Hex | Check |
-|---|---|---|
-| Tile | `#4A47D6` (primary-500) | White on the tile 6.6:1 |
-| Pages | `#9D9AF0` (primary-300) | 2.6:1, decorative |
+| Role  | Hex                     | Check                   |
+| ----- | ----------------------- | ----------------------- |
+| Tile  | `#4A47D6` (primary-500) | White on the tile 6.6:1 |
+| Pages | `#9D9AF0` (primary-300) | 2.6:1, decorative       |
 
 - **Strengths:** it keeps the solid indigo tile of Concept 1. The stitched spine is an idea no other brand in the category uses. The 16 px cut keeps three stitch holes.
 - **Risks:** the holes can read as a ruler or a film strip. The fanned page lines look like "speed lines" at 32 px and below, so they are dropped from the 16 px cut.
@@ -49,11 +49,11 @@ The K's stem is the ledger's spine. It runs the full height of the book, and a c
 
 The tile is the cloth cover of a bahi-khata, recoloured deep indigo, with a stitched hem. The K's sweep keeps going across the whole cover as the tie band, and a small bahi-red knot with two white string ends closes it. In the wordmark, a red knot dot ends the sweep under "hata".
 
-| Role | Hex | Check |
-|---|---|---|
+| Role       | Hex                     | Check                    |
+| ---------- | ----------------------- | ------------------------ |
 | Cover tile | `#3A36B8` (primary-600) | White on the cover 8.8:1 |
-| Hem | `#716DE4` (primary-400) | 2.1:1, decorative |
-| Knot | `#C8322B` bahi red | 5.3:1 on the white band |
+| Hem        | `#716DE4` (primary-400) | 2.1:1, decorative        |
+| Knot       | `#C8322B` bahi red      | 5.3:1 on the white band  |
 
 - **Strengths:** of the four, this is the version that most clearly reads as the tied red ledger, and the knot gives the family a small, ownable signature. White on this tile has the highest contrast of the four.
 - **Risks:** it has the most detail. The hem and the knot shrink to near-noise at 24 px and below, and at 16 px the knot reads as a red dot. Bahi red sits close to the app's debit red `--error` `#CC1C1C`, so it must stay decorative.
@@ -62,10 +62,10 @@ The tile is the cloth cover of a bahi-khata, recoloured deep indigo, with a stit
 
 The K is redrawn from ledger strokes. The stem is a column rule running down through the foot. The two arms are equal-length entries, "diya" (white) and "liya" (primary-200), meeting at the rule, so the account is balanced. A double underline closes the balance, and the wordmark repeats it under "Khata".
 
-| Role | Hex | Check |
-|---|---|---|
-| Tile | `#4A47D6` (primary-500) | White on the tile 6.6:1 |
-| "Liya" arm | `#C6C4F9` (primary-200) | 4.0:1 on the tile |
+| Role       | Hex                     | Check                   |
+| ---------- | ----------------------- | ----------------------- |
+| Tile       | `#4A47D6` (primary-500) | White on the tile 6.6:1 |
+| "Liya" arm | `#C6C4F9` (primary-200) | 4.0:1 on the tile       |
 
 - **Strengths:** it is the cleanest geometry and the crispest 16 px cut. The double underline is the accountant's "closing balance" sign, and it carries the meaning without needing red.
 - **Risks:** it moves furthest from the Concept 1 letter, because the sweep is replaced by the double rule. The double-barred foot may remind some people of the Lao kip sign (₭) or of a generic "K with underline".

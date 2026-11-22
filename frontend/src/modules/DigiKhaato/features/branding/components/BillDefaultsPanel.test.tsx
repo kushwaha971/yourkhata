@@ -19,7 +19,10 @@ const service = jest.requireMock('modules/DigiKhaato/features/settings/api/setti
 };
 
 const data = {
-  values: { 'documents.terms': { text: 'No return once sold.' }, 'documents.show_upi_qr': { value: true } },
+  values: {
+    'documents.terms': { text: 'No return once sold.' },
+    'documents.show_upi_qr': { value: true },
+  },
   numbering: {},
   fyLabel: '2026-27',
   modules: { enabled: ['platform'], available: ['platform'], locked: [], core: ['platform'] },
@@ -30,7 +33,15 @@ const data = {
 const signIn = (role: string, permissions: string[]) =>
   store.dispatch(
     sessionLoaded({
-      user: { id: 'u1', name: 'A', email: 'a@x.test', mobile: null, locale: 'en', mustChangePassword: false, passwordExpiresAt: null },
+      user: {
+        id: 'u1',
+        name: 'A',
+        email: 'a@x.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
       activeTenant: { id: 't1', name: 'Shop', timezone: 'Asia/Kolkata', role },
       tenants: [{ id: 't1', name: 'Shop', timezone: 'Asia/Kolkata', role }],
       permissions: permissions as never,
@@ -52,7 +63,9 @@ it('the owner turns the UPI QR off with one tap and saves the terms line', async
   expect(qr).toBeChecked();
   await user.click(qr);
   await waitFor(() => expect(service.saveSettings).toHaveBeenCalled());
-  expect(JSON.stringify(service.saveSettings.mock.calls[0])).toContain('"documents.show_upi_qr":{"value":false}');
+  expect(JSON.stringify(service.saveSettings.mock.calls[0])).toContain(
+    '"documents.show_upi_qr":{"value":false}'
+  );
 
   const terms = screen.getByLabelText('Terms line');
   expect(terms).toHaveValue('No return once sold.');
@@ -60,7 +73,9 @@ it('the owner turns the UPI QR off with one tap and saves the terms line', async
   await user.type(terms, 'Goods checked at the counter.');
   await user.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() =>
-    expect(JSON.stringify(service.saveSettings.mock.calls.at(-1))).toContain('Goods checked at the counter.')
+    expect(JSON.stringify(service.saveSettings.mock.calls.at(-1))).toContain(
+      'Goods checked at the counter.'
+    )
   );
 });
 
@@ -76,7 +91,12 @@ it('says so when another tab or device saved Settings first (412)', async () => 
   // settings-edges E5, 16 Nov 2026: the refused save showed nothing here,
   // because the conflict dialog lived only on the Settings list.
   signIn('owner', ['platform.tenant.manage']);
-  service.saveSettings.mockRejectedValue({ code: 'precondition_failed', message: 'Changed', details: null, requestId: null });
+  service.saveSettings.mockRejectedValue({
+    code: 'precondition_failed',
+    message: 'Changed',
+    details: null,
+    requestId: null,
+  });
   const user = userEvent.setup();
   renderWithProviders(<BillDefaultsPanel />);
   await user.click(await screen.findByRole('switch', { name: /Show the UPI QR/ }));

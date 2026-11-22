@@ -140,12 +140,17 @@ def apply_payload(
     if "vehicle_number" in payload or "mechanic" in payload or "vehicle_model" in payload:
         vehicle = dict((document.meta or {}).get("vehicle") or {})
         if "vehicle_number" in payload:
-            vehicle["number"] = "".join(str(payload.get("vehicle_number") or "").split()).upper()[:20]
+            vehicle["number"] = "".join(str(payload.get("vehicle_number") or "").split()).upper()[
+                :20
+            ]
         if "mechanic" in payload:
             vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
         if "vehicle_model" in payload:
             vehicle["model"] = " ".join(str(payload.get("vehicle_model") or "").split())[:60]
-        document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
+        document.meta = {
+            **(document.meta or {}),
+            "vehicle": {k: v for k, v in vehicle.items() if v},
+        }
     # G2d — the customer's PAN, asked on a jeweller's bill of ₹2 lakh or more
     # (Rule 114B), kept with the bill in meta.pan.
     if "pan" in payload:
@@ -175,22 +180,30 @@ def apply_payload(
     if "phone_order_id" in payload:
         from apps.sales.services.phone_orders import link_to_draft as link_phone
 
-        link_phone(tenant=tenant, document=document, order_id=payload.get("phone_order_id"), errors=errors)
+        link_phone(
+            tenant=tenant, document=document, order_id=payload.get("phone_order_id"), errors=errors
+        )
     # G10 — the café order this bill settles, kept in meta.cafe_order.
     if "cafe_order_id" in payload:
         from apps.sales.services.cafe_orders import link_to_draft as link_cafe
 
-        link_cafe(tenant=tenant, document=document, order_id=payload.get("cafe_order_id"), errors=errors)
+        link_cafe(
+            tenant=tenant, document=document, order_id=payload.get("cafe_order_id"), errors=errors
+        )
     # G5 — the repair job this bill delivers, kept in meta.repair_job.
     if "repair_job_id" in payload:
         from apps.sales.services.repairs import link_to_draft as link_repair
 
-        link_repair(tenant=tenant, document=document, job_id=payload.get("repair_job_id"), errors=errors)
+        link_repair(
+            tenant=tenant, document=document, job_id=payload.get("repair_job_id"), errors=errors
+        )
     # G3a — the custom order this bill delivers, kept in meta.custom_order.
     if "custom_order_id" in payload:
         from apps.sales.services.custom_orders import link_to_draft
 
-        link_to_draft(tenant=tenant, document=document, order_id=payload.get("custom_order_id"), errors=errors)
+        link_to_draft(
+            tenant=tenant, document=document, order_id=payload.get("custom_order_id"), errors=errors
+        )
     # G2c — a jeweller's old gold taken in, priced by the server, kept in
     # meta.old_gold until issue settles it (`inventory.services.old_gold`).
     if "old_gold" in payload:

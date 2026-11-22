@@ -11,6 +11,9 @@
 export const blurIfTyped =
   (field: { readonly value: unknown; readonly onBlur: () => void }, submitted: boolean) =>
   (): void => {
-    if (submitted || (typeof field.value === 'string' ? field.value.trim() !== '' : field.value != null))
+    if (
+      submitted ||
+      (typeof field.value === 'string' ? field.value.trim() !== '' : field.value != null)
+    )
       field.onBlur();
   };

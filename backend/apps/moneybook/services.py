@@ -15,7 +15,14 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apps.common.exceptions import BusinessRuleViolation, NotFound, ValidationFailed
-from apps.moneybook.constants import MAX_AMOUNT, NAME_MAX, NOTE_MAX, REASON_MAX, EntryKind, EntryStatus
+from apps.moneybook.constants import (
+    MAX_AMOUNT,
+    NAME_MAX,
+    NOTE_MAX,
+    REASON_MAX,
+    EntryKind,
+    EntryStatus,
+)
 from apps.moneybook.models import Entry, Person
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -170,7 +177,10 @@ def preview_entry(*, owner: Any, person_id: Any, data: dict) -> dict:
     """The sheet's "After this: ₹8,000 to get" — the same rule as a save."""
     clean = _clean_entry(data)
     person = get_person(owner=owner, person_id=person_id)
-    return {"balance": person.balance, "balance_after": person.balance + _signed(clean["kind"], clean["amount"])}
+    return {
+        "balance": person.balance,
+        "balance_after": person.balance + _signed(clean["kind"], clean["amount"]),
+    }
 
 
 def _refresh_last(person: Person) -> None:
@@ -185,11 +195,24 @@ def _refresh_last(person: Person) -> None:
 
 
 def _post(
-    person: Person, *, kind: str, amount: Decimal, note: str, entry_date: dt.date, sort_at: Any = None, **extra: Any
+    person: Person,
+    *,
+    kind: str,
+    amount: Decimal,
+    note: str,
+    entry_date: dt.date,
+    sort_at: Any = None,
+    **extra: Any,
 ) -> Entry:
     entry = Entry.objects.create(
-        owner_id=person.owner_id, person=person, kind=kind, amount=amount, note=note,
-        entry_date=entry_date, sort_at=sort_at or timezone.now(), **extra,
+        owner_id=person.owner_id,
+        person=person,
+        kind=kind,
+        amount=amount,
+        note=note,
+        entry_date=entry_date,
+        sort_at=sort_at or timezone.now(),
+        **extra,
     )
     person.balance += _signed(kind, amount)
     return entry
@@ -200,7 +223,8 @@ def _must_be_in_book(person: Person) -> None:
     corrected until they are brought back."""
     if person.archived_at is not None:
         raise BusinessRuleViolation(
-            "person_archived", _("%(name)s is put away. Bring them back first.") % {"name": person.name}
+            "person_archived",
+            _("%(name)s is put away. Bring them back first.") % {"name": person.name},
         )
 
 
@@ -228,8 +252,15 @@ def _undo(person: Person, original: Entry, reason: str) -> Entry:
         raise BusinessRuleViolation("entry_already_reversed", _("This entry was already removed."))
     opposite = EntryKind.GOT if original.kind == EntryKind.GAVE else EntryKind.GAVE
     removal = _post(
-        person, kind=opposite, amount=original.amount, note="", entry_date=original.entry_date,
-        removes=original, reason=reason, status=EntryStatus.REMOVED, sort_at=original.sort_at,
+        person,
+        kind=opposite,
+        amount=original.amount,
+        note="",
+        entry_date=original.entry_date,
+        removes=original,
+        reason=reason,
+        status=EntryStatus.REMOVED,
+        sort_at=original.sort_at,
     )
     # The one change a posted entry may take (the trigger allows status only).
     Entry.objects.filter(pk=original.pk).update(status=EntryStatus.REMOVED)
@@ -262,7 +293,9 @@ def replace_entry(*, owner: Any, entry_id: Any, data: dict) -> Entry:
         person, original = _locked_entry(owner, entry_id)
         reason = _clean_reason(data.get("reason"))
         _undo(person, original, reason)
-        replacement = _post(person, **clean, replaces=original, reason=reason, sort_at=original.sort_at)
+        replacement = _post(
+            person, **clean, replaces=original, reason=reason, sort_at=original.sort_at
+        )
         _refresh_last(person)
         person.save()
         return replacement

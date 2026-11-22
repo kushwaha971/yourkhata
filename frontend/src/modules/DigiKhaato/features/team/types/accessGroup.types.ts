@@ -26,7 +26,10 @@ export interface AccessGroupsPayload {
   readonly parts: readonly AccessPart[];
   readonly groups: readonly AccessGroup[];
   /** The ready-made group the empty tab offers. */
-  readonly suggested: { readonly name: string; readonly levels: Readonly<Record<string, AccessLevel>> };
+  readonly suggested: {
+    readonly name: string;
+    readonly levels: Readonly<Record<string, AccessLevel>>;
+  };
 }
 
 export interface AccessGroupDraft {

@@ -266,7 +266,7 @@ export const mlButtonClasses = (
     // frame, by a press colour distinct from hover and a 0.98 squeeze. The
     // baseline found tabs, rows and four of six variants doing nothing on a
     // touch but their hover style. Transform only, so nothing reflows.
-    'active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100',
+    'active:scale-[0.98] disabled:active:scale-100 motion-reduce:active:scale-100',
     'disabled:cursor-not-allowed disabled:opacity-45',
     BUTTON_VARIANT[variant],
     BUTTON_SIZE[size],

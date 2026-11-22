@@ -78,7 +78,9 @@ def test_a_draft_is_not_billed_and_a_cancelled_order_cannot_be(
     refused = owner.post(order_url(draft["id"], "convert"), {}, format="json")
     assert refused.status_code == 409 and refused.json()["error"]["code"] == "document_not_open"
     assert (
-        owner.post(order_url(draft["id"], "cancel"), {"reason": "Not needed"}, format="json").status_code
+        owner.post(
+            order_url(draft["id"], "cancel"), {"reason": "Not needed"}, format="json"
+        ).status_code
         == 409
     )
 

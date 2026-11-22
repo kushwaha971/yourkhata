@@ -7,20 +7,20 @@ from rest_framework.routers import DefaultRouter
 
 from apps.inventory.views.items import (
     CategoryViewSet,
-    ItemViewSet,
-    LowStockView,
-    StockAdjustmentViewSet,
     ExpiryView,
     HomeStripView,
+    ItemViewSet,
+    LowStockView,
     SerialView,
+    StockAdjustmentViewSet,
     StockSummaryView,
     UnitViewSet,
 )
 from apps.inventory.views.metal_rates import RateHistoryView, TodayRateView
 from apps.inventory.views.price_lists import PriceListViewSet
 from apps.inventory.views.short_book import ShortBookOrderedView, ShortBookView, SubstitutesView
-from apps.inventory.views.tags import ItemTagsView, TagLookupView, TagSummaryView
 from apps.inventory.views.stock_counts import StockCountViewSet
+from apps.inventory.views.tags import ItemTagsView, TagLookupView, TagSummaryView
 from apps.inventory.views.transfers import LocationViewSet, StockTransferViewSet
 
 router = DefaultRouter(trailing_slash=False)

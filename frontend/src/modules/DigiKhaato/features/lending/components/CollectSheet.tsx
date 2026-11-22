@@ -55,7 +55,12 @@ export function CollectSheet({
   lenderName,
   onClose,
   onSaved,
-}: Readonly<{ loan: Loan; lenderName: string; onClose: () => void; onSaved?: (l: LoanDetail) => void }>) {
+}: Readonly<{
+  loan: Loan;
+  lenderName: string;
+  onClose: () => void;
+  onSaved?: (l: LoanDetail) => void;
+}>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const formId = useId();
@@ -69,13 +74,21 @@ export function CollectSheet({
   const [share, setShare] = useState(Boolean(loan.mobile));
   const [changingDate, setChangingDate] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [answer, setAnswer] = useState<{ ask: string; late: string; left: string; daysToGo: number } | null>(null);
+  const [answer, setAnswer] = useState<{
+    ask: string;
+    late: string;
+    left: string;
+    daysToGo: number;
+  } | null>(null);
   const form = useForm<CollectValues>({
     resolver: yupResolver(collectSchema),
     mode: 'onTouched',
     defaultValues: { amount: plain(start), mode: 'cash', collectedOn: today },
   });
-  const [amount, mode, collectedOn] = useWatch({ control: form.control, name: ['amount', 'mode', 'collectedOn'] });
+  const [amount, mode, collectedOn] = useWatch({
+    control: form.control,
+    name: ['amount', 'mode', 'collectedOn'],
+  });
   const typed = useDebounce(amount, 250);
   const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
   // The Save label reads the amount AS TYPED, so it checks that, not the debounced copy:
@@ -117,11 +130,19 @@ export function CollectSheet({
       dispatch(
         showSnackbar(
           Number(values.amount) === 0
-            ? { severity: 'success', id: 'lending.collect.savedNothing', params: { name: loan.borrower } }
+            ? {
+                severity: 'success',
+                id: 'lending.collect.savedNothing',
+                params: { name: loan.borrower },
+              }
             : {
                 severity: 'success',
                 id: 'lending.collect.saved',
-                params: { amount: rupees(values.amount), name: loan.borrower, left: rupees(updated.left) },
+                params: {
+                  amount: rupees(values.amount),
+                  name: loan.borrower,
+                  left: rupees(updated.left),
+                },
               }
         )
       );
@@ -131,7 +152,12 @@ export function CollectSheet({
     }
     wa?.close();
     if (action.payload?.code === 'validation_error') rotate();
-    dispatch(showSnackbar({ severity: 'error', message: action.payload?.message ?? t('lending.collect.error') }));
+    dispatch(
+      showSnackbar({
+        severity: 'error',
+        message: action.payload?.message ?? t('lending.collect.error'),
+      })
+    );
   };
 
   const lateWords = after
@@ -156,7 +182,11 @@ export function CollectSheet({
           className="min-w-[104px] justify-self-start px-6"
           data-testid="lending-collect-save"
         >
-          {nothing ? t('lending.collect.saveNothing') : amountOk ? t('lending.collect.save', { amount: rupees(amount) }) : t('lending.collect.saveEmpty')}
+          {nothing
+            ? t('lending.collect.saveNothing')
+            : amountOk
+              ? t('lending.collect.save', { amount: rupees(amount) })
+              : t('lending.collect.saveEmpty')}
         </UbButton>
       }
     >
@@ -169,7 +199,9 @@ export function CollectSheet({
               onChange={(v) => {
                 field.onChange(v);
                 const n = Number(v);
-                setChoice(n === Number(todayOnly) ? 'today' : n === Number(withLate) ? 'all' : 'other');
+                setChoice(
+                  n === Number(todayOnly) ? 'today' : n === Number(withLate) ? 'all' : 'other'
+                );
               }}
               inputMode="decimal"
               autoFocus
@@ -184,7 +216,14 @@ export function CollectSheet({
           onChange={(v) => pick(v as Choice)}
           options={[
             { value: 'today', label: t('lending.collect.today', { amount: rupees(todayOnly) }) },
-            ...(Number(loan.late) > 0 ? [{ value: 'all' as const, label: t('lending.collect.todayLate', { amount: rupees(withLate) }) }] : []),
+            ...(Number(loan.late) > 0
+              ? [
+                  {
+                    value: 'all' as const,
+                    label: t('lending.collect.todayLate', { amount: rupees(withLate) }),
+                  },
+                ]
+              : []),
             { value: 'other', label: t('lending.collect.other') },
           ]}
           className="flex-nowrap [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
@@ -201,7 +240,13 @@ export function CollectSheet({
         {changingDate ? (
           <UbField name="collectedOn" label={t('lending.collect.dateLabel')}>
             {(field) => (
-              <UbDateInput {...field} value={field.value as string} min={loan.startsOn} max={today} onChange={(v) => field.onChange(v ?? today)} />
+              <UbDateInput
+                {...field}
+                value={field.value as string}
+                min={loan.startsOn}
+                max={today}
+                onChange={(v) => field.onChange(v ?? today)}
+              />
             )}
           </UbField>
         ) : (
@@ -211,13 +256,19 @@ export function CollectSheet({
             data-testid="lending-collect-change-date"
           >
             {t('lending.collect.date', {
-              date: collectedOn === today ? t('lending.collect.onToday', { date: shortDate(today, today) }) : shortDate(collectedOn, today),
+              date:
+                collectedOn === today
+                  ? t('lending.collect.onToday', { date: shortDate(today, today) })
+                  : shortDate(collectedOn, today),
             })}
           </UbPressable>
         )}
         <UbBox
           aria-live="polite"
-          className={cn('min-h-11 rounded-[10px] bg-surface-sunken px-3.5 py-3', !after && 'invisible')}
+          className={cn(
+            'min-h-11 rounded-[10px] bg-surface-sunken px-3.5 py-3',
+            !after && 'invisible'
+          )}
           data-testid="lending-collect-after"
         >
           {after && (
@@ -227,7 +278,9 @@ export function CollectSheet({
                 {lateWords}
               </UbText>
               {` · ${t('lending.collect.left', { amount: rupees(after.left), number: loan.number })}`}
-              {after.daysToGo > 0 ? ` · ${t('lending.collect.daysToGo', { count: after.daysToGo })}` : ''}
+              {after.daysToGo > 0
+                ? ` · ${t('lending.collect.daysToGo', { count: after.daysToGo })}`
+                : ''}
             </UbText>
           )}
         </UbBox>

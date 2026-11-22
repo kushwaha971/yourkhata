@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-
 import {
   UbBottomBar,
   UbBox,
@@ -571,7 +570,10 @@ export function RatesPageContent(): React.JSX.Element {
               {shareButton}
             </UbStack>
           </UbPanel>
-          <UbBottomBar clearToBottom className="mt-auto -mx-4 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3">
+          <UbBottomBar
+            clearToBottom
+            className="-mx-4 mt-auto grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3"
+          >
             {sameButton}
             {saveButton}
           </UbBottomBar>

@@ -29,7 +29,7 @@ def clock(monkeypatch: Any) -> Clock:
 
 
 @pytest.fixture
-def ctx(tenant: Any, attendance_subject: Any) -> Ctx:  # noqa: F811
+def ctx(tenant: Any, attendance_subject: Any) -> Ctx:  # noqa: F811 — reason: a pytest fixture named as a parameter
     return Ctx.system(tenant)
 
 
@@ -42,7 +42,7 @@ def member(tenant: Any, system_roles: dict) -> Any:
 
 
 @pytest.fixture
-def user_ctx(tenant: Any, member: Any, attendance_subject: Any) -> Ctx:  # noqa: F811
+def user_ctx(tenant: Any, member: Any, attendance_subject: Any) -> Ctx:  # noqa: F811 — reason: a pytest fixture named as a parameter
     return Ctx(tenant=tenant, actor=member.user)
 
 

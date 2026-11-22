@@ -20,7 +20,7 @@ def ctx(tenant: Any) -> Ctx:
 
 
 @pytest.fixture
-def today(dues_subject: Any, monkeypatch: Any) -> dt.date:  # noqa: F811
+def today(dues_subject: Any, monkeypatch: Any) -> dt.date:  # noqa: F811 — reason: a pytest fixture named as a parameter
     """The FRD worked example's today: 5 Oct 2026."""
     dues_subject.set_today(monkeypatch, TODAY)
     return TODAY
@@ -41,7 +41,7 @@ def monthly(**overrides: Any) -> dict:
 
 
 @pytest.fixture
-def make_plan(ctx: Ctx, dues_subject: Any) -> Any:  # noqa: F811
+def make_plan(ctx: Ctx, dues_subject: Any) -> Any:  # noqa: F811 — reason: a pytest fixture named as a parameter
     from apps.dues.services.plans import create_plan
 
     def _make(module: str = TEST_MODULE, **overrides: Any) -> Any:

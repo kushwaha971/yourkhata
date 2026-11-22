@@ -32,8 +32,7 @@ import 'src/i18n/catalogues/shopPromise';
    page is opened to read a balance far more often than to take a promise. */
 const ShopPromiseDrawerLazy = dynamic(
   () => import('./ShopPromiseDrawer').then((m) => m.ShopPromiseDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

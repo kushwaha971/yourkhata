@@ -17,6 +17,7 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
+from apps.common.dates import tenant_today
 from apps.common.exceptions import ValidationFailed
 from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
@@ -24,7 +25,6 @@ from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
-from apps.common.dates import tenant_today
 from apps.sales.constants import TAB_STATUSES
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
@@ -241,7 +241,6 @@ class InvoiceViewSet(
         document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
         return StandardResponse.ok(upi_intent(document))
 
-
     # D P5 — the e-way bill's transport details, and the portal's upload file.
     @action(detail=True, methods=["get", "post"], url_path="eway")
     def eway(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -250,11 +249,17 @@ class InvoiceViewSet(
         document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
         if request.method == "POST":
             saved = eway_service.save_transport(document, dict(request.data))
-            return StandardResponse.ok({"offered": eway_service.offered(document), "transport": saved})
+            return StandardResponse.ok(
+                {"offered": eway_service.offered(document), "transport": saved}
+            )
         return StandardResponse.ok(
             {
                 "offered": eway_service.offered(document),
                 "transport": (document.meta or {}).get("eway"),
-                "file": eway_service.portal_json(document) if (document.meta or {}).get("eway") else None,
+                "file": (
+                    eway_service.portal_json(document)
+                    if (document.meta or {}).get("eway")
+                    else None
+                ),
             }
         )

@@ -2136,14 +2136,20 @@ describe('one book: Suppliers', () => {
 
   it('keeps supplier names in the loaded footer and failure state', async () => {
     /** Visual QA found the reused register saying customers on Supplier errors and pagination. */
-    partyService.listParties.mockResolvedValue(loaded([{ ...RAMESH, isSupplier: true, balance: '-2688.00' }]));
+    partyService.listParties.mockResolvedValue(
+      loaded([{ ...RAMESH, isSupplier: true, balance: '-2688.00' }])
+    );
     renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
     expect(await screen.findByText('Showing 1 of 1 suppliers')).toBeInTheDocument();
   });
 
   it('names suppliers in a failed register', async () => {
     /** Supplier load failures must identify the correct business role. */
-    partyService.listParties.mockRejectedValue({code:'server_error',message:'Test failure',status:500});
+    partyService.listParties.mockRejectedValue({
+      code: 'server_error',
+      message: 'Test failure',
+      status: 500,
+    });
     renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
     expect(await screen.findByText('We could not load your suppliers')).toBeInTheDocument();
   });

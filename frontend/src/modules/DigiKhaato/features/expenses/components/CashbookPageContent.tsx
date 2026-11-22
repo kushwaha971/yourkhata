@@ -43,20 +43,23 @@ import { isNegative, shareOf } from '../view-model/expenseDisplay';
 import { CashbookClosePanel } from './CashbookClosePanel';
 import { CASHBOOK_ROW_GRID, CashbookRows, cashRowLabel } from './CashbookDayCard';
 
-import type { CashbookBucketFilter, CashbookData, CashFigures, CashRow } from '../types/cashbook.types';
+import type {
+  CashbookBucketFilter,
+  CashbookData,
+  CashFigures,
+  CashRow,
+} from '../types/cashbook.types';
 import type { ExpensePreset } from '../types/expense.types';
 
 /* Every overlay loads with the tap that opens it (CLAUDE.md: a form belongs
    in the chunk that OPENS it, not in the chunk that renders the screen). */
 const ExpenseFormDrawerLazy = dynamic(
   () => import('./ExpenseFormDrawer').then((m) => m.ExpenseFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const ExpenseDetailDrawerLazy = dynamic(
   () => import('./ExpenseDetailDrawer').then((m) => m.ExpenseDetailDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const CashCountDrawerLazy = dynamic(
   () => import('../../reports/components/CashCountDrawer').then((m) => m.CashCountDrawer),
@@ -67,8 +70,7 @@ const PaymentFormDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
       (m) => m.PaymentFormDrawer
     ),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /** The design's Export: the rows the merchant is reading, as read. */
@@ -121,7 +123,8 @@ export function CashbookPageContent(): React.JSX.Element {
   const canReceive = hasModule('payments') && can('payments.payment.write');
 
   const presets = useMemo(
-    () => CASHBOOK_PRESETS.map((value) => {
+    () =>
+      CASHBOOK_PRESETS.map((value) => {
         const label = t(`expenses.period.${value}`);
         return { value, label: isPhone ? label : t('cashbook.datePrefix', { label }) };
       }),
@@ -240,23 +243,23 @@ export function CashbookPageContent(): React.JSX.Element {
   ) : null;
   const period = (
     <UbDateRangePicker<ExpensePreset>
-              presets={presets}
-              preset={filters.preset}
-              onPresetChange={book.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={book.setRange}
-              max={book.today}
-              name="cashbook-period"
-              labels={{
-                presets: t('expenses.period.label'),
-                from: t('expenses.period.from'),
-                to: t('expenses.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
-            />
+      presets={presets}
+      preset={filters.preset}
+      onPresetChange={book.setPreset}
+      customPreset="custom"
+      from={filters.dateFrom}
+      to={filters.dateTo}
+      onRangeChange={book.setRange}
+      max={book.today}
+      name="cashbook-period"
+      labels={{
+        presets: t('expenses.period.label'),
+        from: t('expenses.period.from'),
+        to: t('expenses.period.to'),
+        apply: t('common.action.apply'),
+        close: t('common.action.close'),
+      }}
+    />
   );
   const searchBox = (
     <UbSearchInput
@@ -370,7 +373,11 @@ export function CashbookPageContent(): React.JSX.Element {
               className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
             >
               {!isPhone && (
-                <UbStack direction="row" align="center" className="gap-2 border-b border-border-hairline p-3">
+                <UbStack
+                  direction="row"
+                  align="center"
+                  className="gap-2 border-b border-border-hairline p-3"
+                >
                   <UbStack className="min-w-0 flex-1">{searchBox}</UbStack>
                   {book.fullScope && period}
                 </UbStack>
@@ -381,12 +388,24 @@ export function CashbookPageContent(): React.JSX.Element {
                 aria-hidden
               >
                 {(['time', 'what'] as const).map((key) => (
-                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-[13px] font-semibold">
+                  <UbText
+                    as="span"
+                    key={key}
+                    variant="caption"
+                    tone="secondary"
+                    className="text-[13px] font-semibold"
+                  >
                     {t(`cashbook.column.${key}`)}
                   </UbText>
                 ))}
                 {(['in', 'out'] as const).map((key) => (
-                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-right text-[13px] font-semibold">
+                  <UbText
+                    as="span"
+                    key={key}
+                    variant="caption"
+                    tone="secondary"
+                    className="text-right text-[13px] font-semibold"
+                  >
                     {t(`cashbook.column.${key}`)}
                   </UbText>
                 ))}
@@ -415,15 +434,19 @@ export function CashbookPageContent(): React.JSX.Element {
                   {book.fullScope && isPhone && period}
                   {book.fullScope && (
                     <UbChoiceChips<CashbookBucketFilter>
-              value={filters.bucket}
-              onChange={book.setBucket}
-              options={bucketOptions}
-              ariaLabel={t('cashbook.bucket.label')}
-              className="flex-nowrap"
-            />
+                      value={filters.bucket}
+                      onChange={book.setBucket}
+                      options={bucketOptions}
+                      ariaLabel={t('cashbook.bucket.label')}
+                      className="flex-nowrap"
+                    />
                   )}
                 </UbStack>
-                <UbStack role="group" aria-label={t('cashbook.figures')} data-testid="cashbook-figures">
+                <UbStack
+                  role="group"
+                  aria-label={t('cashbook.figures')}
+                  data-testid="cashbook-figures"
+                >
                   <UbCountLine
                     items={[
                       {
@@ -434,7 +457,9 @@ export function CashbookPageContent(): React.JSX.Element {
                       {
                         id: 'in',
                         template: `${t('cashbook.in')} {amount}`,
-                        values: { amount: { text: formatInr(value(data.range.in)), tone: 'receivable' } },
+                        values: {
+                          amount: { text: formatInr(value(data.range.in)), tone: 'receivable' },
+                        },
                       },
                       {
                         id: 'out',

@@ -56,19 +56,70 @@ const createColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<Sched
         priority: 1,
         cardSlot: 'meta',
         cell: (row) =>
-          [medicinesOf(row), row.patient ? t('reports.scheduleH.forPatient', { name: row.patient }) : null]
+          [
+            medicinesOf(row),
+            row.patient ? t('reports.scheduleH.forPatient', { name: row.patient }) : null,
+          ]
             .filter(Boolean)
             .join(' · '),
       },
-      { id: 'doctor', header: t('reports.scheduleH.col.doctor'), priority: 1, cardSlot: 'trailing', cell: doctor },
+      {
+        id: 'doctor',
+        header: t('reports.scheduleH.col.doctor'),
+        priority: 1,
+        cardSlot: 'trailing',
+        cell: doctor,
+      },
     ];
   return [
-    { id: 'date', header: t('reports.scheduleH.col.date'), priority: 1, cardSlot: 'none', widthShare: 11, cell: (row) => formatBusinessDate(row.date) },
-    { id: 'bill', header: t('reports.scheduleH.col.bill'), priority: 1, cardSlot: 'none', widthShare: 14, cell: (row) => row.number ?? '—' },
-    { id: 'customer', header: t('reports.scheduleH.col.customer'), priority: 2, cardSlot: 'none', widthShare: 16, cell: (row) => row.customer ?? t('reports.scheduleH.quickSale') },
-    { id: 'medicine', header: t('reports.scheduleH.col.medicine'), priority: 1, cardSlot: 'none', widthShare: 27, cell: (row) => medicinesOf(row) },
-    { id: 'doctor', header: t('reports.scheduleH.col.doctor'), priority: 1, cardSlot: 'none', widthShare: 16, cell: doctor },
-    { id: 'patient', header: t('reports.scheduleH.col.patient'), priority: 2, cardSlot: 'none', widthShare: 16, cell: (row) => row.patient ?? '—' },
+    {
+      id: 'date',
+      header: t('reports.scheduleH.col.date'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 11,
+      cell: (row) => formatBusinessDate(row.date),
+    },
+    {
+      id: 'bill',
+      header: t('reports.scheduleH.col.bill'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 14,
+      cell: (row) => row.number ?? '—',
+    },
+    {
+      id: 'customer',
+      header: t('reports.scheduleH.col.customer'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (row) => row.customer ?? t('reports.scheduleH.quickSale'),
+    },
+    {
+      id: 'medicine',
+      header: t('reports.scheduleH.col.medicine'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 27,
+      cell: (row) => medicinesOf(row),
+    },
+    {
+      id: 'doctor',
+      header: t('reports.scheduleH.col.doctor'),
+      priority: 1,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: doctor,
+    },
+    {
+      id: 'patient',
+      header: t('reports.scheduleH.col.patient'),
+      priority: 2,
+      cardSlot: 'none',
+      widthShare: 16,
+      cell: (row) => row.patient ?? '—',
+    },
   ];
 };
 
@@ -104,7 +155,13 @@ export function ScheduleHPageContent(): React.JSX.Element {
   }, [range.dateFrom, range.dateTo, attempt]);
 
   const columns = useMemo(() => createColumns(t, tier), [t, tier]);
-  const state: ReportState = failed ? 'error' : !data ? 'loading' : data.rows.length === 0 ? 'empty' : 'ready';
+  const state: ReportState = failed
+    ? 'error'
+    : !data
+      ? 'loading'
+      : data.rows.length === 0
+        ? 'empty'
+        : 'ready';
 
   return (
     <ReportPageShell<ReportPreset>
@@ -112,7 +169,10 @@ export function ScheduleHPageContent(): React.JSX.Element {
       description={t('reports.scheduleH.description')}
       testId="schedule-h-register"
       period={{
-        presets: REPORT_PRESETS.map((value) => ({ value, label: t(`reports.shell.period.${value}`) })),
+        presets: REPORT_PRESETS.map((value) => ({
+          value,
+          label: t(`reports.shell.period.${value}`),
+        })),
         preset,
         onPresetChange: (next) => {
           setPreset(next);
@@ -145,7 +205,11 @@ export function ScheduleHPageContent(): React.JSX.Element {
       onRetry={() => setAttempt((n) => n + 1)}
       loadingLabel={t('reports.scheduleH.loading')}
       skeletonTiles={0}
-      empty={{ title: t('reports.scheduleH.empty.title'), description: t('reports.scheduleH.empty.body'), variant: 'filtered' }}
+      empty={{
+        title: t('reports.scheduleH.empty.title'),
+        description: t('reports.scheduleH.empty.body'),
+        variant: 'filtered',
+      }}
     >
       {data && data.rows.length > 0 && (
         <UbStack gap={3}>
@@ -190,7 +254,12 @@ export function ScheduleHPageContent(): React.JSX.Element {
             storageId="reports.scheduleH"
             cardAvatar={false}
             cardLayout="stacked"
-            page={{ page: 1, pageSize: Math.max(data.rows.length, 1), total: data.rows.length, totalPages: 1 }}
+            page={{
+              page: 1,
+              pageSize: Math.max(data.rows.length, 1),
+              total: data.rows.length,
+              totalPages: 1,
+            }}
             onPageChange={() => undefined}
             footer={null}
           />

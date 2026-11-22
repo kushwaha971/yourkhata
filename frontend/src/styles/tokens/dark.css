@@ -27,12 +27,12 @@
   --accent: var(--primary-50);
   --accent-hover: var(--primary-300);
   --accent-press: var(--primary-500);
-  --accent-quiet: #14302F;
+  --accent-quiet: #14302f;
   --accent-line: rgba(14, 124, 134, 0.35);
 
-  --canvas: 216.00 12.20% 8.04%;
-  --surface-sunken: 216.00 12.50% 15.69%;
-  --surface-card: 217.50 12.90% 12.16%;
+  --canvas: 216 12.2% 8.04%;
+  --surface-sunken: 216 12.5% 15.69%;
+  --surface-card: 217.5 12.9% 12.16%;
   --surface-raised: 216 10.64% 18.43%;
   --surface-hover: 212.73 12.64% 17.06%;
   --surface-active: 205.26 14.96% 24.9%;
@@ -44,18 +44,18 @@
 
   --text-on-nav: 210 11.76% 93.33%;
   --text-on-nav-muted: 184.8 30% 80%;
-  --surface-subtle: 216.00 12.50% 15.69%;
+  --surface-subtle: 216 12.5% 15.69%;
   --border-nav-active: 187.83 23.23% 19.41%;
 
-  --border-hairline: 215.00 11.54% 20.39%;
-  --border-subtle: 213.75 10.39% 30.20%;
+  --border-hairline: 215 11.54% 20.39%;
+  --border-subtle: 213.75 10.39% 30.2%;
 
   --border-strong: 215.45 9.02% 52.16%;
   --border-focus: var(--primary-300);
 
   --text-primary: 210 11.76% 93.33%;
 
-  --text-secondary: 215.00 10.53% 77.65%;
+  --text-secondary: 215 10.53% 77.65%;
   --text-tertiary: 212.3 9.4% 63.1%; /* design dark --ink-3 #98A0AA */
 
   --text-muted: 216 8.88% 66.86%;
@@ -64,11 +64,11 @@
 
   --brand-knot: 3.08 67.24% 54.51%;
 
-  --success: 128.12 50.00% 62.35%;
+  --success: 128.12 50% 62.35%;
   --success-bright: 151.65 57.47% 43.33%;
   --success-dim: 133.85 37.14% 13.73%;
 
-  --warning: 40.80 85.23% 65.49%;
+  --warning: 40.8 85.23% 65.49%;
   --warning-bright: 36.34 69.72% 50.78%;
   --warning-dim: 43.33 54.55% 12.94%;
 

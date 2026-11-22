@@ -50,7 +50,9 @@ def test_a_key_released_after_a_lost_claim_answers_try_again() -> None:
         user=SimpleNamespace(is_authenticated=False),
     )
     with (
-        mock.patch.object(idempotency, "_idempotency_model", return_value=_model_whose_key_vanished()),
+        mock.patch.object(
+            idempotency, "_idempotency_model", return_value=_model_whose_key_vanished()
+        ),
         mock.patch("apps.common.tenancy.get_effective_tenant", return_value=object()),
         pytest.raises(IdempotencyInProgress),
     ):

@@ -57,7 +57,9 @@ export function SubstituteSheet({
   const noteIt = () => {
     void addToShortBook(item.id, 'asked').then(() => {
       setNoted(true);
-      dispatch(showSnackbar({ severity: 'success', id: 'sales.subst.added', params: { name: item.name } }));
+      dispatch(
+        showSnackbar({ severity: 'success', id: 'sales.subst.added', params: { name: item.name } })
+      );
     });
   };
 
@@ -129,10 +131,17 @@ export function SubstituteSheet({
           disabled={noted}
           data-testid="subst-short-book"
         >
-          {noted ? t('sales.subst.added', { name: item.name }) : t('sales.subst.shortBook', { name: item.name })}
+          {noted
+            ? t('sales.subst.added', { name: item.name })
+            : t('sales.subst.shortBook', { name: item.name })}
         </UbButton>
         {/* Whether stock may go below zero is the shop's rule, not this sheet's. */}
-        <UbButton variant="ghost" className="w-full whitespace-normal" onClick={onAnyway} data-testid="subst-anyway">
+        <UbButton
+          variant="ghost"
+          className="w-full whitespace-normal"
+          onClick={onAnyway}
+          data-testid="subst-anyway"
+        >
           {t('sales.subst.anyway', { name: item.name })}
         </UbButton>
       </UbStack>

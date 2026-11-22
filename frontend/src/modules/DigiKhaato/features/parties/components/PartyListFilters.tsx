@@ -247,13 +247,14 @@ function PartyListFiltersBase({
     kind: 'single',
     key: 'balance',
     label: t('parties.list.filter.balance.label'),
-      anyLabel: defaultBalance === 'due' ? t('parties.khata.filter.due') : t('parties.list.filter.any'),
+    anyLabel:
+      defaultBalance === 'due' ? t('parties.khata.filter.due') : t('parties.list.filter.any'),
     options: [
       ...(defaultBalance === 'due' ? [{ value: 'all', label: t('parties.khata.filter.all') }] : []),
       ...BALANCE_FILTERS.filter((value) => value !== defaultBalance).map((value) => ({
-      value,
-      label: t(`parties.list.filter.balance.${value}`),
-    })),
+        value,
+        label: t(`parties.list.filter.balance.${value}`),
+      })),
     ],
   };
   const defaultSort = PHONE_SORT_CHOICES.find((c) => c.ordering === DEFAULT_ORDERING);

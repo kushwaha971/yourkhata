@@ -413,7 +413,9 @@ def logout(
     return revoked
 
 
-def start_mobile_change(*, user: Any, mobile: str, ip: str | None = None, request_id: str | None = None) -> Any:
+def start_mobile_change(
+    *, user: Any, mobile: str, ip: str | None = None, request_id: str | None = None
+) -> Any:
     """Your profile › Change mobile, step 1: send a code to the NEW number.
 
     Refused before any code is sent when the number is already this person's,
@@ -430,7 +432,11 @@ def start_mobile_change(*, user: Any, mobile: str, ip: str | None = None, reques
     if User.objects.filter(mobile=mobile).exclude(pk=user.pk).exists():
         raise BusinessRuleViolation("mobile_taken", "Another account signs in with this number.")
     return otp_service.request_otp(
-        mobile=mobile, purpose=OtpPurpose.VERIFY, ip=ip, locale=user.locale or "en", request_id=request_id
+        mobile=mobile,
+        purpose=OtpPurpose.VERIFY,
+        ip=ip,
+        locale=user.locale or "en",
+        request_id=request_id,
     )
 
 
@@ -451,12 +457,18 @@ def finish_mobile_change(
     from apps.platform_app.services import otp as otp_service
 
     challenge = otp_service.consume_challenge(
-        challenge_id=challenge_id, code=code, purpose=OtpPurpose.VERIFY, request_id=request_id, ip=ip
+        challenge_id=challenge_id,
+        code=code,
+        purpose=OtpPurpose.VERIFY,
+        request_id=request_id,
+        ip=ip,
     )
     with transaction.atomic():
         row = User.objects.select_for_update().get(pk=user.pk)
         if User.objects.filter(mobile=challenge.mobile).exclude(pk=row.pk).exists():
-            raise BusinessRuleViolation("mobile_taken", "Another account signs in with this number.")
+            raise BusinessRuleViolation(
+                "mobile_taken", "Another account signs in with this number."
+            )
         old = row.mobile
         fields = ["mobile", "updated_at"]
         if old and row.email == synthetic_email_for(old):

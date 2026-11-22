@@ -25,14 +25,18 @@ def money(v: Decimal | None) -> str:
 
 def _dues_by_loan(loans: list[Loan]) -> dict[Any, list[tuple[int, dt.date, Decimal]]]:
     out: dict[Any, list] = defaultdict(list)
-    for loan_id, seq, on, amount in Due.objects.filter(loan__in=loans).order_by("loan_id", "seq").values_list(
-        "loan_id", "seq", "due_on", "amount"
+    for loan_id, seq, on, amount in (
+        Due.objects.filter(loan__in=loans)
+        .order_by("loan_id", "seq")
+        .values_list("loan_id", "seq", "due_on", "amount")
     ):
         out[loan_id].append((seq, on, amount))
     return out
 
 
-def _collected_by_loan(loans: list[Loan], *, before: dt.date | None = None, on: dt.date | None = None) -> dict[Any, Decimal]:
+def _collected_by_loan(
+    loans: list[Loan], *, before: dt.date | None = None, on: dt.date | None = None
+) -> dict[Any, Decimal]:
     rows = Collection.objects.filter(loan__in=loans, status=RowStatus.LIVE, removes__isnull=True)
     if before is not None:
         rows = rows.filter(collected_on__lt=before)
@@ -78,11 +82,16 @@ def loan_json(loan: Loan, pos: book.Position, day: dt.date) -> dict:
 def positions(tenant: Any, loans: list[Loan], day: dt.date) -> dict[Any, book.Position]:
     dues = _dues_by_loan(loans)
     paid = _collected_by_loan(loans)
-    return {l.pk: book.position(dues=dues.get(l.pk, []), collected=paid.get(l.pk, ZERO), day=day) for l in loans}
+    return {
+        ln.pk: book.position(dues=dues.get(ln.pk, []), collected=paid.get(ln.pk, ZERO), day=day)
+        for ln in loans
+    }
 
 
 def active_loans(tenant: Any, *, route: str = "") -> list[Loan]:
-    rows = Loan.objects.filter(tenant=tenant, status=LoanStatus.ACTIVE).select_related("borrower", "route")
+    rows = Loan.objects.filter(tenant=tenant, status=LoanStatus.ACTIVE).select_related(
+        "borrower", "route"
+    )
     if route:
         rows = rows.filter(route_id=route)
     return list(rows.order_by("borrower__name", "number"))
@@ -98,8 +107,12 @@ def round_for(tenant: Any, *, route: str = "", day: dt.date | None = None) -> di
     visits = {v.loan_id: v for v in Visit.objects.filter(loan__in=loans, day=day)}
     # Loans that closed today were in this morning's round too.
     closed_today = list(
-        Loan.objects.filter(tenant=tenant, status=LoanStatus.CLOSED, closed_on=day, **({"route_id": route} if route else {}))
-        .select_related("borrower", "route")
+        Loan.objects.filter(
+            tenant=tenant,
+            status=LoanStatus.CLOSED,
+            closed_on=day,
+            **({"route_id": route} if route else {}),
+        ).select_related("borrower", "route")
     )
     if closed_today:
         loans += closed_today
@@ -126,15 +139,17 @@ def round_for(tenant: Any, *, route: str = "", day: dt.date | None = None) -> di
         due_sum += expected
         got_sum += min(got, expected)
         v = visits.get(loan.pk)
-        stops.append({
-            **loan_json(loan, now, day),
-            "today": money(morning.due_today),
-            "late_at_start": money(morning.late),
-            "collected_today": money(got),
-            "state": state,
-            "reason": v.reason if v else "",
-            "promised_on": v.promised_on.isoformat() if v and v.promised_on else None,
-        })
+        stops.append(
+            {
+                **loan_json(loan, now, day),
+                "today": money(morning.due_today),
+                "late_at_start": money(morning.late),
+                "collected_today": money(got),
+                "state": state,
+                "reason": v.reason if v else "",
+                "promised_on": v.promised_on.isoformat() if v and v.promised_on else None,
+            }
+        )
     order = {StopState.LATE: 0, StopState.DUE: 1, StopState.NOT_PAID: 2, StopState.DONE: 3}
     stops.sort(key=lambda s: (order[s["state"]], s["borrower"]))
     counts = defaultdict(int)
@@ -161,11 +176,13 @@ def book_figures(tenant: Any, day: dt.date) -> dict:
     loans = active_loans(tenant)
     pos = positions(tenant, loans, day)
     late = [p for p in pos.values() if p.late > 0]
-    month = Loan.objects.filter(tenant=tenant, created_at__date__gte=day.replace(day=1), created_at__date__lte=day)
+    month = Loan.objects.filter(
+        tenant=tenant, created_at__date__gte=day.replace(day=1), created_at__date__lte=day
+    )
     agg = month.aggregate(t=Sum("lent"), n=Count("id"))
     return {
         "late": money(sum((p.late for p in late), ZERO)),
-        "late_borrowers": len({l.borrower_id for l in loans if pos[l.pk].late > 0}),
+        "late_borrowers": len({ln.borrower_id for ln in loans if pos[ln.pk].late > 0}),
         "lent_month": money(agg["t"]),
         "loans_month": agg["n"],
     }
@@ -179,16 +196,24 @@ def loans_list(tenant: Any, *, status: str = "active", route: str = "", q: str =
     if route:
         rows = rows.filter(route_id=route)
     if q:
-        rows = rows.filter(Q(borrower__name__icontains=q) | Q(number__icontains=q) | Q(borrower__mobile__contains=q))
+        rows = rows.filter(
+            Q(borrower__name__icontains=q)
+            | Q(number__icontains=q)
+            | Q(borrower__mobile__contains=q)
+        )
     loans = list(rows.order_by("-created_at"))
     pos = positions(tenant, loans, day)
-    return [loan_json(l, pos[l.pk], day) for l in loans]
+    return [loan_json(ln, pos[ln.pk], day) for ln in loans]
 
 
 def loan_detail(tenant: Any, loan: Loan) -> dict:
     day = today(tenant)
     ds = list(Due.objects.filter(loan=loan).order_by("seq").values_list("seq", "due_on", "amount"))
-    live = list(Collection.objects.filter(loan=loan, removes__isnull=True).order_by("-collected_on", "-created_at"))
+    live = list(
+        Collection.objects.filter(loan=loan, removes__isnull=True).order_by(
+            "-collected_on", "-created_at"
+        )
+    )
     total = sum((c.amount for c in live if c.status == RowStatus.LIVE), ZERO)
     pos = book.position(dues=ds, collected=total, day=day)
     # Each schedule row's state, paying oldest first.
@@ -205,17 +230,35 @@ def loan_detail(tenant: Any, loan: Loan) -> dict:
             state = "due"
         else:
             state = "upcoming"
-        schedule.append({"seq": seq, "due_on": on.isoformat(), "amount": money(amount), "paid": money(paid), "state": state})
+        schedule.append(
+            {
+                "seq": seq,
+                "due_on": on.isoformat(),
+                "amount": money(amount),
+                "paid": money(paid),
+                "state": state,
+            }
+        )
     return {
         **loan_json(loan, pos, day),
         "schedule": schedule,
         "collections": [
-            {"id": str(c.pk), "amount": money(c.amount), "mode": c.mode, "collected_on": c.collected_on.isoformat(),
-             "status": c.status, "by": getattr(c.created_by, "full_name", "") or getattr(c.created_by, "email", "")}
+            {
+                "id": str(c.pk),
+                "amount": money(c.amount),
+                "mode": c.mode,
+                "collected_on": c.collected_on.isoformat(),
+                "status": c.status,
+                "by": getattr(c.created_by, "full_name", "") or getattr(c.created_by, "email", ""),
+            }
             for c in live
         ],
         "visits": [
-            {"day": v.day.isoformat(), "reason": v.reason, "promised_on": v.promised_on.isoformat() if v.promised_on else None}
+            {
+                "day": v.day.isoformat(),
+                "reason": v.reason,
+                "promised_on": v.promised_on.isoformat() if v.promised_on else None,
+            }
             for v in Visit.objects.filter(loan=loan).order_by("-day")[:20]
         ],
         "days_to_go": book.days_to_go(dues=ds, day=day),
@@ -228,19 +271,27 @@ def borrowers_list(tenant: Any, q: str = "") -> list[dict]:
     if q:
         rows = rows.filter(Q(name__icontains=q) | Q(mobile__contains=q) | Q(work__icontains=q))
     borrowers = list(rows.order_by("name"))
-    loans = list(Loan.objects.filter(borrower__in=borrowers, status=LoanStatus.ACTIVE).select_related("borrower", "route"))
+    loans = list(
+        Loan.objects.filter(borrower__in=borrowers, status=LoanStatus.ACTIVE).select_related(
+            "borrower", "route"
+        )
+    )
     pos = positions(tenant, loans, day)
     by: dict[Any, list[Loan]] = defaultdict(list)
-    for l in loans:
-        by[l.borrower_id].append(l)
+    for ln in loans:
+        by[ln.borrower_id].append(ln)
     return [
         {
-            "id": str(b.pk), "name": b.name, "mobile": b.mobile, "work": b.work,
-            "route_id": str(b.route_id) if b.route_id else None, "route": b.route.name if b.route_id else "",
+            "id": str(b.pk),
+            "name": b.name,
+            "mobile": b.mobile,
+            "work": b.work,
+            "route_id": str(b.route_id) if b.route_id else None,
+            "route": b.route.name if b.route_id else "",
             "note": b.note,
             "loans": len(by[b.pk]),
-            "left": money(sum((pos[l.pk].left for l in by[b.pk]), ZERO)),
-            "late": money(sum((pos[l.pk].late for l in by[b.pk]), ZERO)),
+            "left": money(sum((pos[ln.pk].left for ln in by[b.pk]), ZERO)),
+            "late": money(sum((pos[ln.pk].late for ln in by[b.pk]), ZERO)),
         }
         for b in borrowers
     ]
@@ -270,4 +321,7 @@ def remind_list(tenant: Any, kind: str) -> list[dict]:
 
 
 def remind_counts(tenant: Any) -> dict:
-    return {k: len(remind_list(tenant, k)) for k in (MessageKind.LATE, MessageKind.DUE_TODAY, MessageKind.DUE_TOMORROW)}
+    return {
+        k: len(remind_list(tenant, k))
+        for k in (MessageKind.LATE, MessageKind.DUE_TODAY, MessageKind.DUE_TOMORROW)
+    }

@@ -57,11 +57,14 @@ def test_a_same_price_swap_makes_both_documents_and_leaves_nothing_to_pay(
     party, item, bill = _sold(owner, make_item, make_party)
     other = make_item("Cotton shirt L", "500", stock="5")
     before = _stock(item)
-    made = _post(owner, {
-        "against_id": bill["id"],
-        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
-        "lines": [line(other, "1")],
-    })
+    made = _post(
+        owner,
+        {
+            "against_id": bill["id"],
+            "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+            "lines": [line(other, "1")],
+        },
+    )
     assert made.status_code == 201, made.json()
     data = made.json()["data"]
     assert Decimal(data["invoice"]["amount_due"]) == 0
@@ -76,11 +79,14 @@ def test_taking_less_leaves_open_credit_never_cash(
 ) -> None:
     party, item, bill = _sold(owner, make_item, make_party)
     cheap = make_item("Socks", "100", stock="5")
-    data = _post(owner, {
-        "against_id": bill["id"],
-        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
-        "lines": [line(cheap, "1")],
-    }).json()["data"]
+    data = _post(
+        owner,
+        {
+            "against_id": bill["id"],
+            "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+            "lines": [line(cheap, "1")],
+        },
+    ).json()["data"]
     assert Decimal(data["invoice"]["amount_due"]) == 0
     note = SalesDocument.objects.get(pk=data["credit_note"]["id"])
     assert note.amount_due == Decimal(data["credit_note"]["open_credit"])
@@ -94,11 +100,14 @@ def test_a_refused_new_bill_leaves_no_credit_note(
     party, item, bill = _sold(owner, make_item, make_party)
     notes = SalesDocument.objects.filter(kind="credit_note").count()
     before = _stock(item)
-    bad = _post(owner, {
-        "against_id": bill["id"],
-        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
-        "lines": [{"item_id": str(uuid.uuid4()), "qty": "1"}],
-    })
+    bad = _post(
+        owner,
+        {
+            "against_id": bill["id"],
+            "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+            "lines": [{"item_id": str(uuid.uuid4()), "qty": "1"}],
+        },
+    )
     assert bad.status_code >= 400
     assert SalesDocument.objects.filter(kind="credit_note").count() == notes
     assert _stock(item) == before
@@ -109,11 +118,14 @@ def test_returning_more_than_was_sold_is_refused(
 ) -> None:
     party, item, bill = _sold(owner, make_item, make_party)
     other = make_item("Cotton shirt L", "500", stock="5")
-    bad = _post(owner, {
-        "against_id": bill["id"],
-        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "3"}],
-        "lines": [line(other, "1")],
-    })
+    bad = _post(
+        owner,
+        {
+            "against_id": bill["id"],
+            "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "3"}],
+            "lines": [line(other, "1")],
+        },
+    )
     assert bad.status_code >= 400
 
 

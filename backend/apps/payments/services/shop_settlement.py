@@ -94,7 +94,9 @@ def settleable(balances: dict[str, Decimal]) -> Decimal:
 
 def money_text(balances: dict[str, Decimal]) -> dict[str, str]:
     return {
-        key: f"{balances[key]:.2f}" for key in ("customer_balance", "supplier_balance") if key in balances
+        key: f"{balances[key]:.2f}"
+        for key in ("customer_balance", "supplier_balance")
+        if key in balances
     }
 
 

@@ -22,7 +22,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_qa_due03_1_the_allocation_panel_lists_dues_and_invoices_oldest_first(
-    shop: Any, make_party: Any, owner: Any, make_item: Any  # noqa: F811
+    shop: Any, make_party: Any, owner: Any, make_item: Any  # noqa: F811 — reason: a pytest fixture named as a parameter
 ) -> None:
     """QA-DUE-03-1 — `open_documents` concatenated targets in registration order, so with
     `dues_due` as a second main-bucket target the panel listed every invoice before any due,

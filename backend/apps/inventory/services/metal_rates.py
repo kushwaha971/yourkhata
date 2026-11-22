@@ -27,7 +27,10 @@ MAX_RATE = Decimal("1000000")
 
 
 def _figures(row: MetalRate | None) -> dict[str, str | None]:
-    return {p: (None if row is None or getattr(row, p) is None else f"{getattr(row, p):.2f}") for p in PURITIES}
+    return {
+        p: (None if row is None or getattr(row, p) is None else f"{getattr(row, p):.2f}")
+        for p in PURITIES
+    }
 
 
 def _view(row: MetalRate | None, tenant: Any) -> dict[str, Any] | None:
@@ -56,7 +59,12 @@ def today_view(*, tenant: Any) -> dict[str, Any]:
     rows = MetalRate.objects.filter(tenant=tenant, day__lte=today).order_by("-day")[:2]
     current = next((r for r in rows if r.day == today), None)
     previous = next((r for r in rows if r.day < today), None)
-    return {"day": today.isoformat(), "defaults": jewel_defaults(tenant), "today": _view(current, tenant), "yesterday": _view(previous, tenant)}
+    return {
+        "day": today.isoformat(),
+        "defaults": jewel_defaults(tenant),
+        "today": _view(current, tenant),
+        "yesterday": _view(previous, tenant),
+    }
 
 
 def _parse(raw: Any, field: str, details: dict[str, list[str]]) -> Decimal | None:
@@ -89,7 +97,12 @@ def save_today(*, ctx: Ctx, data: dict[str, Any]) -> dict[str, Any]:
         MetalRate.objects.update_or_create(
             tenant=ctx.tenant,
             day=today,
-            defaults={**values, "set_by_name": name[:120], "created_by": ctx.actor, "updated_at": timezone.now()},
+            defaults={
+                **values,
+                "set_by_name": name[:120],
+                "created_by": ctx.actor,
+                "updated_at": timezone.now(),
+            },
         )
     return today_view(tenant=ctx.tenant)
 

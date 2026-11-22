@@ -42,7 +42,12 @@ export function ItemTrackingFields({
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid={`item-tracking-${kind}`}
     >
-      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
+      <UbText
+        as="p"
+        variant="label"
+        tone="tertiary"
+        className="text-[12px] font-bold uppercase tracking-[0.06em]"
+      >
         {t(kind === 'batch' ? 'items.form.medicine.title' : 'items.form.phone.title')}
       </UbText>
       <UbSwitch

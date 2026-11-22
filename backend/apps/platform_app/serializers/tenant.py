@@ -119,6 +119,7 @@ class TenantCreateSerializer(serializers.Serializer):
         if unknown:
             raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
         return value
+
     locale = serializers.ChoiceField(choices=["en", "hi"], required=False, default="en")
     owner_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     # What the business will run: app codes from `GET /onboarding/apps`. Absent
@@ -171,6 +172,7 @@ class TenantUpdateSerializer(serializers.Serializer):
         if unknown:
             raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
         return value
+
     gst_type = serializers.ChoiceField(choices=GstType.choices, required=False)
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
     pan = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)

@@ -154,7 +154,9 @@ export function ShopPromiseDrawer({
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
-      title={t(editing ? 'parties.shopPromise.form.drawer.change' : 'parties.shopPromise.form.drawer.add')}
+      title={t(
+        editing ? 'parties.shopPromise.form.drawer.change' : 'parties.shopPromise.form.drawer.add'
+      )}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
       footer={

@@ -143,7 +143,7 @@ SETTLED: dict[str, str] = {
 
 
 @pytest.fixture
-def world(shop: Any, owner: Any, make_item: Any, make_party: Any) -> dict:  # noqa: F811
+def world(shop: Any, owner: Any, make_item: Any, make_party: Any) -> dict:  # noqa: F811 — reason: a pytest fixture named as a parameter
     return {"shop": shop, "owner": owner, "make_item": make_item, "make_party": make_party}
 
 

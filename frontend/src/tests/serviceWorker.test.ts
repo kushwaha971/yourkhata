@@ -73,6 +73,8 @@ describe('a page load on a slow connection', () => {
 
   it('opens the saved copy only when the network fails', async () => {
     const copy = { from: 'saved' };
-    await expect(pageFrom(Promise.reject(new TypeError('offline')), async () => copy)).resolves.toBe(copy);
+    await expect(
+      pageFrom(Promise.reject(new TypeError('offline')), async () => copy)
+    ).resolves.toBe(copy);
   });
 });

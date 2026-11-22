@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 
-import { UbButton, UbCheckbox, UbDialog, UbQuantityInput, UbStack, UbText } from 'src/design-system';
+import {
+  UbButton,
+  UbCheckbox,
+  UbDialog,
+  UbQuantityInput,
+  UbStack,
+  UbText,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 import { addMoney, formatInr, sumMoney } from 'src/utils/money';
@@ -47,7 +54,12 @@ export function AddonSheet({
           </UbButton>
           <UbButton
             variant="primary"
-            onClick={() => onAdd(picked.map((a) => ({ name: a.name, price: a.price })), Math.max(Number(qty) || 1, 1))}
+            onClick={() =>
+              onAdd(
+                picked.map((a) => ({ name: a.name, price: a.price })),
+                Math.max(Number(qty) || 1, 1)
+              )
+            }
             data-testid="addon-add"
           >
             {t('sales.addons.add', { amount: formatInr(total) })}
@@ -56,7 +68,12 @@ export function AddonSheet({
       }
     >
       <UbStack gap={3} data-testid="addon-sheet">
-        <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
+        <UbText
+          as="p"
+          variant="label"
+          tone="tertiary"
+          className="text-[12px] font-bold uppercase tracking-[0.06em]"
+        >
           {t('sales.addons.title')}
         </UbText>
         <UbStack gap={0} className="rounded-lg border border-border-hairline">

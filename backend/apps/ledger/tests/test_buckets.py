@@ -28,9 +28,7 @@ from apps.common.constants import Direction, LedgerBucket
 from apps.common.context import Ctx
 from apps.ledger.constants import EntryType, SourceType
 from apps.ledger.models import LedgerEntry
-from apps.ledger.selectors.entry import (
-    party_ledger_summary,
-)
+from apps.ledger.selectors.entry import party_ledger_summary
 from apps.ledger.services import postings
 from apps.ledger.services.postings import (
     LedgerPostingError,

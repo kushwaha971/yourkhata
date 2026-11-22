@@ -24,7 +24,10 @@ const run =
   <A, R>(fail: string, call: (s: Service, arg: A, signal: AbortSignal) => Promise<R>) =>
   async (
     arg: A,
-    { signal, rejectWithValue }: { signal: AbortSignal; rejectWithValue: (e: ApiErrorShape) => unknown }
+    {
+      signal,
+      rejectWithValue,
+    }: { signal: AbortSignal; rejectWithValue: (e: ApiErrorShape) => unknown }
   ) => {
     try {
       return await call(await service(), arg, signal);
@@ -38,7 +41,11 @@ export const fetchToday = createAsyncThunk<Round, string, Reject>(
   run('lending.today.error', (s, route, signal) => s.getToday(route, signal))
 );
 
-export const fetchLoans = createAsyncThunk<Loan[], { status?: string; route?: string; q?: string }, Reject>(
+export const fetchLoans = createAsyncThunk<
+  Loan[],
+  { status?: string; route?: string; q?: string },
+  Reject
+>(
   'lending/loans',
   run('lending.loans.error', (s, q, signal) => s.listLoans(q, signal))
 );
@@ -67,7 +74,10 @@ export const fetchRemind = createAsyncThunk<
   { rows: Loan[]; counts: Record<RemindKind, number> },
   RemindKind,
   Reject
->('lending/remind', run('lending.messages.error', (s, kind, signal) => s.remindList(kind, signal)));
+>(
+  'lending/remind',
+  run('lending.messages.error', (s, kind, signal) => s.remindList(kind, signal))
+);
 
 export const fetchSettings = createAsyncThunk<LendingSettings, void, Reject>(
   'lending/settings',
@@ -78,9 +88,18 @@ export const collect = createAsyncThunk<
   { loan: LoanDetail; receipt: string },
   { loanId: string; values: CollectValues; key: string },
   Reject
->('lending/collect', run('lending.collect.error', (s, a) => s.collect(a.loanId, a.values, a.key)));
+>(
+  'lending/collect',
+  run('lending.collect.error', (s, a) => s.collect(a.loanId, a.values, a.key))
+);
 
-export const notPaid = createAsyncThunk<void, { loanId: string; reason: string; promisedOn: string; key: string }, Reject>(
+export const notPaid = createAsyncThunk<
+  void,
+  { loanId: string; reason: string; promisedOn: string; key: string },
+  Reject
+>(
   'lending/notPaid',
-  run('lending.notPaid.error', (s, a) => s.notPaid(a.loanId, { reason: a.reason, promisedOn: a.promisedOn }, a.key))
+  run('lending.notPaid.error', (s, a) =>
+    s.notPaid(a.loanId, { reason: a.reason, promisedOn: a.promisedOn }, a.key)
+  )
 );

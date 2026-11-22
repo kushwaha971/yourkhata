@@ -26,7 +26,9 @@ def add_months(day: dt.date, months: int, anchor: int) -> dt.date:
     return dt.date(year, month, min(anchor, calendar.monthrange(year, month)[1]))
 
 
-def schedule_dates(*, starts_on: dt.date, frequency: str, count: int, skip_sundays: bool) -> list[dt.date]:
+def schedule_dates(
+    *, starts_on: dt.date, frequency: str, count: int, skip_sundays: bool
+) -> list[dt.date]:
     """The days money is collected. Daily skips Sundays when asked; weekly and
     monthly keep the starting weekday / day of month (a monthly on the 31st
     lands on the 30th or 28th and comes back to the 31st)."""
@@ -44,11 +46,17 @@ def schedule_dates(*, starts_on: dt.date, frequency: str, count: int, skip_sunda
     return days
 
 
-def schedule(*, starts_on: dt.date, frequency: str, count: int, each: Decimal, skip_sundays: bool) -> list[tuple[int, dt.date, Decimal]]:
+def schedule(
+    *, starts_on: dt.date, frequency: str, count: int, each: Decimal, skip_sundays: bool
+) -> list[tuple[int, dt.date, Decimal]]:
     """(seq, day, amount) for every collection; every one is `each`."""
     return [
         (i + 1, day, each)
-        for i, day in enumerate(schedule_dates(starts_on=starts_on, frequency=frequency, count=count, skip_sundays=skip_sundays))
+        for i, day in enumerate(
+            schedule_dates(
+                starts_on=starts_on, frequency=frequency, count=count, skip_sundays=skip_sundays
+            )
+        )
     ]
 
 
@@ -56,19 +64,21 @@ def schedule(*, starts_on: dt.date, frequency: str, count: int, each: Decimal, s
 class Position:
     """A loan on a day."""
 
-    total: Decimal          # the whole schedule
-    collected: Decimal      # every live collection
-    late: Decimal           # unpaid money on days before `day`
-    late_days: int          # how many earlier collection days are not (fully) paid
+    total: Decimal  # the whole schedule
+    collected: Decimal  # every live collection
+    late: Decimal  # unpaid money on days before `day`
+    late_days: int  # how many earlier collection days are not (fully) paid
     late_since: dt.date | None
-    due_today: Decimal      # unpaid money on `day` itself
-    left: Decimal           # total − collected
-    paid_count: int         # collection days fully paid
+    due_today: Decimal  # unpaid money on `day` itself
+    left: Decimal  # total − collected
+    paid_count: int  # collection days fully paid
     next_due: dt.date | None  # the first day from `day` on with money unpaid
     ends_on: dt.date | None
 
 
-def position(*, dues: list[tuple[int, dt.date, Decimal]], collected: Decimal, day: dt.date) -> Position:
+def position(
+    *, dues: list[tuple[int, dt.date, Decimal]], collected: Decimal, day: dt.date
+) -> Position:
     """Collections pay the schedule oldest first."""
     total = sum((a for _s, _d, a in dues), ZERO)
     money = collected
@@ -104,7 +114,9 @@ def position(*, dues: list[tuple[int, dt.date, Decimal]], collected: Decimal, da
     )
 
 
-def after(*, dues: list[tuple[int, dt.date, Decimal]], collected: Decimal, amount: Decimal, day: dt.date) -> Position:
+def after(
+    *, dues: list[tuple[int, dt.date, Decimal]], collected: Decimal, amount: Decimal, day: dt.date
+) -> Position:
     """The same loan after `amount` more is collected today (the sheet's "After this")."""
     return position(dues=dues, collected=collected + amount, day=day)
 

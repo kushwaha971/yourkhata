@@ -374,9 +374,7 @@ export function PartyFormDrawer({
         fixedRole ? 'parties.form.shop.mobile.placeholder' : 'parties.form.mobile.placeholder'
       )}
       hint={t(
-        fixedRole === 'supplier'
-            ? 'parties.form.mobile.hintSupplier'
-            : 'parties.form.mobile.hint'
+        fixedRole === 'supplier' ? 'parties.form.mobile.hintSupplier' : 'parties.form.mobile.hint'
       )}
     >
       {(field) => <UbPhoneInput {...field} autoComplete="off" />}
@@ -384,12 +382,7 @@ export function PartyFormDrawer({
   );
   const openingDirectionInput = (
     <UbField name="openingDirection" label={t('parties.form.opening.direction')}>
-      {(field) => (
-        <UbRadioGroup
-          {...field}
-          options={directionOptions}
-        />
-      )}
+      {(field) => <UbRadioGroup {...field} options={directionOptions} />}
     </UbField>
   );
 
@@ -604,8 +597,8 @@ export function PartyFormDrawer({
       onOpenChange={handleOpenChange}
       title={
         isEdit
-            ? t(fixedRole ? `parties.form.shop.title.edit.${fixedRole}` : 'parties.form.title.edit')
-            : t(`parties.form.title.create${byKind}`)
+          ? t(fixedRole ? `parties.form.shop.title.edit.${fixedRole}` : 'parties.form.title.edit')
+          : t(`parties.form.title.create${byKind}`)
       }
       description={
         isEdit
@@ -635,8 +628,8 @@ export function PartyFormDrawer({
             {isEdit
               ? t('parties.form.submit.edit')
               : fixedRole
-                  ? t(`parties.form.shop.submit.${fixedRole}`)
-                  : t(`parties.form.submit.create${byKind}`)}
+                ? t(`parties.form.shop.submit.${fixedRole}`)
+                : t(`parties.form.submit.create${byKind}`)}
           </UbButton>
         </>
       }
@@ -677,26 +670,26 @@ export function PartyFormDrawer({
         )}
 
         <>
-            {/* ── The fifteen-second path ─────────────────────────────────────── */}
-            {/* One contact from the phone fills Name and Mobile, and saves nothing:
+          {/* ── The fifteen-second path ─────────────────────────────────────── */}
+          {/* One contact from the phone fills Name and Mobile, and saves nothing:
             Save does, and the server's duplicate check still decides (PTY-07
             FR-10). A new party only, and nothing at all where the browser
             cannot pick contacts — no dead button on every desktop (FR-14). */}
-            {contactPickButton}
-            {existingPicker}
-            <PartyNameInput
-              t={t}
-              hintKey={fixedRole ? `parties.form.shop.name.placeholder.${fixedRole}` : undefined}
-            />
+          {contactPickButton}
+          {existingPicker}
+          <PartyNameInput
+            t={t}
+            hintKey={fixedRole ? `parties.form.shop.name.placeholder.${fixedRole}` : undefined}
+          />
 
-            {/* `UbPhoneInput`, not a text field with `type="tel"`. The schema's
+          {/* `UbPhoneInput`, not a text field with `type="tel"`. The schema's
             rule is E.164 (`+91XXXXXXXXXX`), and a merchant types ten digits —
             so a plain field turns "9812345678" into a format error about a
             prefix nobody asked them for. This component shows the national
             digits and commits E.164. */}
-            {mobileInput}
+          {mobileInput}
 
-            {/* Two switches rather than a three-way "Customer / Supplier / Both".
+          {/* Two switches rather than a three-way "Customer / Supplier / Both".
             Both is not a third kind of party — it is both boxes ticked — and a
             segmented control that has to invent a word for the combination is
             a control explaining its own implementation.
@@ -705,32 +698,32 @@ export function PartyFormDrawer({
             the question (owner, 25 Oct 2026): Add on Customers is a customer.
             So the pair is not asked there, and the one case it existed for —
             somebody who is both — is a single switch under "More details". */}
-            {!fixedRole && (
-              <>
-                <UbField name="isCustomer" label={t('parties.form.isCustomer')} controlOwnsLabel>
-                  {(field) => (
-                    <UbSwitch
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      label={t('parties.form.isCustomer')}
-                      id={field.id}
-                    />
-                  )}
-                </UbField>
-                <UbField name="isSupplier" label={t('parties.form.isSupplier')} controlOwnsLabel>
-                  {(field) => (
-                    <UbSwitch
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      label={t('parties.form.isSupplier')}
-                      id={field.id}
-                    />
-                  )}
-                </UbField>
-              </>
-            )}
+          {!fixedRole && (
+            <>
+              <UbField name="isCustomer" label={t('parties.form.isCustomer')} controlOwnsLabel>
+                {(field) => (
+                  <UbSwitch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label={t('parties.form.isCustomer')}
+                    id={field.id}
+                  />
+                )}
+              </UbField>
+              <UbField name="isSupplier" label={t('parties.form.isSupplier')} controlOwnsLabel>
+                {(field) => (
+                  <UbSwitch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label={t('parties.form.isSupplier')}
+                    id={field.id}
+                  />
+                )}
+              </UbField>
+            </>
+          )}
 
-            {/* PTY-05 FR-5 — visible, not folded, and that is a deliberate
+          {/* PTY-05 FR-5 — visible, not folded, and that is a deliberate
             exception to this form's own rule.
  
             Everything past the first three fields is behind a disclosure
@@ -744,60 +737,60 @@ export function PartyFormDrawer({
             It is last in the visible group, so the fifteen-second path is still
             name, number, which-kind, save, with tags sitting where the eye lands
             after the decision rather than before it. */}
-            {!fixedRole && tagsField}
+          {!fixedRole && tagsField}
 
-            {/* ── Everything else, folded away ───────────────────────────────── */}
-            {!isEdit && !shop && (
-              <UbDisclosure
-                label={t('parties.form.section.opening')}
-                hint={t('parties.form.section.opening.hint')}
-                open={openingHasError || undefined}
+          {/* ── Everything else, folded away ───────────────────────────────── */}
+          {!isEdit && !shop && (
+            <UbDisclosure
+              label={t('parties.form.section.opening')}
+              hint={t('parties.form.section.opening.hint')}
+              open={openingHasError || undefined}
+            >
+              <OpeningAmountInput t={t} />
+              {openingDirectionInput}
+              <UbField
+                name="openingAsOf"
+                label={t('parties.form.opening.asOf')}
+                placeholder={t('parties.form.opening.asOf.placeholder')}
+                hint={t('parties.form.opening.asOf.hint', { direction: openingDirection })}
               >
-                <OpeningAmountInput t={t} />
-                {openingDirectionInput}
-                <UbField
-                  name="openingAsOf"
-                  label={t('parties.form.opening.asOf')}
-                  placeholder={t('parties.form.opening.asOf.placeholder')}
-                  hint={t('parties.form.opening.asOf.hint', { direction: openingDirection })}
-                >
-                  {(field) => (
-                    <UbDateInput
-                      {...field}
-                      max={isoToday()}
-                      quickChoicesLabel={t('parties.form.opening.quickDates')}
-                      quickChoices={[
-                        { label: t('parties.form.opening.fyStart'), date: isoFinancialYearStart() },
-                        { label: t('parties.form.opening.today'), date: isoToday() },
-                      ]}
-                    />
-                  )}
-                </UbField>
-                {/* What happens to the figure: the server posts it as the khata's
+                {(field) => (
+                  <UbDateInput
+                    {...field}
+                    max={isoToday()}
+                    quickChoicesLabel={t('parties.form.opening.quickDates')}
+                    quickChoices={[
+                      { label: t('parties.form.opening.fyStart'), date: isoFinancialYearStart() },
+                      { label: t('parties.form.opening.today'), date: isoToday() },
+                    ]}
+                  />
+                )}
+              </UbField>
+              {/* What happens to the figure: the server posts it as the khata's
                 first entry in the party's own transaction (LED-02 FR-2). The
                 old line promised it would "join the balance when entries
                 arrive", from before that was true (UAT D8). */}
-                <UbText variant="caption" tone="tertiary">
-                  {t('parties.form.opening.postedOnSave')}
-                </UbText>
-              </UbDisclosure>
-            )}
+              <UbText variant="caption" tone="tertiary">
+                {t('parties.form.opening.postedOnSave')}
+              </UbText>
+            </UbDisclosure>
+          )}
 
-            {!fixedRole && (
-              <UbDisclosure label={t('parties.form.section.gst')} open={gstHasError || undefined}>
-                {gstFields}
-              </UbDisclosure>
-            )}
+          {!fixedRole && (
+            <UbDisclosure label={t('parties.form.section.gst')} open={gstHasError || undefined}>
+              {gstFields}
+            </UbDisclosure>
+          )}
 
-            {/* DEC-019 — the collection date is the Udhaar book's promise; the Shop keeps its
+          {/* DEC-019 — the collection date is the Udhaar book's promise; the Shop keeps its
             own per-role promises on the person page (BP-16), so its form does not ask.
             Removed from the Shop form at the owner's word, 25 Oct 2026. */}
-            {!shop && (
-              <UbDisclosure
-                label={t('parties.form.section.credit')}
-                open={creditHasError || undefined}
-              >
-                {/* PTY-06 FR-13 — a NOTICE, not an error.
+          {!shop && (
+            <UbDisclosure
+              label={t('parties.form.section.credit')}
+              open={creditHasError || undefined}
+            >
+              {/* PTY-06 FR-13 — a NOTICE, not an error.
  
               Lowering a limit below what somebody already owes is allowed and
               is often the whole point: a merchant who has decided to stop
@@ -809,86 +802,86 @@ export function PartyFormDrawer({
               `hint` rather than a banner, because it belongs to this field and
               disappears with it. It is computed from the balance the form
               already has, so there is no request behind it. */}
-                <UbField
-                  name="creditLimit"
-                  label={t('parties.form.creditLimit.label')}
-                  placeholder={t('parties.form.creditLimit.placeholder')}
-                  hint={creditHint}
-                >
-                  {(field) => <UbMoneyInput {...field} />}
-                </UbField>
-                <UbField
-                  name="creditDays"
-                  label={t('parties.form.creditDays.label')}
-                  placeholder={t('parties.form.creditDays.placeholder')}
-                  hint={t('parties.form.creditDays.hint')}
-                >
-                  {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-                </UbField>
-                <UbField
-                  name="collectionDate"
-                  label={t('parties.form.collectionDate.label')}
-                  placeholder={t('parties.form.collectionDate.placeholder')}
-                >
-                  {(field) => <UbDateInput {...field} />}
-                </UbField>
-              </UbDisclosure>
-            )}
+              <UbField
+                name="creditLimit"
+                label={t('parties.form.creditLimit.label')}
+                placeholder={t('parties.form.creditLimit.placeholder')}
+                hint={creditHint}
+              >
+                {(field) => <UbMoneyInput {...field} />}
+              </UbField>
+              <UbField
+                name="creditDays"
+                label={t('parties.form.creditDays.label')}
+                placeholder={t('parties.form.creditDays.placeholder')}
+                hint={t('parties.form.creditDays.hint')}
+              >
+                {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
+              </UbField>
+              <UbField
+                name="collectionDate"
+                label={t('parties.form.collectionDate.label')}
+                placeholder={t('parties.form.collectionDate.placeholder')}
+              >
+                {(field) => <UbDateInput {...field} />}
+              </UbField>
+            </UbDisclosure>
+          )}
 
-            {/* A6 F5/F6 — the Shop has ONE "More details", open, with the
+          {/* A6 F5/F6 — the Shop has ONE "More details", open, with the
             design's subtitle. Its customer form leads with reminders and the
             supplier form with the GSTIN; GST, address, phone, notes and tags
             are kept inside it rather than dropped (R-DEC-29: no capability is
             removed without the owner's word). */}
-            <UbDisclosure
-              label={t('parties.form.section.other')}
-              hint={fixedRole ? t(`parties.form.shop.more.hint.${fixedRole}`) : undefined}
-              open={(fixedRole && gstHasError) || undefined}
+          <UbDisclosure
+            label={t('parties.form.section.other')}
+            hint={fixedRole ? t(`parties.form.shop.more.hint.${fixedRole}`) : undefined}
+            open={(fixedRole && gstHasError) || undefined}
+          >
+            {fixedRole === 'supplier' && gstinField}
+            <UbField
+              name="displayCode"
+              label={t('parties.form.code.label')}
+              placeholder={t('parties.form.code.placeholder')}
             >
-              {fixedRole === 'supplier' && gstinField}
-              <UbField
-                name="displayCode"
-                label={t('parties.form.code.label')}
-                placeholder={t('parties.form.code.placeholder')}
-              >
-                {(field) => <UbTextInput {...field} autoComplete="off" />}
-              </UbField>
-              {/* A6 F6 — the design's order: code, then reminders (customer) or
+              {(field) => <UbTextInput {...field} autoComplete="off" />}
+            </UbField>
+            {/* A6 F6 — the design's order: code, then reminders (customer) or
                   the GSTIN (supplier); the kept fields follow. Credit days is
                   in here too (R-DEC-61): the counter asks a name and a number. */}
-              {fixedRole && !isEdit && !linked && (
-                <UbField
-                  name="openingAmount"
-                  label={t(`parties.form.shop.old.label.${fixedRole}`)}
-                  placeholder={t('parties.form.shop.old.placeholder')}
-                  hint={t('parties.form.shop.old.hint')}
-                >
-                  {(field) => <UbMoneyInput {...field} />}
-                </UbField>
-              )}
-              {creditDaysTop}
-              {fixedRole === 'customer' && remindersFields}
-              {fixedRole === 'customer' && gstinField}
-              {fixedRole && gstRestFields}
+            {fixedRole && !isEdit && !linked && (
               <UbField
-                name="altPhone"
-                label={t('parties.form.altPhone.label')}
-                placeholder={t('parties.form.altPhone.placeholder')}
+                name="openingAmount"
+                label={t(`parties.form.shop.old.label.${fixedRole}`)}
+                placeholder={t('parties.form.shop.old.placeholder')}
+                hint={t('parties.form.shop.old.hint')}
               >
-                {(field) => <UbPhoneInput {...field} autoComplete="off" />}
+                {(field) => <UbMoneyInput {...field} />}
               </UbField>
-              <UbField
-                name="notes"
-                label={t('parties.form.notes.label')}
-                placeholder={t('parties.form.notes.placeholder')}
-              >
-                {(field) => <UbTextInput {...field} autoComplete="off" />}
-              </UbField>
-              {fixedRole && tagsField}
-              {/* Reminders and their consent are about money a CUSTOMER owes; a
+            )}
+            {creditDaysTop}
+            {fixedRole === 'customer' && remindersFields}
+            {fixedRole === 'customer' && gstinField}
+            {fixedRole && gstRestFields}
+            <UbField
+              name="altPhone"
+              label={t('parties.form.altPhone.label')}
+              placeholder={t('parties.form.altPhone.placeholder')}
+            >
+              {(field) => <UbPhoneInput {...field} autoComplete="off" />}
+            </UbField>
+            <UbField
+              name="notes"
+              label={t('parties.form.notes.label')}
+              placeholder={t('parties.form.notes.placeholder')}
+            >
+              {(field) => <UbTextInput {...field} autoComplete="off" />}
+            </UbField>
+            {fixedRole && tagsField}
+            {/* Reminders and their consent are about money a CUSTOMER owes; a
               supplier is paid, not reminded. */}
-              {!fixedRole && remindersFields}
-            </UbDisclosure>
+            {!fixedRole && remindersFields}
+          </UbDisclosure>
         </>
       </UbForm>
     </UbDrawer>

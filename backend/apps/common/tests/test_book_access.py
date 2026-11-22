@@ -17,7 +17,11 @@ def _library_notice():
     """A notice addressed to the Library's people. The rebuilt Library (12 Nov
     2026) sends none of its own, so the app-scoping rule is proved with this one."""
     from apps.notifications.constants import NotificationCategory, NotificationSeverity
-    from apps.notifications.services.notify import REGISTRY, NotificationType, register_notification_type
+    from apps.notifications.services.notify import (
+        REGISTRY,
+        NotificationType,
+        register_notification_type,
+    )
 
     if "library.overdue_today" not in REGISTRY:
         register_notification_type(

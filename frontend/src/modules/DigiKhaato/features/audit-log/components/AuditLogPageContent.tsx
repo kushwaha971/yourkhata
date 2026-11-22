@@ -39,8 +39,7 @@ import { createAuditColumns } from './AuditColumns';
 
 const AuditDetailDrawer = dynamic(
   () => import('./AuditDetailDrawer').then((module) => module.AuditDetailDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const PAGE_SIZE_OPTIONS: readonly number[] = [25, 50, 100];
@@ -211,40 +210,40 @@ export function AuditLogPageContent(): React.JSX.Element {
         {/* The period and the kind of change, which the design has no place
             for, stay under More filters, closed. */}
         <UbDisclosure label={t('audit.filter.more')}>
-        <UbDateRangePicker
-          presets={periodPresets}
-          preset={filters.period}
-          onPresetChange={handlePeriod}
-          customPreset="custom"
-          from={filters.dateFrom}
-          to={filters.dateTo}
-          onRangeChange={log.setRange}
-          max={log.today}
-          name="audit-period"
-          labels={{
-            presets: t('audit.filter.period'),
-            from: t('audit.filter.from'),
-            to: t('audit.filter.to'),
-            apply: t('common.action.apply'),
-            close: t('common.action.close'),
-          }}
-          end={
-            <>
-              <UbFilterSelect
-                spec={{
-                  kind: 'single',
-                  key: 'action',
-                  label: t('audit.filter.action'),
-                  anyLabel: t('audit.filter.action.all'),
-                  options: groupOptions.filter((option) => option.value !== ALL),
-                }}
-                value={filters.group ?? ''}
-                onChange={(value) => handleGroup(value || ALL)}
-                closeLabel={t('common.action.close')}
-              />
-            </>
-          }
-        />
+          <UbDateRangePicker
+            presets={periodPresets}
+            preset={filters.period}
+            onPresetChange={handlePeriod}
+            customPreset="custom"
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            onRangeChange={log.setRange}
+            max={log.today}
+            name="audit-period"
+            labels={{
+              presets: t('audit.filter.period'),
+              from: t('audit.filter.from'),
+              to: t('audit.filter.to'),
+              apply: t('common.action.apply'),
+              close: t('common.action.close'),
+            }}
+            end={
+              <>
+                <UbFilterSelect
+                  spec={{
+                    kind: 'single',
+                    key: 'action',
+                    label: t('audit.filter.action'),
+                    anyLabel: t('audit.filter.action.all'),
+                    options: groupOptions.filter((option) => option.value !== ALL),
+                  }}
+                  value={filters.group ?? ''}
+                  onChange={(value) => handleGroup(value || ALL)}
+                  closeLabel={t('common.action.close')}
+                />
+              </>
+            }
+          />
         </UbDisclosure>
 
         <UbDataGrid

@@ -70,7 +70,11 @@ def add_location(*, ctx: Ctx, name: Any) -> Location:
 
 def _place(ctx: Ctx, raw: Any, path: str, errors: Errors) -> Location | None:
     try:
-        place = Location.objects.filter(tenant=ctx.tenant, pk=raw, is_active=True).first() if raw else None
+        place = (
+            Location.objects.filter(tenant=ctx.tenant, pk=raw, is_active=True).first()
+            if raw
+            else None
+        )
     except (ValueError, TypeError, DjangoValidationError):
         place = None
     if place is None:
@@ -96,7 +100,9 @@ def post_transfer(*, ctx: Ctx, payload: dict) -> StockTransfer:
     try:
         items = {
             str(item.id): item
-            for item in Item.objects.filter(tenant=ctx.tenant, pk__in=item_ids).select_related("unit")
+            for item in Item.objects.filter(tenant=ctx.tenant, pk__in=item_ids).select_related(
+                "unit"
+            )
         }
     except (ValueError, TypeError, DjangoValidationError):
         items = {}
@@ -110,7 +116,9 @@ def post_transfer(*, ctx: Ctx, payload: dict) -> StockTransfer:
             errors.add(f"{path}.item_id", "Choose an item from your list.", "required")
             continue
         if item.item_type != ItemType.GOODS or not item.track_stock:
-            errors.add(f"{path}.item_id", "This item does not keep stock.", "track_stock_not_allowed")
+            errors.add(
+                f"{path}.item_id", "This item does not keep stock.", "track_stock_not_allowed"
+            )
             continue
         if item.status == ItemStatus.ARCHIVED:
             errors.add(f"{path}.item_id", "This item is archived.", "item_archived")
@@ -131,7 +139,9 @@ def post_transfer(*, ctx: Ctx, payload: dict) -> StockTransfer:
             message="Enter how many to move.",
         )
         if qty is not None and validate_qty_for_unit(qty, allow_decimal=item.unit.allow_decimal):
-            errors.add(f"{path}.qty", f"Use a whole number for {item.unit.code}.", "qty_must_be_whole")
+            errors.add(
+                f"{path}.qty", f"Use a whole number for {item.unit.code}.", "qty_must_be_whole"
+            )
             continue
         if qty is not None:
             parsed.append((index, item, q3(qty)))
@@ -199,4 +209,3 @@ def post_transfer(*, ctx: Ctx, payload: dict) -> StockTransfer:
         },
     )
     return transfer
-

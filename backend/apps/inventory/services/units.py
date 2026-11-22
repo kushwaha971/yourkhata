@@ -104,7 +104,9 @@ def set_units(*, ctx: Any, item: Any, raw: Any) -> None:
     for index, entry in enumerate(raw):
         path = f"units.{index}"
         entry = entry if isinstance(entry, dict) else {}
-        unit = Unit.objects.filter(pk=entry.get("unit_id")).first() if entry.get("unit_id") else None
+        unit = (
+            Unit.objects.filter(pk=entry.get("unit_id")).first() if entry.get("unit_id") else None
+        )
         if unit is None or (unit.tenant_id not in (None, ctx.tenant.id)):
             errors[f"{path}.unit_id"] = ["Choose a unit."]
             continue
@@ -120,12 +122,14 @@ def set_units(*, ctx: Any, item: Any, raw: Any) -> None:
         except Exception:  # noqa: BLE001 - any unparsable value is the same refusal
             factor = None
         if factor is None or not factor.is_finite() or factor <= 1 or factor > Decimal("100000"):
-            errors[f"{path}.factor"] = [f"How many {item.unit.code} in one {unit.code}? More than 1."]
+            errors[f"{path}.factor"] = [
+                f"How many {item.unit.code} in one {unit.code}? More than 1."
+            ]
             continue
         if not item.unit.allow_decimal and factor != factor.to_integral_value():
             errors[f"{path}.factor"] = [f"Use a whole number of {item.unit.code}."]
             continue
-        barcode = (str(entry.get("barcode") or "").strip() or None)
+        barcode = str(entry.get("barcode") or "").strip() or None
         if barcode:
             taken = (
                 Item.objects.filter(tenant=ctx.tenant, barcode=barcode).exclude(pk=item.pk).exists()
@@ -142,7 +146,7 @@ def set_units(*, ctx: Any, item: Any, raw: Any) -> None:
         price = entry.get("selling_price")
         try:
             price = Decimal(str(price)) if price not in (None, "") else None
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 — reason: any failure falls back to the plain value
             price = Decimal("-1")
         if price is not None and (not price.is_finite() or price < 0):
             errors[f"{path}.selling_price"] = ["Enter a price of zero or more."]
@@ -226,12 +230,20 @@ def set_addons(*, ctx: Any, item: Any, raw: Any) -> None:
         names.add(name.lower())
         try:
             price = Decimal(str(entry.get("price") or "0"))
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 — reason: any failure falls back to the plain value
             price = Decimal("-1")
         if not price.is_finite() or price < 0:
             errors[f"addons.{index}.price"] = ["Enter a price of zero or more."]
             continue
-        rows.append(ItemAddon(tenant=ctx.tenant, item=item, name=name, price=price.quantize(Decimal("0.01")), position=index))
+        rows.append(
+            ItemAddon(
+                tenant=ctx.tenant,
+                item=item,
+                name=name,
+                price=price.quantize(Decimal("0.01")),
+                position=index,
+            )
+        )
     if errors:
         raise ValidationFailed(errors)
     ItemAddon.objects.filter(item=item).delete()

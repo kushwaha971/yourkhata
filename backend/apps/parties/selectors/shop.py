@@ -10,18 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import (
-    Case,
-    DateField,
-    DecimalField,
-    F,
-    OuterRef,
-    Q,
-    Subquery,
-    Sum,
-    Value,
-    When,
-)
+from django.db.models import Case, DateField, DecimalField, F, OuterRef, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce, Greatest
 
 from apps.common.document_scope import shop_origin_q
@@ -86,7 +75,8 @@ def with_shop_facts(queryset: Any, *, tenant: Any) -> Any:
         queryset.annotate(
             shop_customer_opening=amount(openings.filter(direction="debit"), "amount"),
             shop_supplier_opening=amount(openings.filter(direction="credit"), "amount"),
-            shop_customer_due=amount(invoices) + amount(openings.filter(direction="debit"), "amount"),
+            shop_customer_due=amount(invoices)
+            + amount(openings.filter(direction="debit"), "amount"),
             shop_customer_credit=amount(
                 sales.filter(kind="credit_note", status__in=("issued", "applied"))
             )

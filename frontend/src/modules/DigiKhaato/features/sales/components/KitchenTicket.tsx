@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { ChefHat } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-
 import { UbBox, UbButton, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatTimestamp } from 'src/utils/dates';

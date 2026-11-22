@@ -260,12 +260,26 @@ def test_the_starred_library_and_app_open_at_sign_in_over_the_last_used() -> Non
     mk = MembershipFactory(user=user, tenant=kothrud, role=_role("owner"), is_default=True)
     mb = MembershipFactory(user=user, tenant=baner, role=_role("owner"))
     client = _client(user)
-    made = client.patch(reverse("v1:membership-detail", args=[mb.id]),
-                        {"is_default": True, "primary_app": "library"}, format="json")
+    made = client.patch(
+        reverse("v1:membership-detail", args=[mb.id]),
+        {"is_default": True, "primary_app": "library"},
+        format="json",
+    )
     assert made.status_code == 200, made.content
-    mk.refresh_from_db(); mb.refresh_from_db()
-    assert (mb.is_default, mb.primary_app, mk.is_default, mk.primary_app) == (True, "library", False, "")
-    assert client.post(reverse("v1:auth-switch-tenant"), {"tenant_id": str(kothrud.id)}, format="json").status_code == 200
+    mk.refresh_from_db()
+    mb.refresh_from_db()
+    assert (mb.is_default, mb.primary_app, mk.is_default, mk.primary_app) == (
+        True,
+        "library",
+        False,
+        "",
+    )
+    assert (
+        client.post(
+            reverse("v1:auth-switch-tenant"), {"tenant_id": str(kothrud.id)}, format="json"
+        ).status_code
+        == 200
+    )
     me = _me(_client(user))
     assert me["active_tenant_id"] == str(baner.id)
     assert me["active_app"] == "library" and me["landing"]["path"] == "/library"
@@ -274,8 +288,11 @@ def test_the_starred_library_and_app_open_at_sign_in_over_the_last_used() -> Non
 def test_a_star_on_an_app_this_person_cannot_open_is_refused() -> None:
     user = UserFactory(password=PASSWORD)
     m = MembershipFactory(user=user, tenant=_business(verticals=("library",)), role=_role("owner"))
-    got = _client(user).patch(reverse("v1:membership-detail", args=[m.id]),
-                              {"is_default": True, "primary_app": "lending"}, format="json")
+    got = _client(user).patch(
+        reverse("v1:membership-detail", args=[m.id]),
+        {"is_default": True, "primary_app": "lending"},
+        format="json",
+    )
     assert got.status_code == 403
     m.refresh_from_db()
     assert m.primary_app == ""
@@ -288,10 +305,14 @@ def test_each_business_row_says_which_apps_this_person_opens_there() -> None:
     own = _business()
     work = _business()
     MembershipFactory(user=user, tenant=own, role=_role("owner"), is_default=True)
-    staff = MembershipFactory(user=user, tenant=work, role=_role("staff"), app_grants_configured=True)
+    staff = MembershipFactory(
+        user=user, tenant=work, role=_role("staff"), app_grants_configured=True
+    )
     _grant(staff, lending="staff")
     client = _client(user)
-    rows = {r["tenant_id"]: r["apps"] for r in client.get(reverse("v1:membership-apps")).json()["data"]}
+    rows = {
+        r["tenant_id"]: r["apps"] for r in client.get(reverse("v1:membership-apps")).json()["data"]
+    }
     assert set(rows[str(own.id)]) == {"library", "lending", "shop"}
     assert rows[str(work.id)] == ["lending"]
     me_rows = {r["id"]: r for r in _me(client)["tenants"]}

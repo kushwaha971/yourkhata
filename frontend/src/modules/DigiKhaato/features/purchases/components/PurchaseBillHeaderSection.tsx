@@ -194,9 +194,7 @@ export function PurchaseBillHeaderSection({
                     <UbSelect
                       id={field.id}
                       aria-label={t('purchases.editor.godown')}
-                      value={
-                        (field.value as string) || (places.find((p) => p.isDefault)?.id ?? '')
-                      }
+                      value={(field.value as string) || (places.find((p) => p.isDefault)?.id ?? '')}
                       options={places.map((place) => ({ value: place.id, label: place.name }))}
                       onChange={(next) =>
                         field.onChange(places.find((p) => p.id === next)?.isDefault ? '' : next)

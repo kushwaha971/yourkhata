@@ -247,8 +247,12 @@ it('labels negative cash as records and states the excluded opening cash', async
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
   await screen.findByTestId('home-more');
-  expect(within(screen.getByTestId('home-more')).getByText('Cash by your records')).toBeInTheDocument();
-  expect(within(screen.getByTestId('home-more')).getByText(/opening cash excluded/)).toBeInTheDocument();
+  expect(
+    within(screen.getByTestId('home-more')).getByText('Cash by your records')
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByTestId('home-more')).getByText(/opening cash excluded/)
+  ).toBeInTheDocument();
   expect(within(screen.getByTestId('home-more')).getByText(/150\.00/)).toHaveTextContent(/[-‑−]/);
 });
 
@@ -262,11 +266,15 @@ it('says the drawer is not counted and offers Count cash on the same line', asyn
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
   await screen.findByTestId('home-more');
-  expect(within(screen.getByTestId('home-more')).getByTestId('home-cash-count-last')).toHaveTextContent('Not counted');
+  expect(
+    within(screen.getByTestId('home-more')).getByTestId('home-cash-count-last')
+  ).toHaveTextContent('Not counted');
   expect(within(screen.getByTestId('home-more')).getByTestId('home-cash-count')).toHaveTextContent(
     'Not counted · Count cash'
   );
-  await userEvent.click(within(screen.getByTestId('home-more')).getByRole('button', { name: 'Count cash' }));
+  await userEvent.click(
+    within(screen.getByTestId('home-more')).getByRole('button', { name: 'Count cash' })
+  );
   expect(await screen.findByTestId('cash-count-drawer')).toBeInTheDocument();
 });
 
@@ -452,7 +460,9 @@ it('keeps Needs attention on the page, each row with its amount, age and next st
   renderWithProviders(<DashboardPageContent />);
   const attention = await screen.findByTestId('home-followups');
   expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
-  const rows = within(attention).getAllByRole('link').filter((row) => row.textContent !== 'Open');
+  const rows = within(attention)
+    .getAllByRole('link')
+    .filter((row) => row.textContent !== 'Open');
   const faces = within(attention).getAllByTestId('home-follow-row');
   expect(faces.map((row) => row.textContent)).toEqual([
     expect.stringMatching(/Collect ₹900\.00 from 2 overdue bills.*Oldest is 25 days late/),
@@ -733,7 +743,9 @@ it('says which panel could not load and keeps the rest of the page', async () =>
   renderWithProviders(<DashboardPageContent />);
   const customers = await screen.findByRole('region', { name: 'Customers' });
   expect(within(customers).getByText('This section could not load.')).toBeInTheDocument();
-  expect(within(customers).queryByText('Nothing to collect from customers.')).not.toBeInTheDocument();
+  expect(
+    within(customers).queryByText('Nothing to collect from customers.')
+  ).not.toBeInTheDocument();
   expect(
     within(customers).getByRole('link', { name: /To collect.*₹7,000\.00/ })
   ).toBeInTheDocument();

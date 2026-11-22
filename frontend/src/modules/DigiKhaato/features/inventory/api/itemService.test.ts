@@ -212,7 +212,10 @@ describe('toItemBody', () => {
 
   it('G2a: sends the first tag only with a NEW item that has a tag no.', () => {
     const tag = { ...EMPTY_TAG, tagNo: ' gc-1042 ', grossG: '12.900', stoneG: '0.560' };
-    const body = toItemBody({ ...FORM, tag }, { withOpening: true }) as unknown as Record<string, unknown>;
+    const body = toItemBody({ ...FORM, tag }, { withOpening: true }) as unknown as Record<
+      string,
+      unknown
+    >;
     expect(body.tag).toEqual(
       expect.objectContaining({
         tag_no: 'gc-1042',

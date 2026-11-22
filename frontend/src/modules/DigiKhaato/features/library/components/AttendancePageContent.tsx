@@ -25,7 +25,12 @@ import { Figure, Figures, List } from './LibraryParts';
 
 const time = (iso: string | null): string =>
   iso
-    ? new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+    ? new Date(iso).toLocaleTimeString('en-IN', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata',
+      })
     : '—';
 
 /**
@@ -56,7 +61,12 @@ export function AttendancePageContent(): React.JSX.Element {
           subtitle={day === today ? t('library.attendance.today') : shortDate(day, today)}
           actions={
             <UbBox className="w-[170px]">
-              <UbDateInput value={day} max={today} onChange={(v) => setDay(v ?? today)} aria-label={t('library.attendance.day')} />
+              <UbDateInput
+                value={day}
+                max={today}
+                onChange={(v) => setDay(v ?? today)}
+                aria-label={t('library.attendance.day')}
+              />
             </UbBox>
           }
           renderMobileActions={(a) => a}
@@ -74,22 +84,39 @@ export function AttendancePageContent(): React.JSX.Element {
         ) : !lib.attendance.data ? (
           <UbSkeleton variant="list" count={5} label={t('library.common.loading')} />
         ) : rows.length === 0 ? (
-          <UbEmptyState variant="filtered" title={t('library.attendance.none')} description={t('library.attendance.noneBody')} />
+          <UbEmptyState
+            variant="filtered"
+            title={t('library.attendance.none')}
+            description={t('library.attendance.noneBody')}
+          />
         ) : (
           <List testId="library-attendance-list">
             {rows.map((a) => (
               <UbBox as="li" key={a.id}>
-                <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2.5">
+                <UbStack
+                  direction="row"
+                  align="center"
+                  gap={3}
+                  className="min-h-14 border-b border-border-hairline px-4 py-2.5"
+                >
                   <UbStack gap={0} className="min-w-0 flex-1">
                     <UbText variant="inherit" truncate className="text-[14px] font-medium">
                       {a.student}
                     </UbText>
                     <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
-                      {a.seat ? t('library.fees.seat', { seat: a.seat }) : t('library.student.noSeatShort')}
+                      {a.seat
+                        ? t('library.fees.seat', { seat: a.seat })
+                        : t('library.student.noSeatShort')}
                     </UbText>
                   </UbStack>
-                  <UbText variant="inherit" className="ds-num text-right text-[13px] text-text-secondary">
-                    {t('library.attendance.inOut', { in: time(a.inAt), out: a.outAt ? time(a.outAt) : t('library.attendance.notOut') })}
+                  <UbText
+                    variant="inherit"
+                    className="ds-num text-right text-[13px] text-text-secondary"
+                  >
+                    {t('library.attendance.inOut', {
+                      in: time(a.inAt),
+                      out: a.outAt ? time(a.outAt) : t('library.attendance.notOut'),
+                    })}
                   </UbText>
                 </UbStack>
               </UbBox>

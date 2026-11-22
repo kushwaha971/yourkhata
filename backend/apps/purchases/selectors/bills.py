@@ -10,12 +10,7 @@ from django.db.models.functions import Coalesce
 
 from apps.common.money import ZERO
 from apps.common.overdue import status_tab_q
-from apps.purchases.constants import (
-    BILL_KINDS,
-    NOT_PAYABLE_STATUSES,
-    OPEN_STATUSES,
-    TAB_STATUSES,
-)
+from apps.purchases.constants import BILL_KINDS, NOT_PAYABLE_STATUSES, OPEN_STATUSES, TAB_STATUSES
 from apps.purchases.models import PurchaseDocument
 
 #: PUR-03 §10 — the ordering whitelist; anything else is 400.

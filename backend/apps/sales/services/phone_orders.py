@@ -41,7 +41,11 @@ def view(order: PhoneOrder) -> dict:
     return {
         "id": str(order.id),
         "number": order.number,
-        "party": {"id": str(order.party_id), "name": order.party.name, "mobile": order.party.mobile},
+        "party": {
+            "id": str(order.party_id),
+            "name": order.party.name,
+            "mobile": order.party.mobile,
+        },
         "lines": list(order.lines or []),
         "list_text": order.list_text or None,
         "total": f"{order.total:.2f}",
@@ -61,7 +65,9 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
     data = data if isinstance(data, dict) else {}
     party = None
     try:
-        party = Party.objects.filter(tenant=ctx.tenant, pk=data.get("party_id"), deleted_at__isnull=True).first()
+        party = Party.objects.filter(
+            tenant=ctx.tenant, pk=data.get("party_id"), deleted_at__isnull=True
+        ).first()
     except (ValueError, TypeError, ValidationError):
         party = None
     if party is None:
@@ -105,7 +111,12 @@ def create_order(*, ctx: Ctx, data: dict) -> tuple[PhoneOrder, bool]:
     clean = _clean(ctx=ctx, data=data)
     # One writer at a time per business: the number is gap-free, and a double
     # tap finds the first tap's order here rather than making a second.
-    last = PhoneOrder.objects.select_for_update().filter(tenant=ctx.tenant).order_by("-created_at").first()
+    last = (
+        PhoneOrder.objects.select_for_update()
+        .filter(tenant=ctx.tenant)
+        .order_by("-created_at")
+        .first()
+    )
     same = PhoneOrder.objects.filter(tenant=ctx.tenant, client_key=clean["client_key"]).first()
     if same is not None:
         return same, False
@@ -130,7 +141,9 @@ def move_order(*, ctx: Ctx, order_id: Any, status: Any) -> PhoneOrder:
     order = _lock(ctx, order_id)
     if status not in NEXT.get(order.status, ()):
         raise BusinessRuleViolation(
-            "phone_order_status", "This order cannot move to that status.", details={"status": order.status}
+            "phone_order_status",
+            "This order cannot move to that status.",
+            details={"status": order.status},
         )
     order.status = status
     order.delivered_at = timezone.now() if status == PhoneOrder.DELIVERED else None
@@ -155,7 +168,9 @@ def _lock(ctx: Ctx, order_id: Any) -> PhoneOrder:
 
 def get_order(*, tenant: Any, order_id: Any) -> PhoneOrder:
     try:
-        order = PhoneOrder.objects.select_related("party").filter(tenant=tenant, pk=order_id).first()
+        order = (
+            PhoneOrder.objects.select_related("party").filter(tenant=tenant, pk=order_id).first()
+        )
     except (ValueError, TypeError, ValidationError):
         order = None
     if order is None:
@@ -180,7 +195,11 @@ def list_orders(*, tenant: Any, q: str = "", stage: str = "to_pack") -> dict:
     }.get(stage, rows.filter(status=PhoneOrder.TO_PACK))
     text = " ".join(str(q or "").split())
     if text:
-        shown = shown.filter(Q(number__icontains=text) | Q(party__name__icontains=text) | Q(party__mobile__icontains=text))
+        shown = shown.filter(
+            Q(number__icontains=text)
+            | Q(party__name__icontains=text)
+            | Q(party__mobile__icontains=text)
+        )
     return {"rows": [view(o) for o in shown[:200]], "counts": counts}
 
 
@@ -207,9 +226,17 @@ def order_for_issue(*, ctx: Ctx, document: Any) -> PhoneOrder | None:
         return None
     order = PhoneOrder.objects.select_for_update().filter(tenant=ctx.tenant, pk=link["id"]).first()
     if order is None or order.status != PhoneOrder.TO_PACK:
-        raise BusinessRuleViolation("phone_order_status", "This order already has its bill. Remove it from this bill.", details={})
+        raise BusinessRuleViolation(
+            "phone_order_status",
+            "This order already has its bill. Remove it from this bill.",
+            details={},
+        )
     if order.party_id != document.party_id:
-        raise BusinessRuleViolation("phone_order_status", "This bill is for a different customer than the order.", details={})
+        raise BusinessRuleViolation(
+            "phone_order_status",
+            "This bill is for a different customer than the order.",
+            details={},
+        )
     return order
 
 
@@ -235,11 +262,20 @@ _QTY = re.compile(
 )
 #: The unit the customer wrote → (the item unit it fits, how many of that unit).
 _UNIT = {
-    "kg": ("KGS", Decimal("1")), "kgs": ("KGS", Decimal("1")), "kilo": ("KGS", Decimal("1")),
-    "g": ("KGS", Decimal("0.001")), "gm": ("KGS", Decimal("0.001")), "gms": ("KGS", Decimal("0.001")),
-    "gram": ("KGS", Decimal("0.001")), "grams": ("KGS", Decimal("0.001")),
-    "l": ("LTR", Decimal("1")), "ltr": ("LTR", Decimal("1")), "litre": ("LTR", Decimal("1")),
-    "litres": ("LTR", Decimal("1")), "liter": ("LTR", Decimal("1")), "liters": ("LTR", Decimal("1")),
+    "kg": ("KGS", Decimal("1")),
+    "kgs": ("KGS", Decimal("1")),
+    "kilo": ("KGS", Decimal("1")),
+    "g": ("KGS", Decimal("0.001")),
+    "gm": ("KGS", Decimal("0.001")),
+    "gms": ("KGS", Decimal("0.001")),
+    "gram": ("KGS", Decimal("0.001")),
+    "grams": ("KGS", Decimal("0.001")),
+    "l": ("LTR", Decimal("1")),
+    "ltr": ("LTR", Decimal("1")),
+    "litre": ("LTR", Decimal("1")),
+    "litres": ("LTR", Decimal("1")),
+    "liter": ("LTR", Decimal("1")),
+    "liters": ("LTR", Decimal("1")),
     "ml": ("LTR", Decimal("0.001")),
 }
 _SPLIT = re.compile(r"[\n,;]+")
@@ -293,4 +329,3 @@ def read_list(*, tenant: Any, text: Any) -> dict:
             }
         )
     return {"matched": matched, "unmatched": unmatched}
-

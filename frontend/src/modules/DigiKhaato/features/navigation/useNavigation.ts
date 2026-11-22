@@ -58,7 +58,10 @@ export interface UseNavigationResult {
   readonly shell: NonNullable<AppManifest['shell']>;
 }
 
-export const appForPath = (pathname: string | null, manifests: readonly AppManifest[] = APP_MANIFESTS): string | null => matchAppPath(pathname, manifests);
+export const appForPath = (
+  pathname: string | null,
+  manifests: readonly AppManifest[] = APP_MANIFESTS
+): string | null => matchAppPath(pathname, manifests);
 
 const NO_SHELL: NonNullable<AppManifest['shell']> = {};
 
@@ -115,8 +118,8 @@ export function useNavigation(): UseNavigationResult {
     const visible = (item: AppNavItem): boolean =>
       personalModules.has(item.module) ||
       (enabledModules.includes(item.module) &&
-      permissions.includes(item.permission) &&
-      (!item.feature || features === null || features.includes(item.feature)));
+        permissions.includes(item.permission) &&
+        (!item.feature || features === null || features.includes(item.feature)));
 
     const fromServer = sessionApps
       ? sessionApps.flatMap((server) => {
@@ -128,7 +131,8 @@ export function useNavigation(): UseNavigationResult {
           return first ? [{ manifest, home: first.href }] : [];
         });
     const personal = APP_MANIFESTS.filter(
-      (m) => onPersonal && m.code === fromPath && !fromServer.some((a) => a.manifest.code === m.code)
+      (m) =>
+        onPersonal && m.code === fromPath && !fromServer.some((a) => a.manifest.code === m.code)
     ).flatMap((manifest) => {
       const first = manifest.navigation.find(visible);
       return first ? [{ manifest, home: first.href }] : [];
@@ -175,7 +179,14 @@ export function useNavigation(): UseNavigationResult {
       icon: manifest.icon,
       href: home,
     }));
-    return { sections, bottomNav, apps, app: code, book: current?.book, shell: current?.shell ?? NO_SHELL };
+    return {
+      sections,
+      bottomNav,
+      apps,
+      app: code,
+      book: current?.book,
+      shell: current?.shell ?? NO_SHELL,
+    };
   }, [enabledModules, permissions, features, sessionApps, activeApp, fromPath]);
 
   useEffect(() => {

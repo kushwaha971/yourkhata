@@ -52,7 +52,7 @@
   --accent-hover: var(--primary-700);
   --accent-press: var(--primary-700);
 
-  --accent-quiet: #E8F4F5;
+  --accent-quiet: #e8f4f5;
   --accent-line: rgba(14, 124, 134, 0.35);
 
   /* R-DEC-02 (owner, 17 Oct 2026) — a white page; cards keep their hairline. */
@@ -82,7 +82,7 @@
   --text-tertiary: 214.74 8.6% 43.33%;
   --text-muted: 214.74 8.6% 43.33%;
   --text-inverse: 0 0% 100%;
-  --text-accent: 185.22 80.70% 22.35%;
+  --text-accent: 185.22 80.7% 22.35%;
 
   --text-on-nav: 0 0% 100%;
   --text-on-nav-muted: 184.8 42.37% 88.43%;
@@ -91,9 +91,9 @@
   --success-bright: 151.65 57.47% 43.33%;
   --success-dim: 133.85 41.94% 93.92%;
 
-  --warning: 40.43 100.00% 27.06%;
+  --warning: 40.43 100% 27.06%;
   --warning-bright: 38.09 83.33% 48.63%;
-  --warning-dim: 42.44 100.00% 91.96%;
+  --warning-dim: 42.44 100% 91.96%;
 
   --error: 3.22 71.29% 40.98%;
   --error-bright: 0 77.97% 57.65%;

@@ -33,7 +33,9 @@ def test_the_sign_in_moves_to_the_new_number_after_its_code(
     sent = _send(client)
     assert sent.status_code == 200, sent.content
     challenge = sent.json()["data"]["challenge_id"]
-    done = client.post(reverse(CONFIRM), {"challenge_id": challenge, "code": fixed_otp}, format="json")
+    done = client.post(
+        reverse(CONFIRM), {"challenge_id": challenge, "code": fixed_otp}, format="json"
+    )
     assert done.status_code == 200, done.content
     member.user.refresh_from_db()
     assert member.user.mobile == NEW
@@ -51,7 +53,9 @@ def test_a_wrong_code_changes_nothing(tenant: Any, api_as: Any, fixed_otp: str) 
     assert member.user.mobile == before
 
 
-def test_a_number_somebody_else_signs_in_with_is_refused(tenant: Any, api_as: Any, fixed_otp: str) -> None:
+def test_a_number_somebody_else_signs_in_with_is_refused(
+    tenant: Any, api_as: Any, fixed_otp: str
+) -> None:
     from tests.factories.platform import UserFactory
 
     UserFactory(mobile=NEW)
@@ -67,13 +71,19 @@ def test_a_login_code_cannot_confirm_a_change(tenant: Any, api_as: Any, fixed_ot
 
     client, member = api_as(tenant)
     issued = otp_service.request_otp(mobile=NEW, purpose="login")
-    done = client.post(reverse(CONFIRM), {"challenge_id": str(issued.challenge_id), "code": fixed_otp}, format="json")
+    done = client.post(
+        reverse(CONFIRM),
+        {"challenge_id": str(issued.challenge_id), "code": fixed_otp},
+        format="json",
+    )
     assert done.status_code == 400
     member.user.refresh_from_db()
     assert member.user.mobile != NEW
 
 
-def test_an_account_named_after_its_number_follows_the_new_number(tenant: Any, api_as: Any, fixed_otp: str) -> None:
+def test_an_account_named_after_its_number_follows_the_new_number(
+    tenant: Any, api_as: Any, fixed_otp: str
+) -> None:
     """A mobile-only account's stand-in email is built from its number; it moves too."""
     from apps.platform_app.services.auth import synthetic_email_for
     from tests.factories.platform import UserFactory

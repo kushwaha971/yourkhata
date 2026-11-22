@@ -4,7 +4,11 @@ import { useSearchParams } from 'next/navigation';
 
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { selectLanding, selectSessionStatus, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import {
+  selectLanding,
+  selectSessionStatus,
+  selectSessionTenants,
+} from 'src/redux/slice/sessionSlice';
 
 import { AUTH_CONFIG } from '../config';
 import { selectAuthStatus, selectOtp } from '../redux/authSlice';

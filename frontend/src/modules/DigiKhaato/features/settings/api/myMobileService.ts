@@ -13,7 +13,13 @@ import type { OtpChallenge } from 'modules/DigiKhaato/features/auth/types/auth.t
 /** POST /auth/me/mobile — a code on WhatsApp to the NEW number. */
 export const requestMobileChange = async (mobile: string): Promise<OtpChallenge> => {
   const response = await api.post<{
-    data: { challenge_id: string; expires_in: number; retry_after: number; code_length?: number; channel?: string };
+    data: {
+      challenge_id: string;
+      expires_in: number;
+      retry_after: number;
+      code_length?: number;
+      channel?: string;
+    };
   }>(API_PATHS.AUTH_ME_MOBILE, { mobile });
   const data = response.data.data;
   return {
@@ -31,6 +37,9 @@ export const confirmMobileChange = async (input: {
   readonly challengeId: string;
   readonly code: string;
 }): Promise<void> => {
-  await api.post(API_PATHS.AUTH_ME_MOBILE_CONFIRM, { challenge_id: input.challengeId, code: input.code });
+  await api.post(API_PATHS.AUTH_ME_MOBILE_CONFIRM, {
+    challenge_id: input.challengeId,
+    code: input.code,
+  });
 };
 export const confirmMobileChangeWriteClass: TWriteClass = 'online-only';

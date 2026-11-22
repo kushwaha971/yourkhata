@@ -53,7 +53,9 @@ export function BoughtPiecesPanel({
   );
   useEffect(() => {
     const controller = new AbortController();
-    load(controller.signal).then(setPieces).catch(() => undefined);
+    load(controller.signal)
+      .then(setPieces)
+      .catch(() => undefined);
     return () => controller.abort();
   }, [load]);
   if (!pieces.length) return null;

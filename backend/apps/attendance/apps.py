@@ -15,7 +15,7 @@ class AttendanceConfig(AppConfig):
         # Job handlers register on import; the two schedules and the module-off
         # counters (R56) are registered here so every consuming module that
         # lists the engine in ENGINES_USED_BY gets its guard from day one.
-        from apps.attendance import tasks  # noqa: F401
+        from apps.attendance import tasks  # noqa: F401 — reason: imported to register handlers
         from apps.attendance.services.guards import register_off_guards
         from apps.attendance.tasks import register_schedules
 

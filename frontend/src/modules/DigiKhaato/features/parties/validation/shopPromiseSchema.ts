@@ -16,9 +16,7 @@ export interface ShopPromiseFormValues {
  * moment it is saved; the server refuses it too). The amount is optional, and
  * more than zero when given; the note is the shop's own and at most 200.
  */
-export const useShopPromiseSchema = (
-  today: string
-): Yup.ObjectSchema<ShopPromiseFormValues> => {
+export const useShopPromiseSchema = (today: string): Yup.ObjectSchema<ShopPromiseFormValues> => {
   const { t } = useTranslation();
   const { businessDateValidation, optionalAmountValidation, noteValidation } =
     useValidationSchemas();

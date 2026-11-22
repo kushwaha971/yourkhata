@@ -146,7 +146,9 @@ def _parse_date(raw: Any, *, tenant: Any, details: dict) -> dt.date | None:
     return value
 
 
-def validate_entry_payload(payload: dict, *, tenant: Any, needs_mode: bool = True, allow_unspecified_mode: bool = False) -> dict:
+def validate_entry_payload(
+    payload: dict, *, tenant: Any, needs_mode: bool = True, allow_unspecified_mode: bool = False
+) -> dict:
     """Every field rule that does not need the party row. Raises `ValidationFailed`.
 
     Returns the cleaned values. Collected into one `details` dict and raised
@@ -278,7 +280,9 @@ def post_entry(*, ctx: Ctx, payload: dict) -> dict:
        with no justification, and an entry without its balance move is money
        the list does not show.
     """
-    cleaned = validate_entry_payload(payload, tenant=ctx.tenant, allow_unspecified_mode=payload.get("simple") is True)
+    cleaned = validate_entry_payload(
+        payload, tenant=ctx.tenant, allow_unspecified_mode=payload.get("simple") is True
+    )
 
     party = lock_party(tenant=ctx.tenant, party_id=payload.get("party_id"))
     if party is None:

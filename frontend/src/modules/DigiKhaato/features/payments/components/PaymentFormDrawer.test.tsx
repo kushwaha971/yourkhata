@@ -610,8 +610,13 @@ it('opens Receive money clean: tapping Received does not paint the empty amount 
   /** 16 Nov 2026, e2e/shop-edges-ppi-ui.mjs: the amount box is focused on open; tapping
    *  "Received" took focus away, marked it touched, and "Enter the amount" showed in red
    *  before any Save — the LED-01 / A5 class. An untyped amount is checked on Save. */
-  renderWithProviders(<PaymentFormDrawer context={{ direction: 'in', entry: 'list' }} onClose={jest.fn()} />);
+  renderWithProviders(
+    <PaymentFormDrawer context={{ direction: 'in', entry: 'list' }} onClose={jest.fn()} />
+  );
   const received = await screen.findByRole('radio', { name: 'Received' });
   await userEvent.click(received);
-  expect(document.querySelector('[name="lines.0.amount"]')).not.toHaveAttribute('aria-invalid', 'true');
+  expect(document.querySelector('[name="lines.0.amount"]')).not.toHaveAttribute(
+    'aria-invalid',
+    'true'
+  );
 });

@@ -134,7 +134,11 @@ export function PhoneOrderDrawer({
   }, [q]);
 
   const total = useMemo(
-    () => lines.reduce((sum, l) => sum.plus(toDecimal(l.qty || '0').times(toDecimal(l.rate || '0'))), toDecimal('0')),
+    () =>
+      lines.reduce(
+        (sum, l) => sum.plus(toDecimal(l.qty || '0').times(toDecimal(l.rate || '0'))),
+        toDecimal('0')
+      ),
     [lines]
   );
 
@@ -142,7 +146,10 @@ export function PhoneOrderDrawer({
     setLinesError(null);
     setLines((now) => {
       const at = now.findIndex((l) => l.itemId === line.itemId);
-      if (at >= 0) return now.map((l, i) => (i === at ? { ...l, qty: toDecimal(l.qty).plus(toDecimal(line.qty)).toString() } : l));
+      if (at >= 0)
+        return now.map((l, i) =>
+          i === at ? { ...l, qty: toDecimal(l.qty).plus(toDecimal(line.qty)).toString() } : l
+        );
       return [...now, line];
     });
   };
@@ -186,7 +193,8 @@ export function PhoneOrderDrawer({
       } catch (thrown) {
         const error = thrown as ApiErrorShape;
         const raw = (error.details ?? {}) as Record<string, unknown>;
-        if (Object.keys(raw).some((k) => k.startsWith('lines'))) setLinesError(t('sales.cafe.linesWrong'));
+        if (Object.keys(raw).some((k) => k.startsWith('lines')))
+          setLinesError(t('sales.cafe.linesWrong'));
         const details = Object.fromEntries(
           Object.entries(raw)
             .filter(([key]) => !key.startsWith('lines'))
@@ -215,7 +223,13 @@ export function PhoneOrderDrawer({
           />
         )}
       </UbField>
-      <UbButton variant="secondary" busy={reading} disabled={!listText.trim()} onClick={() => void readList()} data-testid="phone-read">
+      <UbButton
+        variant="secondary"
+        busy={reading}
+        disabled={!listText.trim()}
+        onClick={() => void readList()}
+        data-testid="phone-read"
+      >
         {t('sales.phone.read')}
       </UbButton>
       {unmatched.length > 0 && (
@@ -224,7 +238,11 @@ export function PhoneOrderDrawer({
             {t('sales.phone.ask', { count: unmatched.length })}
           </UbText>
           {unmatched.map((piece) => (
-            <UbPressable key={piece} onClick={() => setSearch(piece.replace(/[\d.]+\s*\w*$/, '').trim() || piece)} className="rounded-md px-2 py-1 hover:bg-surface-subtle">
+            <UbPressable
+              key={piece}
+              onClick={() => setSearch(piece.replace(/[\d.]+\s*\w*$/, '').trim() || piece)}
+              className="rounded-md px-2 py-1 hover:bg-surface-subtle"
+            >
               <UbText variant="body-sm" tone="secondary">
                 {t('sales.phone.findThis', { piece })}
               </UbText>
@@ -257,11 +275,22 @@ export function PhoneOrderDrawer({
             <UbText variant="inherit" tone="secondary" className="text-[13px]">
               {t('sales.phone.itemsCount', { count: lines.length })}
             </UbText>
-            <UbText variant="h3" className="font-semibold tabular-nums" data-testid="phone-dock-total">
+            <UbText
+              variant="h3"
+              className="font-semibold tabular-nums"
+              data-testid="phone-dock-total"
+            >
               {formatInr(total.toFixed(2))}
             </UbText>
           </UbStack>
-          <UbButton type="submit" form={formId} busy={busy} size="lg" className="w-full" data-testid="phone-save">
+          <UbButton
+            type="submit"
+            form={formId}
+            busy={busy}
+            size="lg"
+            className="w-full"
+            data-testid="phone-save"
+          >
             {t('sales.phone.save')}
           </UbButton>
         </UbStack>
@@ -296,7 +325,12 @@ export function PhoneOrderDrawer({
             {t('sales.cafe.items')}
           </UbText>
           {lines.map((line, index) => (
-            <UbStack key={line.itemId} gap={1} className="border-b border-border pb-2" data-testid="phone-line">
+            <UbStack
+              key={line.itemId}
+              gap={1}
+              className="border-b border-border pb-2"
+              data-testid="phone-line"
+            >
               <UbStack direction="row" gap={2} className="items-start justify-between">
                 <UbStack gap={0} className="min-w-0">
                   <UbText variant="body-sm" className="font-semibold">
@@ -307,12 +341,18 @@ export function PhoneOrderDrawer({
                   </UbText>
                 </UbStack>
                 <UbText variant="body-sm" className="shrink-0 font-semibold tabular-nums">
-                  {formatInr(toDecimal(line.qty || '0').times(toDecimal(line.rate)).toFixed(2))}
+                  {formatInr(
+                    toDecimal(line.qty || '0')
+                      .times(toDecimal(line.rate))
+                      .toFixed(2)
+                  )}
                 </UbText>
               </UbStack>
               <UbQuantityStepper
                 value={line.qty}
-                onChange={(qty) => setLines((now) => now.map((l, i) => (i === index ? { ...l, qty } : l)))}
+                onChange={(qty) =>
+                  setLines((now) => now.map((l, i) => (i === index ? { ...l, qty } : l)))
+                }
                 label={t('sales.cafe.qtyOf', { name: line.name })}
                 decreaseLabel={t('sales.cafe.less')}
                 increaseLabel={t('sales.cafe.more')}
@@ -321,15 +361,30 @@ export function PhoneOrderDrawer({
               />
             </UbStack>
           ))}
-          <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.cafe.findItem')} aria-label={t('sales.cafe.findItem')} />
+          <UbSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder={t('sales.cafe.findItem')}
+            aria-label={t('sales.cafe.findItem')}
+          />
           {q && search.trim() && found.length > 0 && (
             <UbStack gap={1} role="list" aria-label={t('sales.cafe.findItem')}>
               {found.map((row) => (
                 <UbPressable
                   key={row.id}
                   onClick={() => {
-                    addLine({ itemId: row.id, name: row.name, qty: '1', rate: row.sellingPrice, unit: row.unit.code });
-                    setUnmatched((now) => now.filter((piece) => !piece.toLowerCase().startsWith(search.trim().toLowerCase())));
+                    addLine({
+                      itemId: row.id,
+                      name: row.name,
+                      qty: '1',
+                      rate: row.sellingPrice,
+                      unit: row.unit.code,
+                    });
+                    setUnmatched((now) =>
+                      now.filter(
+                        (piece) => !piece.toLowerCase().startsWith(search.trim().toLowerCase())
+                      )
+                    );
                     setSearch('');
                   }}
                   className="rounded-md px-3 py-2 hover:bg-surface-subtle"

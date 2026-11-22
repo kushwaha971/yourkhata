@@ -70,8 +70,7 @@ MOBILE_UNIQUE_CONSTRAINT = "uq_user_mobile_notnull"
 # holds the number and nothing about whose, which is as little as a form that
 # must refuse the number can say.
 MOBILE_TAKEN_MESSAGE = (
-    "This mobile number is already used by another login. "
-    "Use a different number."
+    "This mobile number is already used by another login. " "Use a different number."
 )
 
 # L6. The stable, machine-readable name of that refusal, so a client can show

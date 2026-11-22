@@ -455,7 +455,9 @@ export function UbDataGrid<TRow>({
       )}
     >
       {toolbar && !selectedIds?.length ? (
-        registerFrame ? null : toolbar
+        registerFrame ? null : (
+          toolbar
+        )
       ) : (
         <UbDataGridToolbar
           search={search}
@@ -484,156 +486,156 @@ export function UbDataGrid<TRow>({
       {beforeRows}
 
       <RegisterFrame on={registerFrame} fill={fillHeight}>
-      {/* The design's `.tools`: the search lives in the table's own card. */}
-      {registerFrame && toolbar && !selectedIds?.length && (
-        <div className="shrink-0 border-b border-border-hairline p-3">{toolbar}</div>
-      )}
-      <div
-        ref={scrollRegion}
-        data-testid="ub-grid-scroll-region"
-        role={fillHeight ? 'region' : undefined}
-        aria-label={fillHeight ? caption : undefined}
-        tabIndex={fillHeight ? 0 : undefined}
-        className={cn(
-          fillHeight &&
-            'relative min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:shadow-focus'
+        {/* The design's `.tools`: the search lives in the table's own card. */}
+        {registerFrame && toolbar && !selectedIds?.length && (
+          <div className="shrink-0 border-b border-border-hairline p-3">{toolbar}</div>
         )}
-      >
-        {/* Loading, empty, filtered-empty and error are drawn INSIDE the table on
+        <div
+          ref={scrollRegion}
+          data-testid="ub-grid-scroll-region"
+          role={fillHeight ? 'region' : undefined}
+          aria-label={fillHeight ? caption : undefined}
+          tabIndex={fillHeight ? 0 : undefined}
+          className={cn(
+            fillHeight &&
+              'relative min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:shadow-focus'
+          )}
+        >
+          {/* Loading, empty, filtered-empty and error are drawn INSIDE the table on
           a table tier — BrandHub's arrangement, and see `UbDataGridStateTable`
           for the three reasons. `cards` keeps the stacked shapes and the plain
           panel, because there is no table there to keep the reader's place in. */}
-        {state === 'loading' &&
-          (tier === 'cards' ? (
-            <SkeletonRows
-              count={skeletonRows}
-              columns={Math.max(shown.length, 1)}
-              label={labels.loading}
-              isCards
-            />
-          ) : (
-            // The live region wraps the table rather than living in it: `role` on
-            // a `<tbody>` would cost the table its own semantics, and a merchant
-            // navigating by table keys needs those more than the announcement
-            // needs a tidy home.
-            <div role="status" aria-busy aria-label={labels.loading}>
+          {state === 'loading' &&
+            (tier === 'cards' ? (
+              <SkeletonRows
+                count={skeletonRows}
+                columns={Math.max(shown.length, 1)}
+                label={labels.loading}
+                isCards
+              />
+            ) : (
+              // The live region wraps the table rather than living in it: `role` on
+              // a `<tbody>` would cost the table its own semantics, and a merchant
+              // navigating by table keys needs those more than the announcement
+              // needs a tidy home.
+              <div role="status" aria-busy aria-label={labels.loading}>
+                <UbDataGridStateTable
+                  columns={shown}
+                  caption={caption}
+                  selectable={canSelect}
+                  register={registerFrame}
+                >
+                  <UbDataGridSkeletonRows
+                    columnCount={shown.length}
+                    rowCount={skeletonRows}
+                    selectable={canSelect}
+                    rowHeight={rowHeight}
+                  />
+                </UbDataGridStateTable>
+              </div>
+            ))}
+
+          {state !== 'loading' &&
+            state !== 'rows' &&
+            (tier === 'cards' ? (
+              <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
+            ) : (
               <UbDataGridStateTable
                 columns={shown}
                 caption={caption}
                 selectable={canSelect}
                 register={registerFrame}
               >
-                <UbDataGridSkeletonRows
-                  columnCount={shown.length}
-                  rowCount={skeletonRows}
-                  selectable={canSelect}
-                  rowHeight={rowHeight}
-                />
+                <UbDataGridStateRow colSpan={shown.length + (canSelect ? 1 : 0)}>
+                  <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
+                </UbDataGridStateRow>
               </UbDataGridStateTable>
-            </div>
-          ))}
+            ))}
 
-        {state !== 'loading' &&
-          state !== 'rows' &&
-          (tier === 'cards' ? (
-            <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
-          ) : (
-            <UbDataGridStateTable
-              columns={shown}
-              caption={caption}
-              selectable={canSelect}
-              register={registerFrame}
-            >
-              <UbDataGridStateRow colSpan={shown.length + (canSelect ? 1 : 0)}>
-                <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
-              </UbDataGridStateRow>
-            </UbDataGridStateTable>
-          ))}
-
-        {/* Indeterminate on purpose: a list request has no progress to report,
+          {/* Indeterminate on purpose: a list request has no progress to report,
           and a bar that crept to 90 % and waited would be a lie with a
           percentage on it. No `aria-valuenow` is how ARIA says "indeterminate". */}
-        {/* A7 — not on a register: its count line shows the loading look,
+          {/* A7 — not on a register: its count line shows the loading look,
             and a 2 px bar pushed every row down while a search ran. */}
-        {state === 'rows' && busy && variant !== 'register' && (
-          <div
-            role="progressbar"
-            aria-label={labels.loading}
-            data-testid="ub-grid-busy"
-            className="h-0.5 w-full overflow-hidden bg-surface-sunken"
-          >
-            <div className="h-full w-1/3 animate-pulse bg-action motion-reduce:animate-none" />
-          </div>
-        )}
+          {state === 'rows' && busy && variant !== 'register' && (
+            <div
+              role="progressbar"
+              aria-label={labels.loading}
+              data-testid="ub-grid-busy"
+              className="h-0.5 w-full overflow-hidden bg-surface-sunken"
+            >
+              <div className="h-full w-1/3 animate-pulse bg-action motion-reduce:animate-none" />
+            </div>
+          )}
 
-        {state === 'rows' && (
-          <div
-            aria-busy={busy || undefined}
-            className={cn(
-              'transition-opacity duration-base',
-              // A7 — the design dims a register's rows to half while results load.
-              busy && (variant === 'register' ? 'opacity-50' : 'opacity-60')
-            )}
-          >
-            {tier === 'cards' ? (
-              <UbDataGridMobileList
-                rows={rows}
-                columns={shown}
-                rowId={rowId}
-                rowName={rowName}
-                onRowOpen={onRowOpen}
-                labels={labels}
-                listLabel={caption}
-                className={
-                  variant === 'register'
-                    ? 'rounded-card border border-border-hairline bg-surface-card'
-                    : undefined
-                }
-                actions={cardActions}
-                layout={cardLayout}
-                avatar={cardAvatar}
-                avatarIcon={cardAvatarIcon}
-              />
-            ) : (
-              <GridTable
-                register={registerFrame}
-                className={cn(
-                  // `clip`, not `hidden`, when the region above scrolls: it
-                  // trims the grey header to the rounded corners without
-                  // becoming a scroll container, which would stop the sticky
-                  // header sticking. `visible` let it paint square corners.
-                  fillHeight ? 'overflow-clip' : 'overflow-hidden'
-                )}
-                rows={rows}
-                columns={shown}
-                rowId={rowId}
-                rowName={rowName}
-                onRowOpen={onRowOpen}
-                labels={labels}
-                caption={caption}
-                sort={sort}
-                onSortChange={onSortChange}
-                selectable={canSelect}
-                selectedIds={selectedIds}
-                onSelectionChange={onSelectionChange}
-                allowHorizontalScroll={scrollX}
-                maxHeight={fillHeight ? 'fill' : maxHeight}
-                rowHeight={rowHeight}
-              />
-            )}
-          </div>
-        )}
-        {afterRows}
-      </div>
-      {pagination !== null &&
-        state === 'rows' &&
-        (fillHeight ? (
-          <UbBottomBar sticky={false} clearToBottom className="shrink-0">
-            {pagination}
-          </UbBottomBar>
-        ) : (
-          pagination
-        ))}
+          {state === 'rows' && (
+            <div
+              aria-busy={busy || undefined}
+              className={cn(
+                'transition-opacity duration-base',
+                // A7 — the design dims a register's rows to half while results load.
+                busy && (variant === 'register' ? 'opacity-50' : 'opacity-60')
+              )}
+            >
+              {tier === 'cards' ? (
+                <UbDataGridMobileList
+                  rows={rows}
+                  columns={shown}
+                  rowId={rowId}
+                  rowName={rowName}
+                  onRowOpen={onRowOpen}
+                  labels={labels}
+                  listLabel={caption}
+                  className={
+                    variant === 'register'
+                      ? 'rounded-card border border-border-hairline bg-surface-card'
+                      : undefined
+                  }
+                  actions={cardActions}
+                  layout={cardLayout}
+                  avatar={cardAvatar}
+                  avatarIcon={cardAvatarIcon}
+                />
+              ) : (
+                <GridTable
+                  register={registerFrame}
+                  className={cn(
+                    // `clip`, not `hidden`, when the region above scrolls: it
+                    // trims the grey header to the rounded corners without
+                    // becoming a scroll container, which would stop the sticky
+                    // header sticking. `visible` let it paint square corners.
+                    fillHeight ? 'overflow-clip' : 'overflow-hidden'
+                  )}
+                  rows={rows}
+                  columns={shown}
+                  rowId={rowId}
+                  rowName={rowName}
+                  onRowOpen={onRowOpen}
+                  labels={labels}
+                  caption={caption}
+                  sort={sort}
+                  onSortChange={onSortChange}
+                  selectable={canSelect}
+                  selectedIds={selectedIds}
+                  onSelectionChange={onSelectionChange}
+                  allowHorizontalScroll={scrollX}
+                  maxHeight={fillHeight ? 'fill' : maxHeight}
+                  rowHeight={rowHeight}
+                />
+              )}
+            </div>
+          )}
+          {afterRows}
+        </div>
+        {pagination !== null &&
+          state === 'rows' &&
+          (fillHeight ? (
+            <UbBottomBar sticky={false} clearToBottom className="shrink-0">
+              {pagination}
+            </UbBottomBar>
+          ) : (
+            pagination
+          ))}
       </RegisterFrame>
     </div>
   );

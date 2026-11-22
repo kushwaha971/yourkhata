@@ -630,6 +630,7 @@ def test_an_unregistered_table_holding_rows_stops_deletion_before_anything_goes(
 # their own mobile re-verifies them instead; a password still works for those
 # who have one.
 
+
 def _mobile_owner(api_as: Any, tenant: Any) -> tuple[Any, Any]:
     from apps.platform_app.services.auth import synthetic_email_for
 
@@ -665,7 +666,9 @@ def test_a_wrong_code_deletes_nothing(
     challenge = client.post(reverse(DELETE_CODE), {}, format="json").json()["data"]["challenge_id"]
     wrong = "1" * len(fixed_otp) if fixed_otp != "1" * len(fixed_otp) else "2" * len(fixed_otp)
     response = client.post(
-        reverse(DELETE_REQUEST), {"challenge_id": challenge, "code": wrong, "confirm_name": tenant.name}, format="json"
+        reverse(DELETE_REQUEST),
+        {"challenge_id": challenge, "code": wrong, "confirm_name": tenant.name},
+        format="json",
     )
     assert response.status_code == 400
     tenant.refresh_from_db()
