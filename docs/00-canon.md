@@ -100,7 +100,7 @@ Module prefixes: `PLT` platform, `PTY` parties, `LED` ledger, `INV` inventory, `
 | Tenant | `platform_tenant` | Business; profile, GST type, business type, settings JSON, branding |
 | User | `platform_user` | Person; mobile (unique), optional email, password hash, locale |
 | Membership | `platform_membership` | User × Tenant × Role; status |
-| Role / Permission | `platform_role`, `platform_role_permission` | System roles (owner, admin, staff, accountant) + custom roles (P3) |
+| Role / Permission | `platform_role` (permissions are its `permissions text[]` column) | System roles (owner, admin, staff, accountant) + custom roles (P3) |
 | Invitation | `platform_invitation` | Pending membership invite (token, expiry) |
 | OtpChallenge | `platform_otp_challenge` | OTP send/verify with throttling |
 | Device / Session | `platform_session` | Refresh-token family, device label, revocation |

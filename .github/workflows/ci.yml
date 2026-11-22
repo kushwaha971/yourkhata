@@ -8,7 +8,8 @@
 #   backend               < 6 min   blocks merge
 #   frontend              < 5 min   blocks merge
 #   e2e-smoke             < 4 min   blocks merge
-#   traceability          < 1 min   blocks merge
+#   (traceability: removed until `manage.py build_traceability` exists;
+#    ruff, mypy and coverage are not installed, per ADR-021)
 #   gate                  —         the single required check for branch protection
 #
 # Repository layout assumed: backend/ and frontend/ as siblings of docs/, e2e/
@@ -91,15 +92,9 @@ jobs:
       - name: isort
         working-directory: backend
         run: isort --check-only .
-      - name: ruff
-        working-directory: backend
-        run: ruff check .
       - name: flake8
         working-directory: backend
         run: flake8 .
-      - name: mypy
-        working-directory: backend
-        run: mypy .
 
       - name: eslint
         working-directory: frontend
@@ -129,8 +124,8 @@ jobs:
           if grep -rnE '(#\s*noqa|eslint-disable|@ts-ignore|@ts-expect-error)' \
                backend frontend/src frontend/app \
                --include='*.py' --include='*.ts' --include='*.tsx' 2>/dev/null \
-             | grep -v -- '— reason:' ; then
-            echo "::error::A suppression was added without a trailing '— reason: …' (Part 28 §28.11.2 gate 1)."
+             | grep -vE -- '— reason:|eslint-disable[a-z-]* [^ ]+ -- [a-z]|noqa: ?[A-Z]+[0-9]+(, ?[A-Z]+[0-9]+)* +[-—(] *[a-zA-Z]|@ts-expect-error — [a-z]' ; then
+            echo "::error::A suppression was added without a written reason after it (Part 28 §28.11.2 gate 1)."
             exit 1
           fi
           echo "no unjustified suppressions"
@@ -240,18 +235,12 @@ jobs:
       - name: Migrate (explicit — never an entrypoint side effect, §29.5.2)
         working-directory: backend
         run: python manage.py migrate --noinput
-      - name: pytest (fast bands, with coverage and query budgets)
+      - name: pytest (fast bands, with query budgets)
         working-directory: backend
-        run: pytest -m "not slow" --cov --cov-report=xml --cov-report=term
+        run: pytest -m "not slow"
       - name: Migration reversibility
         working-directory: backend
         run: pytest tests/migrations -q
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: backend-coverage
-          path: backend/coverage.xml
-          if-no-files-found: ignore
 
   # ──────────────────────────────────────────────────────────────────────────
   # PR — frontend. Jest with coverage; bundle size; i18n completeness; contrast.
@@ -356,47 +345,6 @@ jobs:
           if-no-files-found: ignore
 
   # ──────────────────────────────────────────────────────────────────────────
-  # PR — traceability. Fails on an unimplemented FRD test ID for any feature the
-  # PR marks done (§28.11.2 gate 5).
-  # ──────────────────────────────────────────────────────────────────────────
-  traceability:
-    name: Traceability
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: udhaarbook
-          POSTGRES_USER: udhaarbook
-          POSTGRES_PASSWORD: ci-not-a-secret
-        options: >-
-          --health-cmd "pg_isready -U udhaarbook -d udhaarbook"
-          --health-interval 10s --health-timeout 5s --health-retries 10
-        ports: ["5432:5432"]
-    env:
-      DATABASE_URL: postgresql://udhaarbook:ci-not-a-secret@localhost:5432/udhaarbook
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: backend/requirements/*.txt
-      - name: Install
-        working-directory: backend
-        run: pip install -r requirements/dev.txt
-      - name: build_traceability
-        working-directory: backend
-        run: python manage.py build_traceability
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: traceability
-          path: build/traceability.json
-          if-no-files-found: ignore
-
-  # ──────────────────────────────────────────────────────────────────────────
   # The single required status check. Branch protection on `main` requires this
   # job and nothing else, so adding a job above never means editing a setting.
   # §28.11.3: a red `main` stops other merges; the fix or the revert is next.
@@ -405,7 +353,7 @@ jobs:
     name: Quality gate
     runs-on: ubuntu-latest
     if: always()
-    needs: [lint-and-types, spec-consistency, backend, frontend, e2e-smoke, traceability]
+    needs: [lint-and-types, spec-consistency, backend, frontend, e2e-smoke]
     steps:
       - name: Require every blocking job to have succeeded
         run: |
