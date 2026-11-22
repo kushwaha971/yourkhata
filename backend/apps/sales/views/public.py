@@ -25,7 +25,10 @@ from django.core.files.storage import default_storage
 from django.http import FileResponse
 
 from apps.common.exceptions import NotFound
-from apps.common.public_views import PUBLIC_HEADERS, PublicLinkView  # noqa: F401 — reason: imported so the names load or are re-exported
+from apps.common.public_views import (  # noqa: F401 — reason: imported so the names load or are re-exported
+    PUBLIC_HEADERS,
+    PublicLinkView,
+)
 from apps.common.responses import StandardResponse
 from apps.sales.serializers.public import public_document_payload
 from apps.sales.services.share import public_document, public_logo

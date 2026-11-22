@@ -26,7 +26,9 @@ from apps.reports.selectors.gst_checks import gst_exceptions
 
 
 def _next_month_day(on: dt.date, day: int) -> dt.date:
-    year, month = (on.year + 1, 1) if on.month == 12 else (on.year, on.month + 1)  # noqa: PLR2004 — reason: month 12 is December
+    year, month = (
+        (on.year + 1, 1) if on.month == 12 else (on.year, on.month + 1)
+    )  # noqa: PLR2004 — reason: month 12 is December
     return dt.date(year, month, day)
 
 

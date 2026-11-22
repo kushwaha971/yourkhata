@@ -175,7 +175,10 @@ def _ensure_loaded() -> None:
     if _LOADED:
         return
     _LOADED = True
-    from apps.imports.mappers import items, parties  # noqa: F401 — reason: imported so the names load or are re-exported
+    from apps.imports.mappers import (  # noqa: F401 — reason: imported so the names load or are re-exported
+        items,
+        parties,
+    )
 
 
 def __getattr__(name: str) -> Any:

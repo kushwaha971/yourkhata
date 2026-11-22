@@ -181,7 +181,10 @@ def test_a_bill_from_the_godown_takes_the_godowns_stock(
         owner, make_party(), [line(switch, "1", unit_code="BOX")], location_id=str(godown.id)
     )
     assert invoice["location"] == {"id": str(godown.id), "name": "Godown"}
-    at = lambda place: ItemStock.objects.get(item=switch, location=place).on_hand  # noqa: E731 — reason: a one-line helper inside the test
+
+    def at(place):
+        return ItemStock.objects.get(item=switch, location=place).on_hand
+
     assert (at(default_location(shop)), at(godown)) == (Decimal("150.000"), Decimal("30.000"))
     created = owner.post(
         reverse(CREDIT_NOTES),

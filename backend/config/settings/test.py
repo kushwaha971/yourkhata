@@ -30,9 +30,7 @@ LOGGING = build_logging_config(level="CRITICAL", fmt="console")
 
 # Parallel worktrees each run pytest against their own throwaway database, so
 # two tracks testing at once never drop each other's test_<db> mid-run.
-DATABASES["default"]["TEST"] = {
-    "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")
-}
+DATABASES["default"]["TEST"] = {"NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")}
 
 # Never a real message from the suite. `base` reads backend/.env, where the
 # owner's WhatsApp credentials live, so without this every OTP test would

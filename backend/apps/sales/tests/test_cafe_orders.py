@@ -238,7 +238,10 @@ def test_home_shows_an_advance_order_the_day_before(
     from apps.common.dates import tenant_today
 
     dashboard = reverse("v1:report-dashboard")
-    keys = lambda: [s["key"] for s in owner.get(dashboard).json()["data"]["sections"]]  # noqa: E731 — reason: a one-line helper inside the test
+
+    def keys():
+        return [s["key"] for s in owner.get(dashboard).json()["data"]["sections"]]
+
     assert "sales.advance_orders" not in keys()
     box = make_item("Box", "720.00", "GST5", stock="5")
     day = tenant_today(cafe)

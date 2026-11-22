@@ -128,7 +128,10 @@ def test_sum_money_is_exact_addition() -> None:
 
 import random  # noqa: E402 — reason: imports for the tests below this point
 
-from apps.common.money import round_amount, split_total  # noqa: E402 — reason: imports for the tests below this point
+from apps.common.money import (  # noqa: E402 — reason: imports for the tests below this point
+    round_amount,
+    split_total,
+)
 
 
 @pytest.mark.parametrize(

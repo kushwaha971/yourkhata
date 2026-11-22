@@ -59,7 +59,9 @@ def member(shop: Any) -> Any:  # noqa: F811 — reason: a pytest fixture named a
 
 
 @pytest.fixture
-def doc_plan(make_plan: Any, shop: Any) -> Any:  # noqa: F811 — reason: a pytest fixture named as a parameter
+def doc_plan(
+    make_plan: Any, shop: Any
+) -> Any:  # noqa: F811 — reason: a pytest fixture named as a parameter
     """₹1,000 a month plus 18% GST (GST18, SAC 999723), invoiced through sales."""
 
     def _make(**overrides: Any) -> Any:

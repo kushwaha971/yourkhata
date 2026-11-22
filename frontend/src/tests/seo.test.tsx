@@ -254,6 +254,9 @@ describe('sitemap.xml', () => {
       'https://yourkhata.com/solutions/shop-billing',
       'https://yourkhata.com/solutions/library-management',
       'https://yourkhata.com/solutions/lending-collections',
+      // Money Book and the comparison page (22 Nov 2026).
+      'https://yourkhata.com/solutions/money-book-udhaar',
+      'https://yourkhata.com/solutions/khata-app-alternatives',
       // One guide page per shop kind (17 Nov 2026).
       'https://yourkhata.com/solutions/shop-kirana',
       'https://yourkhata.com/solutions/shop-electronics',
