@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { SolutionsPage } from 'modules/DigiKhaato/features/landing/components/SolutionsPage';
 import { SOLUTIONS, solutionBySlug } from 'modules/DigiKhaato/features/landing/config/solutions';
+import { hindiSolutionBySlug } from 'modules/DigiKhaato/features/landing/config/solutions.hi';
 import { solutionMetadata } from 'modules/DigiKhaato/features/landing/utils/solutionMetadata';
 
 import type { Metadata } from 'next';
@@ -13,7 +14,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const solution = solutionBySlug(slug);
   if (!solution) notFound();
-  return solutionMetadata(`/solutions/${slug}`, solution.title, solution.description);
+  return solutionMetadata(
+    `/solutions/${slug}`,
+    solution.title,
+    solution.description,
+    hindiSolutionBySlug(slug)
+      ? { locale: 'en_IN', english: `/solutions/${slug}`, hindi: `/hi/solutions/${slug}` }
+      : undefined
+  );
 }
 export default async function Page({ params }: Props): Promise<React.JSX.Element> {
   const { slug } = await params;

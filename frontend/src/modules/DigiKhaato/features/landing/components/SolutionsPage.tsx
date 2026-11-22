@@ -19,6 +19,7 @@ import { absoluteUrl } from 'src/utils/seo';
 import { LANDING_CONTAINER, LANDING_SCALE } from '../config/layout';
 import { searchTermsFor } from '../config/searchTerms';
 import { SOLUTIONS, solutionBySlug, type Solution, type SolutionGuide } from '../config/solutions';
+import { HINDI_SLUGS, hindiSolutionBySlug } from '../config/solutions.hi';
 
 import { BusinessSection } from './BusinessSection';
 import { GuideFold } from './GuideFold';
@@ -29,6 +30,75 @@ import { LandingHeader } from './LandingHeader';
 const VIDEO_LABELS = { play: 'Play video', pause: 'Pause video', fallback: 'Open the video' };
 const CARD = 'rounded-[18px] border border-border-hairline bg-surface-card';
 const SECTION_LABEL = 'uppercase tracking-[0.06em]';
+
+type Lang = 'en' | 'hi';
+/** Every fixed word on a guide page, per language (owner, 22 Nov 2026: Hindi pages). */
+const COPY = {
+  en: {
+    startFree: 'Start free',
+    seeGuides: 'See the step-by-step guides',
+    noCard: 'Start with your mobile number and a code on WhatsApp. No card needed.',
+    inShort: 'In short',
+    whoFor: 'Who is it for?',
+    problem: 'Keep daily records together',
+    featuresLabel: 'Features',
+    featuresTitle: 'What you can do',
+    exampleLabel: 'Worked example',
+    step: 'Step',
+    casesLabel: 'Case studies',
+    casesTitle: 'How it can be used',
+    casesBody:
+      'Illustrative examples, not customer stories. Names and figures are made up to show the workflow.',
+    illustrative: 'Illustrative',
+    questionsLabel: 'Questions',
+    questionsTitle: 'Common questions',
+    alsoSearched: 'Also searched as',
+    home: 'Home',
+    solutions: 'Solutions',
+    otherKinds: 'Guides for other kinds of shop',
+    yourKind: 'Guides for your kind of shop',
+    otherModules: 'Other modules',
+    otherModulesHub: 'Other modules and solutions',
+    guidesCount: (n: number) => `${n} step-by-step guides with real phone and computer screens.`,
+    ctaLending: 'Put your line register on your phone',
+    cta: 'Start with your business records',
+    ctaBody: 'YourKhata works in a browser on phone or computer, with nothing to install.',
+    otherLanguage: 'हिंदी में पढ़ें',
+  },
+  hi: {
+    startFree: 'मुफ़्त शुरू करें',
+    seeGuides: '',
+    noCard: 'मोबाइल नंबर और WhatsApp कोड से शुरू करें। कोई कार्ड नहीं चाहिए।',
+    inShort: 'संक्षेप में',
+    whoFor: 'यह किसके लिए है?',
+    problem: 'रोज़ का हिसाब एक जगह',
+    featuresLabel: 'सुविधाएँ',
+    featuresTitle: 'आप क्या कर सकते हैं',
+    exampleLabel: 'उदाहरण',
+    step: 'कदम',
+    casesLabel: 'उदाहरण',
+    casesTitle: 'इसका इस्तेमाल कैसे हो सकता है',
+    casesBody:
+      'ये समझाने के लिए उदाहरण हैं, असली ग्राहकों की कहानियाँ नहीं। नाम और आँकड़े बनावटी हैं।',
+    illustrative: 'उदाहरण',
+    questionsLabel: 'सवाल',
+    questionsTitle: 'आम सवाल',
+    alsoSearched: 'लोग ऐसे भी खोजते हैं',
+    home: 'होम',
+    solutions: 'गाइड',
+    otherKinds: 'दूसरी दुकानों की गाइड',
+    yourKind: 'आपकी दुकान की गाइड',
+    otherModules: 'दूसरे ऐप',
+    otherModulesHub: 'दूसरे ऐप',
+    guidesCount: () => '',
+    ctaLending: 'अपना लाइन रजिस्टर फ़ोन पर रखें',
+    cta: 'अपने व्यापार का हिसाब शुरू करें',
+    ctaBody: 'YourKhata फ़ोन या कंप्यूटर के ब्राउज़र में चलता है, कुछ इंस्टॉल नहीं करना।',
+    otherLanguage: 'Read in English',
+  },
+} as const;
+const solutionPath = (slug: string, lang: Lang): string =>
+  `${lang === 'hi' ? '/hi' : ''}/solutions/${slug}`;
 
 const shot = (slug: string, size: 'phone' | 'desktop', name: string) =>
   `/media/guides/${solutionBySlug(slug)?.media ?? slug}/${size}-${name}`;
@@ -133,9 +203,16 @@ function SectionHead({
   );
 }
 
-function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.JSX.Element {
-  const guides = solution.guides ?? [];
-  const hero = guides.find((g) => g.shot === 'today' || g.shot === 'dashboard') ?? guides[0];
+function SolutionDetail({
+  solution,
+  lang,
+}: Readonly<{ solution: Solution; lang: Lang }>): React.JSX.Element {
+  const t = COPY[lang];
+  // The step-by-step guides are photographed in English: the Hindi page keeps
+  // their pictures for the hero and links to the English page for the steps.
+  const allGuides = solution.guides ?? [];
+  const guides = lang === 'hi' ? [] : allGuides;
+  const hero = allGuides.find((g) => g.shot === 'today' || g.shot === 'dashboard') ?? allGuides[0];
   const video = solution.video;
   return (
     <>
@@ -155,11 +232,11 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
           </UbText>
           <UbStack direction="row" wrap gap={3}>
             <UbActionLink href={ROUTES.LOGIN} variant="primary">
-              Start free
+              {t.startFree}
             </UbActionLink>
             {guides.length ? (
               <UbActionLink href="#guides" variant="secondary">
-                See the step-by-step guides
+                {t.seeGuides}
               </UbActionLink>
             ) : null}
           </UbStack>
@@ -177,7 +254,7 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
             </UbStack>
           ) : null}
           <UbText variant="caption" tone="secondary">
-            Start with your mobile number and a code on WhatsApp. No card needed.
+            {t.noCard}
           </UbText>
         </UbStack>
         {hero ? (
@@ -211,7 +288,7 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
       {solution.summary ? (
         <UbBox as="section" className={`${CARD} border-l-4 border-l-[var(--accent)] p-6 md:p-8`}>
           <UbText as="h2" variant="h3">
-            In short
+            {t.inShort}
           </UbText>
           <UbText className="mt-3">{solution.summary}</UbText>
         </UbBox>
@@ -220,20 +297,20 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
       <UbBox as="section" className="grid gap-6 md:grid-cols-2">
         <UbStack gap={3} className={`${CARD} p-6`}>
           <UbText as="h2" variant="h3">
-            Who is it for?
+            {t.whoFor}
           </UbText>
           <UbText tone="secondary">{solution.audience}</UbText>
         </UbStack>
         <UbStack gap={3} className={`${CARD} p-6`}>
           <UbText as="h2" variant="h3">
-            Keep daily records together
+            {t.problem}
           </UbText>
           <UbText tone="secondary">{solution.problem}</UbText>
         </UbStack>
       </UbBox>
 
       <UbStack as="section" gap={6}>
-        <SectionHead label="Features" title="What you can do" />
+        <SectionHead label={t.featuresLabel} title={t.featuresTitle} />
         <UbBox as="ul" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {solution.features.map((feature, index) => (
             <UbStack as="li" key={feature} gap={3} className={`${CARD} p-5`}>
@@ -289,12 +366,12 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
 
       {solution.example ? (
         <UbStack as="section" gap={6}>
-          <SectionHead label="Worked example" title={solution.example.title} />
+          <SectionHead label={t.exampleLabel} title={solution.example.title} />
           <UbStack as="ol" gap={4} className="grid md:grid-cols-3">
             {solution.example.steps.map((step, index) => (
               <UbStack as="li" key={step} gap={2} className={`${CARD} p-6`}>
                 <UbText variant="body-sm-medium" tone="accent">
-                  Step {index + 1}
+                  {t.step} {index + 1}
                 </UbText>
                 <UbText>{step}</UbText>
               </UbStack>
@@ -360,16 +437,12 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
 
       {solution.cases?.length ? (
         <UbStack as="section" gap={6}>
-          <SectionHead
-            label="Case studies"
-            title="How it can be used"
-            body="Illustrative examples, not customer stories. Names and figures are made up to show the workflow."
-          />
+          <SectionHead label={t.casesLabel} title={t.casesTitle} body={t.casesBody} />
           <UbBox className="grid gap-4 md:grid-cols-2">
             {solution.cases.map(({ title: caseTitle, body }) => (
               <UbStack as="article" key={caseTitle} gap={2} className={`${CARD} p-6`}>
                 <UbText variant="caption" tone="warning">
-                  Illustrative
+                  {t.illustrative}
                 </UbText>
                 <UbText as="h3" variant="h3">
                   {caseTitle}
@@ -397,7 +470,7 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
       ) : null}
 
       <UbStack as="section" gap={6}>
-        <SectionHead label="Questions" title="Common questions" />
+        <SectionHead label={t.questionsLabel} title={t.questionsTitle} />
         <UbStack gap={3}>
           {solution.questions.map(({ question, answer }, index) => (
             <UbDisclosure
@@ -418,7 +491,7 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
       {searchTermsFor(solution.slug).length ? (
         <UbStack as="section" gap={2} data-testid="solution-search-terms">
           <UbText variant="body-sm-medium" tone="secondary">
-            Also searched as
+            {t.alsoSearched}
           </UbText>
           <UbText tone="secondary">{searchTermsFor(solution.slug).join(' · ')}</UbText>
         </UbStack>
@@ -427,29 +500,33 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
   );
 }
 
-/** English public editorial pages. Hindi remains available in the application;
- * separate Hindi URLs will be introduced with reviewed translated content.
- */
 const isShopKind = (entry: Solution): boolean => entry.media?.startsWith('shop/') ?? false;
 
 /** The guides hub groups every kind of shop together; a page offers its siblings first. */
-const GROUPS = (current?: Solution): readonly { title: string; entries: readonly Solution[] }[] => {
-  const others = SOLUTIONS.filter((entry) => entry.slug !== current?.slug);
+const GROUPS = (
+  lang: Lang,
+  current?: Solution
+): readonly { title: string; entries: readonly Solution[] }[] => {
+  const t = COPY[lang];
+  const all =
+    lang === 'hi' ? HINDI_SLUGS.flatMap((slug) => hindiSolutionBySlug(slug) ?? []) : SOLUTIONS;
+  const others = all.filter((entry) => entry.slug !== current?.slug);
   const kinds = others.filter(isShopKind);
   const modules = others.filter((entry) => !isShopKind(entry));
-  const kindsTitle =
-    current && isShopKind(current)
-      ? 'Guides for other kinds of shop'
-      : 'Guides for your kind of shop';
+  const kindsTitle = current && isShopKind(current) ? t.otherKinds : t.yourKind;
   const groups = [
     { title: kindsTitle, entries: kinds },
-    { title: current ? 'Other modules' : 'Other modules and solutions', entries: modules },
+    { title: current ? t.otherModules : t.otherModulesHub, entries: modules },
   ];
   return current && !isShopKind(current) ? [...groups].reverse() : groups;
 };
 
-export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): React.JSX.Element {
-  const path = solution ? `/solutions/${solution.slug}` : '/solutions';
+export function SolutionsPage({
+  solution,
+  lang = 'en',
+}: Readonly<{ solution?: Solution; lang?: Lang }>): React.JSX.Element {
+  const t = COPY[lang];
+  const path = solution ? solutionPath(solution.slug, lang) : '/solutions';
   const title = solution?.name ?? 'Business solutions on one shared platform';
   const video = solution?.video;
   const graph = {
@@ -464,7 +541,7 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
           solution?.description ??
           'Explore YourKhata modules for billing, inventory, libraries and lending records.',
         isPartOf: { '@id': `${absoluteUrl('/')}#website` },
-        inLanguage: 'en-IN',
+        inLanguage: lang === 'hi' ? 'hi-IN' : 'en-IN',
         ...(solution && searchTermsFor(solution.slug).length
           ? { keywords: searchTermsFor(solution.slug).join(', ') }
           : {}),
@@ -473,13 +550,13 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'YourKhata', item: absoluteUrl('/') },
-          { '@type': 'ListItem', position: 2, name: 'Solutions', item: absoluteUrl('/solutions') },
+          { '@type': 'ListItem', position: 2, name: t.solutions, item: absoluteUrl('/solutions') },
           ...(solution
             ? [{ '@type': 'ListItem', position: 3, name: solution.name, item: absoluteUrl(path) }]
             : []),
         ],
       },
-      ...(solution?.guides ?? []).map((guide) => ({
+      ...(lang === 'hi' ? [] : (solution?.guides ?? [])).map((guide) => ({
         '@type': 'HowTo',
         '@id': `${absoluteUrl(path)}#${guide.id}`,
         name: guide.title,
@@ -521,7 +598,7 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
   };
   return (
     <UbBox
-      lang="en"
+      lang={lang}
       className={cn(
         'relative min-h-dvh overflow-x-clip bg-canvas text-text-primary',
         LANDING_SCALE
@@ -541,17 +618,27 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
         <UbBox as="nav" aria-label="Breadcrumb">
           <UbText variant="body-sm" tone="secondary">
             <UbLink href="/" className="inline-flex min-h-11 items-center">
-              Home
+              {t.home}
             </UbLink>
             {' / '}
             <UbLink href="/solutions" className="inline-flex min-h-11 items-center">
-              Solutions
+              {t.solutions}
             </UbLink>
             {solution ? ` / ${solution.name}` : ''}
           </UbText>
+          {solution ? (
+            <UbLink
+              href={solutionPath(solution.slug, lang === 'hi' ? 'en' : 'hi')}
+              hrefLang={lang === 'hi' ? 'en' : 'hi'}
+              className="inline-flex min-h-11 items-center"
+              data-testid="solution-other-language"
+            >
+              {t.otherLanguage}
+            </UbLink>
+          ) : null}
         </UbBox>
         {solution ? (
-          <SolutionDetail solution={solution} />
+          <SolutionDetail solution={solution} lang={lang} />
         ) : (
           <>
             <UbText as="h1" variant="h1">
@@ -565,7 +652,7 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
             <BusinessSection bare />
           </>
         )}
-        {(solution ? GROUPS(solution) : []).map((group) => (
+        {(solution ? GROUPS(lang, solution) : []).map((group) => (
           <UbStack as="section" gap={6} key={group.title}>
             <SectionHead title={group.title} />
             <UbBox className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -573,7 +660,7 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
                 <UbBox key={entry.slug} className={`${CARD} p-6`}>
                   <UbText as="h3" variant="h3">
                     <UbLink
-                      href={`/solutions/${entry.slug}`}
+                      href={solutionPath(entry.slug, lang)}
                       variant="h3"
                       className="inline-flex min-h-11 items-center"
                     >
@@ -581,8 +668,8 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
                     </UbLink>
                   </UbText>
                   <UbText tone="secondary" className="mt-3">
-                    {entry.guides?.length
-                      ? `${entry.guides.length} step-by-step guides with real phone and computer screens.`
+                    {entry.guides?.length && lang === 'en'
+                      ? t.guidesCount(entry.guides.length)
                       : entry.description}
                   </UbText>
                 </UbBox>
@@ -597,15 +684,11 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
           className="rounded-[18px] bg-[var(--accent-quiet)] p-6 md:p-10"
         >
           <UbText as="h2" variant="h2">
-            {solution?.slug === 'lending-collections'
-              ? 'Put your line register on your phone'
-              : 'Start with your business records'}
+            {solution?.slug === 'lending-collections' ? t.ctaLending : t.cta}
           </UbText>
-          <UbText>
-            YourKhata works in a browser on phone or computer, with nothing to install.
-          </UbText>
+          <UbText>{t.ctaBody}</UbText>
           <UbActionLink href={ROUTES.LOGIN} variant="primary">
-            Start free
+            {t.startFree}
           </UbActionLink>
         </UbStack>
       </UbStack>

@@ -437,4 +437,7 @@ export const importJobPath = (id: string): string => `${ROUTES.IMPORTS}/${encode
 
 /** Public acquisition pages; no tenant, token or authentication URLs. */
 export const isMarketingPath = (path: string | null): boolean =>
-  path === ROUTES.HOME || path === '/solutions' || Boolean(path?.startsWith('/solutions/'));
+  path === ROUTES.HOME ||
+  path === '/solutions' ||
+  Boolean(path?.startsWith('/solutions/')) ||
+  Boolean(path?.startsWith('/hi/solutions/'));

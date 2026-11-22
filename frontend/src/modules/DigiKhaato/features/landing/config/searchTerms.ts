@@ -21,6 +21,10 @@ export const BRAND_ALTERNATE_NAMES: readonly string[] = [
 /** The home page: the whole platform. */
 export const HOME_SEARCH_TERMS: readonly string[] = [
   'khata app',
+  // Seen in Search Console, 22 Nov 2026.
+  'my khata',
+  'hisab lekha',
+  'hisablekha',
   'business app India',
   'business management app',
   'dukan app',

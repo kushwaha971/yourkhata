@@ -2,6 +2,7 @@ import { SITE_URL } from 'src/constants';
 import { GUARDED_ROUTE_PREFIXES, ROUTES } from 'src/routes';
 
 import { SOLUTIONS } from 'modules/DigiKhaato/features/landing/config/solutions';
+import { HINDI_SLUGS } from 'modules/DigiKhaato/features/landing/config/solutions.hi';
 
 import type { Metadata } from 'next';
 
@@ -83,6 +84,8 @@ export const SITEMAP_PATHS: readonly string[] = [
   ROUTES.HOME,
   '/solutions',
   ...SOLUTIONS.map(({ slug }) => `/solutions/${slug}`),
+  // The Hindi guide pages (owner, 22 Nov 2026).
+  ...HINDI_SLUGS.map((slug) => `/hi/solutions/${slug}`),
   ROUTES.LEGAL_TERMS,
   ROUTES.LEGAL_PRIVACY,
 ];

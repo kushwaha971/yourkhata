@@ -16,6 +16,10 @@ import {
 } from 'modules/DigiKhaato/features/landing/config/searchTerms';
 import { LANDING_DESCRIPTION, LANDING_TITLE } from 'modules/DigiKhaato/features/landing/config/seo';
 import { SOLUTIONS } from 'modules/DigiKhaato/features/landing/config/solutions';
+import {
+  HINDI_SLUGS,
+  hindiSolutionBySlug,
+} from 'modules/DigiKhaato/features/landing/config/solutions.hi';
 
 /**
  * `/llms.txt` (owner, 17 Nov 2026: GEO): the site in plain words for AI answer
@@ -52,6 +56,15 @@ export function GET(): Response {
     '## Guides by business',
     '',
     ...pages,
+    '',
+    '## हिंदी में गाइड (Guides in Hindi)',
+    '',
+    ...HINDI_SLUGS.flatMap((slug) => {
+      const page = hindiSolutionBySlug(slug);
+      return page
+        ? [`- [${page.name}](${absoluteUrl(`/hi/solutions/${slug}`)}): ${page.description}`]
+        : [];
+    }),
     '',
     '## Questions people ask',
     '',
