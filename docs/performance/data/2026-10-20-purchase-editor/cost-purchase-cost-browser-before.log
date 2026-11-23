@@ -1,0 +1,27 @@
+390-light-en empty 0 0 0
+390-light-en search 0 0 0
+390-light-en picked 0 0 0
+390-light-en repeat 0 0 0
+390-light-en no-match 0 0 0
+390-light-en long-large 0 0 0
+390-light-en finder 0 0 0
+390-light-en found 0 0 0
+390-light-en saving 0 0 0
+390-light-en late-reply 0 0 0
+390-light-en saved 0 0 0
+390-light-en source-default-saved 0 0 0
+390-light-en explicit-zero-saved 0 0 0
+390-light-en precise-cost 0 0 0
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.fill: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-line-cell][data-row="0"][data-col="2"] input')[22m
+
+    at /Users/akashkushwaha/Projects/ims-platform/e2e/revamp-purchase-quick-add.mjs:387:23 {
+  name: 'TimeoutError'
+}
+
+Node.js v26.8.1

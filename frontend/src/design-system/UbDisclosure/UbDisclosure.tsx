@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useId, useState, type ReactNode } from 'react';
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
@@ -23,6 +23,20 @@ import { cn } from 'src/utils/cn';
  * a section they cannot see, types into it and has no idea where the text went.
  * Unmounting costs the fields' local state — which is fine, because React Hook
  * Form holds the values, not the inputs.
+ *
+ * ── Unless it is CONTENT: `keepMounted` ─────────────────────────────────────
+ * A public page's FAQ is the opposite case (CR-2026-09-29-PLATFORM-C). Its
+ * answers are the page's copy, and an unrendered answer is one that no search
+ * engine, no find-in-page and no reader-mode can see. With `keepMounted` the
+ * panel is always rendered and carries the `hidden` attribute while closed —
+ * `display: none`, so it is out of the tab order and the accessibility tree
+ * exactly as an unmounted one is, which is the property the rule above is for.
+ *
+ * After hydration the attribute is upgraded to `hidden="until-found"` where the
+ * browser supports it: Ctrl-F then finds text inside a closed answer, and the
+ * browser's `beforematch` opens it. React 19 renders `hidden` as a boolean
+ * only, so the upgrade is done on the element, and redone whenever React
+ * writes the boolean back (every close).
  */
 export interface UbDisclosureProps {
   readonly label: string;
@@ -37,6 +51,24 @@ export interface UbDisclosureProps {
   readonly onOpenChange?: (open: boolean) => void;
   readonly children: ReactNode;
   readonly className?: string;
+  /**
+   * `md` (default) is the in-form disclosure. `lg` is a question on a public
+   * page — the landing page's FAQ — where the question is the content and a
+   * 12 px label would read as a footnote.
+   */
+  readonly size?: 'md' | 'lg';
+  /**
+   * Render the panel while closed, `hidden`, instead of not at all. For
+   * content (an FAQ answer), never for form fields — see the header.
+   */
+  readonly keepMounted?: boolean;
+  /**
+   * The open panel has no padding and no gap: its children are rows that
+   * draw their own (the khata's Details, where each fact group is a row
+   * divided by a rule). FB-012 — without it a bordered panel sat inside the
+   * disclosure's border, a box within a box with two sets of padding.
+   */
+  readonly flush?: boolean;
 }
 
 function UbDisclosureBase({
@@ -47,7 +79,11 @@ function UbDisclosureBase({
   onOpenChange,
   children,
   className,
+  size = 'md',
+  keepMounted = false,
+  flush = false,
 }: Readonly<UbDisclosureProps>) {
+  const large = size === 'lg';
   const id = useId();
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = open ?? internalOpen;
@@ -58,23 +94,70 @@ function UbDisclosureBase({
     onOpenChange?.(next);
   };
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!keepMounted || isOpen || !panel || !('onbeforematch' in document.body)) return undefined;
+    panel.setAttribute('hidden', 'until-found');
+    const reveal = () => {
+      setInternalOpen(true);
+      onOpenChange?.(true);
+    };
+    panel.addEventListener('beforematch', reveal);
+    return () => panel.removeEventListener('beforematch', reveal);
+  }, [keepMounted, isOpen, onOpenChange]);
+
   return (
-    <div className={cn('flex flex-col rounded-card border border-border-hairline', className)}>
+    // FB-012. The ROOT clips (`overflow-clip`, not `hidden`, so it creates no
+    // scroll container for a sticky child) and owns the card colour, so the
+    // header's hover and the panel's last row are cut by the same 12 px
+    // corner instead of each painting their own slightly different one. The
+    // focus ring is the root's for the same reason: a ring drawn on the
+    // header alone was clipped at the bottom by the panel's rule.
+    <div
+      data-ub-disclosure=""
+      className={cn(
+        'flex flex-col overflow-clip rounded-card border border-border-hairline bg-surface-card',
+        'has-[>button:focus-visible]:shadow-focus',
+        className
+      )}
+    >
       <button
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         id={`${id}-trigger`}
+        // Named by the label alone; the summary is its description. Without
+        // this the summary joined the name ("Details Address, GST, …"), so a
+        // screen reader read the whole line as the control's name.
+        aria-labelledby={`${id}-label`}
+        aria-describedby={hint ? `${id}-hint` : undefined}
         className={cn(
-          'flex min-h-11 w-full items-center justify-between gap-3 rounded-card px-4 py-3',
-          'text-left transition-colors hover:bg-surface-hover',
-          'focus-visible:shadow-focus focus-visible:outline-none'
+          'flex min-h-[52px] w-full items-center justify-between gap-3 px-4 py-2.5',
+          large && 'min-h-14 px-5 py-4',
+          'text-left transition-colors hover:bg-surface-hover focus-visible:outline-none'
         )}
       >
         <span className="flex min-w-0 flex-col">
-          <span className="ds-body-sm-medium text-text-primary">{label}</span>
-          {hint && <span className="ds-caption text-text-tertiary">{hint}</span>}
+          <span
+            id={`${id}-label`}
+            className={cn(large ? 'ds-body-l-medium' : 'ds-body-s-semibold', 'text-text-primary')}
+          >
+            {label}
+          </span>
+          {hint && (
+            <span
+              id={`${id}-hint`}
+              className={cn(
+                'text-text-tertiary',
+                large ? 'ds-caption' : 'ds-caption text-[0.8125rem]'
+              )}
+            >
+              {hint}
+            </span>
+          )}
         </span>
         <ChevronDown
           aria-hidden
@@ -84,12 +167,23 @@ function UbDisclosureBase({
           )}
         />
       </button>
-      {isOpen && (
+      {(isOpen || keepMounted) && (
         <div
+          ref={panelRef}
           id={`${id}-panel`}
           role="region"
           aria-labelledby={`${id}-trigger`}
-          className="flex flex-col gap-4 border-t border-border-hairline px-4 py-4"
+          hidden={!isOpen}
+          // `flex` only while open: an author `display` beats the `[hidden]`
+          // rule (same specificity, later layer), and the closed panel would
+          // simply stay on screen. The padding and the rule are open-only too
+          // (QA B25): `hidden="until-found"` hides the CONTENT and keeps the
+          // box, so a closed panel drew an empty bordered strip under its header.
+          className={cn(
+            isOpen && 'flex flex-col border-t border-border-hairline',
+            isOpen && !flush && 'gap-4 px-4 py-4',
+            isOpen && !flush && large && 'px-5 pb-5'
+          )}
         >
           {children}
         </div>

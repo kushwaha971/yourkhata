@@ -87,9 +87,14 @@ function schedule(): void {
   frame = requestAnimationFrame(flush);
 }
 
-function occupancyOf(element: HTMLElement): number {
+function occupancyOf(element: HTMLElement, clearToBottom = false): number {
   const rect = element.getBoundingClientRect();
   const viewport = window.innerHeight || document.documentElement.clientHeight || 0;
+  // A pager can sit above the phone nav and page inset. Clearing only its
+  // own height would still put the toast over its buttons. Other bars retain
+  // their existing height-only behavior unless they explicitly own the stack.
+  if (clearToBottom)
+    return rect.height > 0 && rect.bottom > 0 ? Math.max(0, viewport - Math.max(0, rect.top)) : 0;
   return Math.min(Math.max(viewport - rect.top, 0), rect.height);
 }
 
@@ -102,7 +107,8 @@ function occupancyOf(element: HTMLElement): number {
  * for you and is what feature code should use.
  */
 export function useBottomInset<E extends HTMLElement = HTMLElement>(
-  enabled = true
+  enabled = true,
+  clearToBottom = false
 ): RefObject<E | null> {
   const ref = useRef<E | null>(null);
 
@@ -111,7 +117,7 @@ export function useBottomInset<E extends HTMLElement = HTMLElement>(
     if (!enabled || !element) return undefined;
 
     const measure = (): void => {
-      occupancy.set(element, occupancyOf(element));
+      occupancy.set(element, occupancyOf(element, clearToBottom));
       schedule();
     };
 
@@ -137,7 +143,7 @@ export function useBottomInset<E extends HTMLElement = HTMLElement>(
       occupancy.delete(element);
       schedule();
     };
-  }, [enabled]);
+  }, [enabled, clearToBottom]);
 
   return ref;
 }

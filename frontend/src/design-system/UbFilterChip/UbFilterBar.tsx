@@ -68,10 +68,17 @@ function UbFilterBarBase({ children, trailing, end, className }: Readonly<UbFilt
     <div
       className={cn(
         'flex min-w-0 items-center gap-3 overflow-x-auto overscroll-x-contain',
-        // The chips are 44px tall and their focus ring sits outside them, so
-        // the track needs a little vertical room or a focused chip is clipped
-        // by the scroll container it lives in.
-        'py-0.5',
+        // QA R-D1 — on a desktop the chips WRAP: a track scrolled sideways under
+        // a mouse hid the day book's last chip ("Khata") behind "Show voided",
+        // with nothing to say it was there. The phone keeps its scrolling track.
+        'lg:flex-wrap lg:gap-y-2 lg:overflow-x-visible',
+        // The focus ring sits outside the chips, so the track needs a little
+        // vertical room or a focused chip is clipped by the scroll container
+        // it lives in. On the phone's scrolling track that room is 6 px: the
+        // overflow clips each chip's 44 px hit area (`.ub-hit`, 6 px above and
+        // below a 32 px pill) exactly where the padding ends, and the negative
+        // margin gives the extra 4 px back to the layout (R-A-3, Sprint 12).
+        'py-0.5 max-lg:-my-1 max-lg:py-1.5',
         !trailing && className
       )}
     >
@@ -102,7 +109,9 @@ function UbFilterBarBase({ children, trailing, end, className }: Readonly<UbFilt
 
   if (!end) return track;
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    // 12 px when the end cluster wraps under the track on a phone, so a chip's
+    // 44 px hit area and the one under it meet rather than overlap (R-A-3).
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 max-sm:gap-y-3">
       {/* The chips keep at least 24rem (or the whole row, if narrower), so on a
           phone the end cluster wraps to its own line rather than squeezing
           the chip track to two and a half chips. */}

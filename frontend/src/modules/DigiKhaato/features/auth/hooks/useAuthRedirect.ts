@@ -2,20 +2,25 @@
 
 import { useCallback, useEffect } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { track } from 'src/analytics/track';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { resetAllFeatureState } from 'src/redux/actions';
 import { localeFromProfile } from 'src/redux/slice/localeSlice';
 import { selectSessionHeldInThisDocument } from 'src/redux/slice/sessionSlice';
+import { landingFromFacts, type Landing } from 'src/types/landing.types';
 import { replaceDocument } from 'src/utils/documentNavigation';
 
 import { AUTH_CONFIG } from '../config';
 import { authResultConsumed, selectAuthResult } from '../redux/authSlice';
 import { fetchSession } from '../redux/sessionThunk';
-import { postAuthDestination, safeNextPath } from '../view-model/authDisplay';
+import { safeNextPath } from '../view-model/authDisplay';
+import { entryRoute, landingRoute } from '../view-model/landing';
 
-import type { PostAuthDestination } from '../types/auth.types';
+/** `/money-book/report` → `money-book`: the part of an address that names a screen and nothing else. */
+const firstSegment = (path: string): string => path.replace(/[?#].*$/, '').split('/')[1] ?? '';
 
 /**
  * Part 19 §19.1.1 layer 4 — the single place a successful authentication turns
@@ -68,15 +73,15 @@ import type { PostAuthDestination } from '../types/auth.types';
  * `SessionBootstrap` reads `/auth/me` itself.
  */
 export interface UseAuthRedirectResult {
-  /** Route on a result the caller already has, without waiting for the slice. */
-  readonly redirectTo: (destination: PostAuthDestination) => void;
+  /** Route on a landing the caller already has, without waiting for the slice. */
+  readonly redirectTo: (landing: Landing) => void;
   /** `?next=` from the URL, already validated against the allow-list. */
   readonly nextPath: string;
 }
 
 export const useAuthRedirect = (): UseAuthRedirectResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const searchParams = useSearchParams();
   const result = useAppSelector(selectAuthResult);
   const heldBefore = useAppSelector(selectSessionHeldInThisDocument);
@@ -93,8 +98,8 @@ export const useAuthRedirect = (): UseAuthRedirectResult => {
    * by every auth screen and there is one flow, not two portals.
    */
   const redirectTo = useCallback(
-    (destination: PostAuthDestination) => {
-      const path = destinationPath(destination, nextPath);
+    (landing: Landing) => {
+      const path = landingRoute(landing, nextPath);
       if (heldBefore) replaceDocument(path);
       else router.replace(path);
     },
@@ -118,32 +123,33 @@ export const useAuthRedirect = (): UseAuthRedirectResult => {
     // bootstraps its own session, and this request would only be cancelled.
     if (!heldBefore) void dispatch(fetchSession());
 
-    redirectTo(postAuthDestination(result));
+    // docs/platform/14 §4.1 — the server decided where this session goes. A
+    // body without `landing` is a test fixture or a server older than this
+    // client: the active business, or create one.
+    const landing =
+      result.landing ??
+      landingFromFacts({
+        mustChangePassword: result.mustChangePassword,
+        activeTenantId: result.activeTenantId,
+        tenantStatuses: result.tenants.map((t) => t.status),
+        isSuperAdmin: false,
+      });
+    // Owner, 18 Nov 2026: the starred business, else Money Book.
+    const path = entryRoute(landing, result.tenants, nextPath);
+    // Owner, 23 Nov 2026: a new account was once sent to business setup and
+    // nothing recorded why. Only kinds and first path segments go out: no
+    // number, no id, no query.
+    track('signin_landed', {
+      landing: landing.kind,
+      is_new: result.isNew,
+      tenants: result.tenants.length,
+      next: firstSegment(nextPath),
+      to: firstSegment(path),
+    });
+    if (heldBefore) replaceDocument(path);
+    else router.replace(path);
     dispatch(authResultConsumed());
-  }, [result, dispatch, redirectTo, heldBefore]);
+  }, [result, dispatch, router, nextPath, heldBefore]);
 
   return { redirectTo, nextPath };
-};
-
-/**
- * PLT-01 FR-9's five outcomes as a path. Pure, so the client navigation and the
- * document load cannot disagree about where a sign-in goes; `nextPath` is
- * already `safeNextPath`'s output.
- */
-const destinationPath = (destination: PostAuthDestination, nextPath: string): string => {
-  switch (destination.kind) {
-    // DEC-012 — first, and it does not honour `?next=`: wherever they were
-    // going, the server will refuse it until this is done.
-    case 'setPassword':
-      return AUTH_CONFIG.setPasswordRoute;
-    case 'onboarding':
-      return AUTH_CONFIG.onboardingStepPath(destination.step);
-    case 'invitation':
-    case 'chooser':
-      return AUTH_CONFIG.chooserRoute;
-    case 'app':
-      return nextPath;
-    default:
-      return AUTH_CONFIG.defaultPostLoginPath;
-  }
 };

@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+import { track } from 'src/analytics/track';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { toApiError } from 'src/utils/apiError';
 
@@ -7,10 +8,12 @@ import * as authService from '../api/authService';
 
 import type {
   AuthResult,
+  OtpChallenge,
+  OtpRequestInput,
+  OtpVerifyInput,
   PasswordLoginInput,
   PasswordResetConfirmInput,
   PasswordSetInput,
-  RegisterInput,
 } from '../types/auth.types';
 
 /**
@@ -24,22 +27,40 @@ import type {
  * branches (PLT-01 FR-9) belongs somewhere a unit test can reach without a
  * router.
  *
- * **CR-2026-09-19-A.** `requestOtp` and `verifyOtp` are gone; `registerAccount`
- * replaces the account creation the OTP verify used to do implicitly. Every name
+ * **Owner, 9 Oct 2026.** `requestOtp` and `verifyOtp` are back and are the way
+ * in; `registerAccount` is gone with the email sign-up screen, because a new
+ * number becomes an account at its first verified code. Every name
  * here appears in `src/redux/invalidation/registry.ts` — that is what the
  * completeness test checks, and it is not optional.
  */
 
-/** MUTATION — CR-2026-09-19-A FR-S1. On success the session cookies exist. */
-export const registerAccount = createAsyncThunk<
-  AuthResult,
-  RegisterInput,
+/** MUTATION — owner, 9 Oct 2026: ask for a sign-in code (also every resend). */
+export const requestOtp = createAsyncThunk<
+  OtpChallenge,
+  OtpRequestInput,
   { rejectValue: ApiErrorShape }
->('auth/registerAccount', async (input, { rejectWithValue }) => {
+>('auth/requestOtp', async (input, { rejectWithValue }) => {
   try {
-    return await authService.register(input);
+    return await authService.requestOtp(input);
   } catch (error) {
-    return rejectWithValue(toApiError(error, 'auth.signUp.error'));
+    return rejectWithValue(toApiError(error, 'auth.otp.requestError'));
+  }
+});
+
+/** MUTATION — check the code; on success the session cookies exist. */
+export const verifyOtp = createAsyncThunk<
+  AuthResult,
+  OtpVerifyInput,
+  { rejectValue: ApiErrorShape }
+>('auth/verifyOtp', async (input, { rejectWithValue }) => {
+  try {
+    const result = await authService.verifyOtp(input);
+    // The funnel's first step after the landing page (INTEL #1): a fact about
+    // the account, never the number that was verified.
+    track('otp_verified', { is_new: result.isNew });
+    return result;
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'auth.otp.verifyError'));
   }
 });
 

@@ -133,7 +133,15 @@ def test_hsn_search_by_code_prefix_and_by_word(owner: Any) -> None:
         "is_service": False,
     } in rice
     assert [r["code"] for r in owner.get(url, {"q": "100"}).json()["data"]] == ["1001", "1006"]
-    assert owner.get(url, {"q": ""}).json()["data"] == []
+    # Owner, 5 Oct 2026 — nothing typed lists the schedule by code, paged, so
+    # the picker opens onto codes rather than an empty panel.
+    browse = owner.get(url, {"q": ""}).json()
+    codes = [r["code"] for r in browse["data"]]
+    assert codes and codes == sorted(codes)
+    assert browse["meta"]["page"] == 1
+    assert browse["meta"]["has_more"] is (len(browse["data"]) == 20)
+    second = owner.get(url, {"q": "", "page": 2}).json()
+    assert not {r["code"] for r in second["data"]} & {r["code"] for r in browse["data"]}
 
 
 # ── EC-4 across every inventory read (QA defect: valuation leaked to staff) ──
@@ -196,3 +204,25 @@ def test_low_stock_costs_gated_and_never_purchased_is_null(
     staff = api_as(tenant, RoleCode.STAFF.value)[0]
     staff_row = staff.get(reverse("v1:stock-low")).json()["data"][0]
     assert "avg_cost" not in staff_row and "last_purchase_cost" not in staff_row
+
+
+def test_a_category_carries_its_stock_value_and_usual_gst(
+    owner: Any, tenant: Any, make_item: Any
+) -> None:
+    """F-cat-d draws Stock value and GST usually per category. Without them the
+    screen would have to guess, and a value summed from unrounded rows would
+    disagree with the stock summary by paise (3 × 46.625 rounds per row)."""
+    from apps.inventory.models import Item
+    from apps.inventory.selectors.items import category_tree
+
+    cat = Category.objects.create(tenant=tenant, name="QA Dal")
+    made = [make_item(n, opening=("3", "46.625")) for n in ("Moong", "Masoor", "Chana")]
+    for item, code in zip(made, ["GST5", "GST5", "GST12"]):
+        Item.objects.filter(pk=getattr(item, "pk", None) or item["id"]).update(
+            category=cat, tax_code=code
+        )
+    row = next(r for r in category_tree(tenant=tenant, valuation=True) if r["id"] == str(cat.id))
+    assert row["tax_code"] == "GST5"
+    assert row["stock_value"] == "419.64"
+    hidden = next(r for r in category_tree(tenant=tenant) if r["id"] == str(cat.id))
+    assert "stock_value" not in hidden

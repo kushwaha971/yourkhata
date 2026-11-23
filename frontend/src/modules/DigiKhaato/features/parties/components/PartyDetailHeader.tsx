@@ -85,6 +85,11 @@ export interface PartyDetailHeaderProps {
   readonly onCopyMobile: (mobile: string) => void;
   /** Set for a moment after a successful copy, so the button can say so. */
   readonly copied: boolean;
+  /**
+   * A6 (PLT-X04 §2 flow 2) — the party's module roles ("Member", "Borrower"),
+   * already worded by the caller from each module's catalogue.
+   */
+  readonly roleLabels?: readonly { readonly code: string; readonly label: string }[];
 }
 
 function PartyDetailHeaderBase({
@@ -101,6 +106,7 @@ function PartyDetailHeaderBase({
   pending,
   onCopyMobile,
   copied,
+  roleLabels,
 }: Readonly<PartyDetailHeaderProps>) {
   const view = balanceView(balance);
   /* QA O6 follow-up — the number is SHOWN as the reminder sheet shows it
@@ -134,6 +140,9 @@ function PartyDetailHeaderBase({
                 between them (PTY-01 US-4). */}
             {isCustomer && <UbStatusBadge label={t('parties.detail.badge.customer')} />}
             {isSupplier && <UbStatusBadge label={t('parties.detail.badge.supplier')} />}
+            {roleLabels?.map((role) => (
+              <UbStatusBadge key={role.code} tone="info" label={role.label} />
+            ))}
             {displayCode && (
               <UbText variant="caption" tone="tertiary">
                 {displayCode}
@@ -143,14 +152,16 @@ function PartyDetailHeaderBase({
         </UbBox>
 
         {mobile && (
-          <UbBox className="flex items-center gap-1">
+          // 12 px on a phone so the call link's and the copy button's 44 px hit
+          // areas (`.ub-hit`) meet instead of overlapping (R-A-3, Sprint 12).
+          <UbBox className="flex items-center gap-1 max-sm:gap-3">
             {/* A `tel:` link and not a button: on a phone this is the action the
                 merchant came for, and the platform's own handler is better than
                 anything this screen could do with the number. */}
             <UbLink
               href={`tel:${dialMobile}`}
               variant="inherit"
-              className="ds-num-base-regular inline-flex items-center gap-2"
+              className="ub-hit ds-num-base-regular inline-flex items-center gap-2"
             >
               <Phone className="h-3.5 w-3.5" aria-hidden />
               {shownMobile}

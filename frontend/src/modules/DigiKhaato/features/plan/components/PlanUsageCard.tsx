@@ -33,6 +33,12 @@ import { isUnlimited, nounIdFor } from '../view-model/planDisplay';
  *
  * R-C-9 — the card renders its loading, empty, populated and error states.
  */
+/** The plan's own words, never its code ("unlimited") — Settings round, 14 Nov 2026. */
+const planName = (
+  t: (id: string) => string,
+  code: string | null | undefined
+): string | undefined => (code ? t(`plan.name.${code}`) : undefined);
+
 export function PlanUsageCard(): React.JSX.Element {
   const { t } = useTranslation();
   const plan = usePlanLimits({ fetchOnMount: true });
@@ -63,7 +69,7 @@ export function PlanUsageCard(): React.JSX.Element {
   // with no limits, and saying so is the honest rendering.
   if (plan.limits.length === 0) {
     return (
-      <UbCard title={t('plan.card.title')} description={plan.planCode ?? undefined}>
+      <UbCard title={t('plan.card.title')} description={planName(t, plan.planCode)}>
         <UbText variant="body-sm">{t('plan.card.noLimits')}</UbText>
         <UbText variant="caption" tone="tertiary" className="mt-2">
           {t('plan.ledgerNote')}
@@ -72,55 +78,63 @@ export function PlanUsageCard(): React.JSX.Element {
     );
   }
 
+  // Design S8: the plan on its own card, then "How much is used" (bars only
+  // where the server meters, DEC-001).
   return (
-    <UbCard
-      title={t('plan.card.title')}
-      description={plan.planCode ?? undefined}
-      action={
-        plan.isNearMemberLimit || plan.isAtMemberLimit ? (
-          <UbStatusBadge
-            tone={plan.isAtMemberLimit ? 'error' : 'warning'}
-            label={t(plan.isAtMemberLimit ? 'plan.card.atLimit' : 'plan.card.nearLimit')}
-          />
-        ) : undefined
-      }
-    >
-      <UbStack as="ul" gap={4}>
-        {plan.limits.map((limit) => {
-          const noun = t(nounIdFor(limit.key));
-          const unlimited = isUnlimited(limit);
-          // DEC-001 — only the member count is metered. Everything else the
-          // server happens to send is stated, not drawn as a gauge.
-          const metered = plan.metered.some((entry) => entry.key === limit.key);
+    <UbStack gap={4}>
+      <UbCard title={t('plan.card.title')}>
+        <UbText as="span" variant="h3">
+          {planName(t, plan.planCode)}
+        </UbText>
+      </UbCard>
+      <UbCard
+        title={t('plan.used.title')}
+        action={
+          plan.isNearMemberLimit || plan.isAtMemberLimit ? (
+            <UbStatusBadge
+              tone={plan.isAtMemberLimit ? 'error' : 'warning'}
+              label={t(plan.isAtMemberLimit ? 'plan.card.atLimit' : 'plan.card.nearLimit')}
+            />
+          ) : undefined
+        }
+      >
+        <UbStack as="ul" gap={4}>
+          {plan.limits.map((limit) => {
+            const noun = t(nounIdFor(limit.key));
+            const unlimited = isUnlimited(limit);
+            // DEC-001 — only the member count is metered. Everything else the
+            // server happens to send is stated, not drawn as a gauge.
+            const metered = plan.metered.some((entry) => entry.key === limit.key);
 
-          return (
-            <UbStack as="li" key={limit.key} gap={1.5}>
-              <UbStack direction="row" align="baseline" justify="between" gap={3}>
-                <UbText as="span" variant="body-sm-medium" className="flex items-center gap-2">
-                  {limit.key === 'max_users' && (
-                    <Users aria-hidden className="h-4 w-4 text-text-tertiary" />
-                  )}
-                  {noun}
-                </UbText>
-                {/* §23.2.6 — numerals stay Latin in Hindi, so the figure carries
+            return (
+              <UbStack as="li" key={limit.key} gap={1.5}>
+                <UbStack direction="row" align="baseline" justify="between" gap={3}>
+                  <UbText as="span" variant="body-sm-medium" className="flex items-center gap-2">
+                    {limit.key === 'max_users' && (
+                      <Users aria-hidden className="h-4 w-4 text-text-tertiary" />
+                    )}
+                    {t(`plan.row.${limit.key}`)}
+                  </UbText>
+                  {/* §23.2.6 — numerals stay Latin in Hindi, so the figure carries
                     its own direction rather than inheriting the sentence's. */}
-                <UbText as="span" variant="body-sm" tone="secondary" dir="ltr" className="ds-num">
-                  {unlimited
-                    ? t('plan.card.unlimited')
-                    : t('plan.near.body', { used: limit.used, limit: limit.limit ?? 0, noun })}
-                </UbText>
+                  <UbText as="span" variant="body-sm" tone="secondary" dir="ltr" className="ds-num">
+                    {unlimited
+                      ? t('plan.card.unlimited')
+                      : t('plan.near.body', { used: limit.used, limit: limit.limit ?? 0, noun })}
+                  </UbText>
+                </UbStack>
+                {metered && !unlimited && (
+                  <UbProgress used={limit.used} limit={limit.limit} ariaLabel={noun} />
+                )}
               </UbStack>
-              {metered && !unlimited && (
-                <UbProgress used={limit.used} limit={limit.limit} ariaLabel={noun} />
-              )}
-            </UbStack>
-          );
-        })}
-      </UbStack>
+            );
+          })}
+        </UbStack>
 
-      <UbText variant="caption" tone="tertiary" className="mt-4">
-        {t('plan.ledgerNote')}
-      </UbText>
-    </UbCard>
+        <UbText variant="caption" tone="tertiary" className="mt-4">
+          {t('plan.ledgerNote')}
+        </UbText>
+      </UbCard>
+    </UbStack>
   );
 }

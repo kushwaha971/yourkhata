@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 import { SnackbarHost } from 'src/components/layout/SnackbarHost';
-import { UbBottomBar } from 'src/design-system';
+import { UbBottomBar, UbDrawer } from 'src/design-system';
 import { UB_BOTTOM_INSET_PROPERTY, __resetBottomInset } from 'src/hooks/useBottomInset';
 import { hideSnackbar } from 'src/redux/slice/snackbarSlice';
 import { store } from 'src/redux/store';
@@ -152,7 +152,9 @@ describe('the two archetypes that own the bottom of the page declare it', () => 
     expect(bar).not.toBeNull();
     // It is still the sticky bar it always was.
     expect(bar?.className).toContain('sticky');
-    expect(bar?.className).toContain('bottom-0');
+    // `--ub-nav-offset` is 0 outside a phone screen with the bottom nav, so
+    // this is `bottom: 0` wherever the wizard is (it has no nav).
+    expect(bar?.className).toContain('bottom-[var(--ub-nav-offset)]');
   });
 });
 
@@ -167,21 +169,16 @@ describe('the toast viewport reads the custom property', () => {
     return viewport;
   };
 
-  it('is anchored top-centre, 25 px down — BrandHub CustomerSnackbar', () => {
+  it('clears bottom furniture on mobile and uses the measured desktop header (QA B19)', () => {
     const viewport = toastViewport();
 
-    /* The owner moved it (Sep 2026): top-centre at every width, the way
-       BrandHub's snackbar sits, clear of every bottom bar by construction.
-       The bottom-inset arithmetic below is kept: `UbBottomBar` still
-       publishes its height and a bottom-anchored overlay can use it. */
-    expect(viewport.className).toContain('top-[25px]');
+    expect(viewport.className).toContain('bottom-toast');
+    expect(viewport.className).toContain('lg:top-[var(--ub-toast-top)]');
     // The offsets it used to carry. `bottom-20` was a guess at the height of a
     // `UbBottomNav` that does not exist yet — a number per screen, in the toast.
     expect(viewport.className).not.toContain('bottom-20');
     expect(viewport.className).not.toContain('md:bottom-6');
-    // Bottom-centre at every width is a decision, not an oversight: see
-    // mlToastPrimitives.tsx. Nothing may quietly re-anchor it to a corner.
-    expect(viewport.className).not.toContain('right-0');
+    expect(viewport.className).toContain('lg:right-0');
     expect(viewport.className).toContain('inset-x-0');
   });
 
@@ -275,4 +272,35 @@ describe('the toast respects prefers-reduced-motion', () => {
     expect(TAILWIND).toMatch(/'fade-in':\s*'fade-in var\(--dur-fast\) var\(--ease-entrance\)'/);
     expect(TOKENS).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*--dur-fast:\s*0ms;/);
   });
+});
+
+it('publishes a dialog footer so an error toast cannot cover Discard changes', async () => {
+  /** R-DEC-14 visual defect: a failed-read toast hid the phone discard action. */
+  renderWithProviders(
+    <UbDrawer
+      open
+      title="Receive payment"
+      closeLabel="Close"
+      onOpenChange={jest.fn()}
+      footer={<button type="button">Discard changes</button>}
+    />
+  );
+  const footer = screen
+    .getByRole('button', { name: 'Discard changes' })
+    .closest<HTMLElement>('[data-ub-overlay-footer]');
+  expect(footer).not.toBeNull();
+  if (!footer) throw new Error('Missing overlay footer');
+  place(footer, VIEWPORT - 144, 144);
+  await waitFor(() => expect(publishedInset()).toBe('144px'));
+});
+
+it('clears the whole bottom stack when a register pager sits above navigation', async () => {
+  /** Defect: a pinned pager was above the phone nav, so height-only clearance let error toasts cover Next page. */
+  renderWithProviders(
+    <UbBottomBar sticky={false} clearToBottom data-testid="pager">
+      Next page
+    </UbBottomBar>
+  );
+  place(screen.getByTestId('pager'), VIEWPORT - 150, 60);
+  await waitFor(() => expect(publishedInset()).toBe('150px'));
 });

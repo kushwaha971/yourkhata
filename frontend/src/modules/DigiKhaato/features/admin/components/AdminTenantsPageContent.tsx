@@ -2,22 +2,19 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbButton,
   UbDataGrid,
-  UbFilterBar,
-  UbFilterChip,
-  UbFilterChipGroup,
   UbPageHeader,
   UbPageShell,
   UbSearchInput,
   UbStack,
   UbStatCard,
   UbStatGrid,
+  UbFilterSelect,
 } from 'src/design-system';
 import type { UbDataGridEmptyStates, UbGridState } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { adminTenantPath } from 'src/routes';
 
@@ -35,7 +32,7 @@ const EMPTY_PAGE = { page: 1, pageSize: 25, total: 0, totalPages: 1 };
  */
 export function AdminTenantsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const list = useAdminTenants();
   const { state } = list;
   const columns = useMemo(() => createTenantColumns(t), [t]);
@@ -100,18 +97,25 @@ export function AdminTenantsPageContent(): React.JSX.Element {
             <UbStatCard label={t('admin.stat.partners')} value={String(overview.partners)} />
           </UbStatGrid>
         ) : null}
-        <UbFilterBar>
-          <UbFilterChipGroup label={t('admin.tenants.column.status')}>
-            {ADMIN_TENANT_STATUSES.map((status) => (
-              <UbFilterChip
-                key={status}
-                label={t(`admin.status.${status}`)}
-                pressed={state.filters.status === status}
-                onToggle={(next) => list.setStatus(next ? status : null)}
-              />
-            ))}
-          </UbFilterChipGroup>
-        </UbFilterBar>
+        <UbStack direction="row" gap={2}>
+          <UbFilterSelect
+            spec={{
+              kind: 'single',
+              key: 'status',
+              label: t('admin.tenants.column.status'),
+              anyLabel: t('admin.status.any'),
+              options: ADMIN_TENANT_STATUSES.map((status) => ({
+                value: status,
+                label: t(`admin.status.${status}`),
+              })),
+            }}
+            value={state.filters.status ?? ''}
+            onChange={(status) =>
+              list.setStatus((status || null) as Parameters<typeof list.setStatus>[0])
+            }
+            closeLabel={t('common.action.close')}
+          />
+        </UbStack>
         <UbDataGrid
           rows={state.tenants}
           columns={columns}

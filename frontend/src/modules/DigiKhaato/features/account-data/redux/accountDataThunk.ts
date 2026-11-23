@@ -95,6 +95,19 @@ export const requestDeletion = createAsyncThunk<
   }
 });
 
+/** QUERY-like — a code to the owner's own mobile; it changes nothing held here. */
+export const requestDeleteCode = createAsyncThunk<
+  { readonly challengeId: string; readonly codeLength: number },
+  void,
+  { rejectValue: ApiErrorShape }
+>('accountData/requestDeleteCode', async (_arg, { rejectWithValue }) => {
+  try {
+    return await (await service()).requestDeleteCode();
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'data.delete.code.sendError'));
+  }
+});
+
 /** MUTATION — FR-4. */
 export const cancelDeletion = createAsyncThunk<DeletionState, void, { rejectValue: ApiErrorShape }>(
   'accountData/cancelDeletion',

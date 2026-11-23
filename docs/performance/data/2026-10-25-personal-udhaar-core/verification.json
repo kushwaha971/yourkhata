@@ -1,0 +1,34 @@
+{
+  "frontend": {
+    "suites": 440,
+    "tests": 4865,
+    "status": "passed",
+    "log": "/tmp/personal-core-jest2.log"
+  },
+  "backend": {
+    "passed": 443,
+    "skipped": 4,
+    "status": "passed",
+    "log": "/tmp/personal-core-backend2.log"
+  },
+  "gates": [
+    "changed-file lint",
+    "types",
+    "locale split/check",
+    "production build",
+    "bundle",
+    "contrast:174 pairs"
+  ],
+  "visual_frames": 70,
+  "real_journey_checks": 21,
+  "baseline": "9976dde58",
+  "performance": "old/new/old/new, 3 reps each, 6 samples per cell",
+  "limits": [
+    "Chromium emulation, not physical phone/PWA",
+    "OS contact picker simulated in list harness",
+    "No external messages/calls sent",
+    "Historical shared-tenant main-book ownership is unchanged",
+    "BP-21 deferred; no Shop work"
+  ],
+  "screenshots": "/Users/akashkushwaha/Documents/Codex/2026-10-02/https-railway-com-project-386b1ca4-ae4a/artifacts/personal-udhaar-core-2026-10-25"
+}

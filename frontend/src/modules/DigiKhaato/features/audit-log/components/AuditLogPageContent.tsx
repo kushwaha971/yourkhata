@@ -11,15 +11,20 @@ import {
   UbButton,
   UbDataGrid,
   UbDateRangePicker,
+  UbDisclosure,
+  UbFilterChip,
+  UbFilterChipGroup,
+  UbDrawerLoading,
+  UbFilterSelect,
   UbPageHeader,
-  UbPageShell,
   UbSearchInput,
-  UbSelect,
   UbStack,
   UbText,
 } from 'src/design-system';
 import type { UbDataGridEmptyStates, UbDataGridLabels, UbGridState } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useAuditLog } from '../hooks/useAuditLog';
 import {
@@ -34,7 +39,7 @@ import { createAuditColumns } from './AuditColumns';
 
 const AuditDetailDrawer = dynamic(
   () => import('./AuditDetailDrawer').then((module) => module.AuditDetailDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const PAGE_SIZE_OPTIONS: readonly number[] = [25, 50, 100];
@@ -189,42 +194,57 @@ export function AuditLogPageContent(): React.JSX.Element {
   );
 
   return (
-    <UbPageShell header={header}>
+    <SettingsFrame page="activity" header={header} wide>
       <UbStack gap={4}>
-        <UbDateRangePicker
-          presets={periodPresets}
-          preset={filters.period}
-          onPresetChange={handlePeriod}
-          customPreset="custom"
-          from={filters.dateFrom}
-          to={filters.dateTo}
-          onRangeChange={log.setRange}
-          max={log.today}
-          name="audit-period"
-          labels={{
-            presets: t('audit.filter.period'),
-            from: t('audit.filter.from'),
-            to: t('audit.filter.to'),
-          }}
-          end={
-            <UbStack direction="row" gap={2} wrap>
-              <UbSelect
-                value={filters.actorId ?? ALL}
-                onChange={handleActor}
-                options={actorOptions}
-                aria-label={t('audit.filter.actor')}
-                className="w-44"
-              />
-              <UbSelect
-                value={filters.group ?? ALL}
-                onChange={handleGroup}
-                options={groupOptions}
-                aria-label={t('audit.filter.action')}
-                className="w-40"
-              />
-            </UbStack>
-          }
-        />
+        {/* Design S7: filter by person, with chips — Everyone first. */}
+        <UbFilterChipGroup label={t('audit.filter.actor')} className="flex-wrap">
+          {actorOptions.map((option) => (
+            <UbFilterChip
+              key={option.value}
+              label={option.label}
+              pressed={(filters.actorId ?? ALL) === option.value}
+              onToggle={() => handleActor(option.value)}
+            />
+          ))}
+        </UbFilterChipGroup>
+        {/* The period and the kind of change, which the design has no place
+            for, stay under More filters, closed. */}
+        <UbDisclosure label={t('audit.filter.more')}>
+          <UbDateRangePicker
+            presets={periodPresets}
+            preset={filters.period}
+            onPresetChange={handlePeriod}
+            customPreset="custom"
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            onRangeChange={log.setRange}
+            max={log.today}
+            name="audit-period"
+            labels={{
+              presets: t('audit.filter.period'),
+              from: t('audit.filter.from'),
+              to: t('audit.filter.to'),
+              apply: t('common.action.apply'),
+              close: t('common.action.close'),
+            }}
+            end={
+              <>
+                <UbFilterSelect
+                  spec={{
+                    kind: 'single',
+                    key: 'action',
+                    label: t('audit.filter.action'),
+                    anyLabel: t('audit.filter.action.all'),
+                    options: groupOptions.filter((option) => option.value !== ALL),
+                  }}
+                  value={filters.group ?? ''}
+                  onChange={(value) => handleGroup(value || ALL)}
+                  closeLabel={t('common.action.close')}
+                />
+              </>
+            }
+          />
+        </UbDisclosure>
 
         <UbDataGrid
           rows={rows}
@@ -258,6 +278,6 @@ export function AuditLogPageContent(): React.JSX.Element {
       </UbStack>
 
       {log.selected && <AuditDetailDrawer log={log} />}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

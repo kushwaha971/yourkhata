@@ -51,6 +51,19 @@ export type { UbBoxProps } from './UbBox';
  */
 export { UbBottomBar } from './UbBottomBar';
 export type { UbBottomBarElement, UbBottomBarProps } from './UbBottomBar';
+// docs/mobile-redesign — the phone's navigation bar (below `lg`).
+export { UbBottomNav } from './UbBottomNav';
+export type { UbBottomNavItem, UbBottomNavProps } from './UbBottomNav';
+export { UbMenuList } from './UbMenuList';
+export { UbTaskBar } from './UbTaskBar';
+export type { UbTaskBarProps } from './UbTaskBar';
+export { UbTotalDock } from './UbTotalDock';
+export { UbAttentionList, UbHeroPair, UbMiniStatStrip, UbQuickActions } from './UbHomeBlocks';
+export type { UbAttentionItem, UbHeroFigure, UbMiniStat, UbQuickAction } from './UbHomeBlocks';
+export type { UbTotalDockProps } from './UbTotalDock';
+export { UbActionSheet, UbMoreActions, useUbActionPresentation } from './UbActionSheet';
+export type { UbActionPresentation, UbActionSheetProps, UbMoreActionsProps } from './UbActionSheet';
+export type { UbMenuListProps, UbMenuListRow } from './UbMenuList';
 
 export { UbDivider } from './UbDivider';
 export type { UbDividerOrientation, UbDividerProps } from './UbDivider';
@@ -67,6 +80,14 @@ export type { UbLinkProps } from './UbLink';
  */
 export { UbLogo } from './UbLogo';
 export type { UbLogoProps, UbLogoSize, UbLogoTone, UbLogoVariant } from './UbLogo';
+
+/**
+ * CR-2026-09-29-PLATFORM-C — structured data. A server-rendered
+ * `<script type="application/ld+json">` with the escaping written once; the
+ * landing page is its only caller.
+ */
+export { UbJsonLd, serializeJsonLd } from './UbJsonLd';
+export type { UbJsonLdProps } from './UbJsonLd';
 
 export { UbListItemText } from './UbListItemText';
 export type { UbListItemTextProps } from './UbListItemText';
@@ -102,13 +123,21 @@ export type { UbEmptyStateProps, UbEmptyStateVariant } from './UbEmptyState';
 export { UbRequestId, formatRequestReference } from './UbRequestId';
 export type { UbRequestIdFields, UbRequestIdProps } from './UbRequestId';
 
-export { UbPageHeader } from './UbPageHeader';
-export type { UbPageHeaderProps, UbPageHeaderWidth } from './UbPageHeader';
+export { UbPageHeader, UbPageHeaderMobileActions } from './UbPageHeader';
+export type { UbPageHeaderMobile, UbPageHeaderProps, UbPageHeaderWidth } from './UbPageHeader';
 
 export { UbPageShell } from './UbPageShell';
+export { UbViewportPageShell } from './UbPageShell/UbViewportPageShell';
 export type { UbPageShellProps, UbPageShellWidth } from './UbPageShell';
 
 export { UbPageSkeleton, UbSkeleton } from './UbSkeleton';
+export { SLOW_LOADING_MS, UbSlowLoadingNote } from './UbSlowLoadingNote';
+export {
+  UB_LOADING_LABELS_EN,
+  UbLoadingLabelsProvider,
+  useUbLoadingLabels,
+} from './UbLoadingLabels';
+export type { UbLoadingLabels } from './UbLoadingLabels';
 export type { UbSkeletonProps, UbSkeletonVariant } from './UbSkeleton';
 
 export { UB_SNACKBAR_AUTO_HIDE_MS, UbSnackbar } from './UbSnackbar';
@@ -118,6 +147,8 @@ export { UbStatusBadge } from './UbStatusBadge';
 export type { UbStatusBadgeProps, UbStatusBadgeTone } from './UbStatusBadge';
 
 export { UbSearchInput } from './UbSearchInput';
+export { UbLoadMore } from './UbLoadMore';
+export type { UbLoadMoreProps } from './UbLoadMore';
 export type { UbSearchInputProps } from './UbSearchInput';
 export { UbSectionHeading } from './UbSectionHeading';
 export type { UbSectionHeadingProps } from './UbSectionHeading';
@@ -147,15 +178,54 @@ export type { UbInputHintProps } from './UbInputHint';
 // `UbDateInput`'s quick choices once PTY-02 needed the same pill three more
 // times.
 export { UbFilterBar, UbFilterChip, UbFilterChipGroup } from './UbFilterChip';
+// Owner, 6 Oct 2026: stat cards fold into one summary line, expandable.
+export { UbCountLine } from './UbCountLine';
+export type { UbCountLineItem, UbCountLineProps, UbCountLineValue } from './UbCountLine';
+export { UbStatSummary } from './UbStatSummary';
+export type { UbStatSummaryItem, UbStatSummaryProps } from './UbStatSummary';
+// Owner-approved filter pattern (6 Oct 2026): dropdowns, one Filters drawer,
+// and pills for what is on — replacing rows of chips on list screens.
+export {
+  UbActiveFilters,
+  UbFilterSelect,
+  UbFilterSheet,
+  UbPeriodSelect,
+  appliedCount,
+  appliedLabel,
+  isApplied,
+} from './UbFilters';
+export type {
+  UbActiveFiltersProps,
+  UbFilterDateRangeSpec,
+  UbFilterMultiSpec,
+  UbFilterOption,
+  UbFilterSelectProps,
+  UbFilterSheetLabels,
+  UbFilterSheetProps,
+  UbFilterSingleSpec,
+  UbFilterSpec,
+  UbFilterValues,
+  UbPeriodPreset,
+  UbPeriodSelectProps,
+} from './UbFilters';
 export type { UbFilterBarProps, UbFilterChipGroupProps, UbFilterChipProps } from './UbFilterChip';
 
 // ── Wave 1 — controls ────────────────────────────────────────────────────────
 export { UbButton } from './UbButton';
+// CR-2026-09-29-SEC-A — the support session's view-only region, read by UbButton/UbFab.
+export { UbViewOnlyProvider, useUbViewOnly } from './UbViewOnly';
+export type { UbViewOnlyProviderProps } from './UbViewOnly';
 export type { UbButtonProps, UbButtonSize, UbButtonVariant } from './UbButton';
 export { UbActionLink } from './UbActionLink';
 export type { UbActionLinkProps } from './UbActionLink';
 export { UbChoiceChips } from './UbChoiceChips';
 export type { UbChoiceChipOption, UbChoiceChipsProps } from './UbChoiceChips';
+export { UbEditTable } from './UbEditTable';
+export type { UbEditTableColumn, UbEditTableProps, UbEditTableRow } from './UbEditTable';
+export { UbQuantityStepper } from './UbQuantityStepper';
+export type { UbQuantityStepperProps } from './UbQuantityStepper';
+export { UbSegmentedControl } from './UbSegmentedControl';
+export type { UbSegmentedControlProps, UbSegmentedOption } from './UbSegmentedControl';
 
 export { UbCheckbox } from './UbCheckbox';
 export type { UbCheckboxProps } from './UbCheckbox';
@@ -178,6 +248,8 @@ export type { UbPhoneInputProps } from './UbPhoneInput';
 
 export { progressTone, UbProgress, usagePercent } from './UbProgress';
 export type { UbProgressProps } from './UbProgress';
+export { UbRouteProgress } from './UbRouteProgress';
+export type { UbRouteProgressProps } from './UbRouteProgress';
 
 export { UbRadioGroup } from './UbRadioGroup';
 export type { UbRadioGroupProps } from './UbRadioGroup';
@@ -191,7 +263,7 @@ export type { UbSelectOption, UbSelectProps } from './UbSelect';
 
 export { UbDisclosure } from './UbDisclosure';
 export type { UbDisclosureProps } from './UbDisclosure';
-export { UbDrawer } from './UbDrawer';
+export { UbDrawer, UbDrawerLoading } from './UbDrawer';
 export type { UbDrawerProps } from './UbDrawer';
 export { UbMoneyInput, groupIndian, padDecimals, sanitiseAmount } from './UbMoneyInput';
 export type { UbMoneyInputProps } from './UbMoneyInput';
@@ -199,7 +271,11 @@ export type { UbMoneyInputProps } from './UbMoneyInput';
 export { UbQuantityInput, sanitiseQuantity } from './UbQuantityInput';
 export type { UbQuantityInputProps } from './UbQuantityInput';
 export { UbAsyncCombobox } from './UbAsyncCombobox';
-export type { UbAsyncComboboxOption, UbAsyncComboboxProps } from './UbAsyncCombobox';
+export type {
+  UbAsyncComboboxOption,
+  UbAsyncComboboxPaging,
+  UbAsyncComboboxProps,
+} from './UbAsyncCombobox';
 export { UbLineItemsEditor } from './UbLineItemsEditor';
 export type {
   UbLineCellContext,
@@ -207,10 +283,12 @@ export type {
   UbLineItemsColumn,
   UbLineItemsEditorLabels,
   UbLineItemsEditorProps,
+  UbLineFocusRequest,
 } from './UbLineItemsEditor';
 export { UbDateInput, isoFinancialYearStart, isoToday } from './UbDateInput';
 export type { UbDateInputProps, UbDateQuickChoice } from './UbDateInput';
 
+export { UbPicture, type UbPictureProps } from './UbPicture';
 export { UbPopover } from './UbPopover';
 export type { UbPopoverProps } from './UbPopover';
 export { UbSwitch } from './UbSwitch';
@@ -225,6 +303,9 @@ export { UbFileUpload } from './UbFileUpload';
 export type { UbFileUploadProps } from './UbFileUpload';
 export { UbImagePreview } from './UbImagePreview';
 export type { UbImagePreviewProps } from './UbImagePreview';
+// A16 / R33 — the UPI QR, shared by every printed and on-screen document.
+export { UbQrCode } from './UbQrCode';
+export type { UbQrCodeProps } from './UbQrCode';
 export { UbColorInput } from './UbColorInput';
 export type { UbColorInputProps } from './UbColorInput';
 
@@ -242,7 +323,7 @@ export type { UbTokenInputOption, UbTokenInputProps } from './UbTokenInput';
 export { UbConfirmDialog } from './UbConfirmDialog';
 export type { UbConfirmDialogProps } from './UbConfirmDialog';
 
-export { UbDialog } from './UbDialog';
+export { UbDialog, UbDialogLoading } from './UbDialog';
 export type { UbDialogProps } from './UbDialog';
 
 // ── Wave 3 — Sprint 3 §32.6.4 ────────────────────────────────────────────────
@@ -257,6 +338,9 @@ export type { UbDialogProps } from './UbDialog';
  */
 export { UbShareSheet } from './UbShareSheet';
 export type { UbShareChannel, UbShareSheetLabels, UbShareSheetProps } from './UbShareSheet';
+/** `UbMessageBox` — the sheet's editable message box, for a flow that is not a sheet ("Remind all"). */
+export { UbMessageBox, finalMessage, isBlankMessage } from './UbShareSheet';
+export type { UbMessageBoxLabels, UbMessageBoxProps } from './UbShareSheet';
 export { UbDateRangePicker } from './UbDateRangePicker';
 export type {
   UbDateRangePickerLabels,
@@ -297,6 +381,7 @@ export {
   loadColumnVisibility,
   MAX_CARD_META,
   MD_QUERY,
+  preloadGridTable,
   UbDataGrid,
   UbDataGridEmptyState,
   UbDataGridMobileList,
@@ -381,3 +466,40 @@ export type {
   UbRankedParty,
   UbTrendPoint,
 } from './charts/chartTypes';
+
+// ── The public landing page (`/`) — motion and media ─────────────────────────
+/**
+ * Built for the landing page and kept general: a silent product loop that
+ * costs nothing until it is near the viewport (`UbVideo`), the device it sits
+ * in (`UbDeviceFrame`), a below-the-fold entrance that never hides content from
+ * a visitor without JavaScript (`UbReveal`), a rotating word that is decoration
+ * over a complete accessible sentence (`UbRotatingText`) and a pill tab row
+ * with a sliding indicator (`UbChipTabs`). The hooks under them are exported so
+ * a feature never writes a second IntersectionObserver or matchMedia listener.
+ * See docs/DESIGN-SYSTEM.md §4.
+ */
+export { UbVideo } from './UbVideo';
+export type { UbVideoLabels, UbVideoPoster, UbVideoProps, UbVideoSource } from './UbVideo';
+export { UbDeviceFrame } from './UbDeviceFrame';
+export type { UbDeviceFrameProps, UbDeviceFrameVariant } from './UbDeviceFrame';
+export { UbAmbientGlow } from './UbAmbientGlow';
+export { UbReveal } from './UbReveal';
+export type { UbRevealProps } from './UbReveal';
+export { UbRotatingText } from './UbRotatingText';
+export type { UbRotatingTextProps } from './UbRotatingText';
+export { UbChipTabs } from './UbChipTabs';
+export type { UbChipTab, UbChipTabsProps } from './UbChipTabs';
+export {
+  matchesNow,
+  MOBILE_LAYER_QUERY,
+  REDUCED_MOTION_QUERY,
+  useInView,
+  useIsMobileLayer,
+  useMediaQuery,
+  usePrefersReducedMotion,
+} from './motion';
+export type { UseInViewOptions } from './motion';
+export { UbShopKindIcon } from './UbShopKindIcon';
+export type { UbShopKind, UbShopKindIconProps } from './UbShopKindIcon';
+export { UbScanSheet, REPEAT_MS, UbScanButton } from './UbScanSheet';
+export type { UbScanSheetProps } from './UbScanSheet';

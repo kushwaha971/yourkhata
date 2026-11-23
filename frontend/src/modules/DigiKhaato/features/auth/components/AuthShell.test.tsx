@@ -1,10 +1,8 @@
 import { screen } from '@testing-library/react';
 
 import { UbText } from 'src/design-system';
+import { en, hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-
-import en from 'locales/en.json';
-import hi from 'locales/hi.json';
 
 import { AuthShell } from './AuthShell';
 
@@ -40,7 +38,7 @@ describe('AuthShell — the brand', () => {
       </AuthShell>
     );
 
-    expect(screen.getByRole('img', { name: 'DigiKhaato' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'YourKhata' })).toBeInTheDocument();
   });
 
   it('sets the mark BEFORE the content, in the DOM as well as on the screen', () => {
@@ -50,7 +48,7 @@ describe('AuthShell — the brand', () => {
       </AuthShell>
     );
 
-    const mark = screen.getByRole('img', { name: 'DigiKhaato' });
+    const mark = screen.getByRole('img', { name: 'YourKhata' });
     const form = screen.getByText('the form');
     // Node.DOCUMENT_POSITION_FOLLOWING — the form comes after the mark.
     expect(mark.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

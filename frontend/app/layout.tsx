@@ -1,9 +1,16 @@
 import { cookies } from 'next/headers';
 
 import { AppProviders } from 'src/components/providers/AppProviders';
-import { APP_NAME } from 'src/constants';
-import { dmSans, epilogue, fraunces, inter, notoDevanagari } from 'src/fonts';
+import {
+  APP_NAME,
+  BING_SITE_VERIFICATION,
+  GOOGLE_SITE_VERIFICATION,
+  SITE_URL,
+} from 'src/constants';
+import { jakarta, mukta } from 'src/lib/fonts';
+import { BRAND_INIT, THEME_INIT } from 'src/utils/bootScripts';
 import { LOCALE_COOKIE, THEME_CHOICE_COOKIE } from 'src/utils/cookieUtils';
+import { siteVerification } from 'src/utils/seo';
 
 import { SessionBootstrap } from 'modules/DigiKhaato/features/auth/components/SessionBootstrap';
 
@@ -35,31 +42,10 @@ import './globals.css';
  */
 
 /**
- * Resolve the theme before first paint.
- *
- * The fallback is `light`, not `prefers-color-scheme`. It used to be the media
- * query, which is why a merchant on a Mac set to Dark got a dark khata: the OS
- * decided, the specification said light, and the specification lost. §19.8.4's
- * reason for light is that the product is used in bright shops on cheap screens
- * — the operating system of the phone or laptop knows nothing about that.
- *
- * Only an explicit choice is read, and `ub_theme_choice` only ever holds one —
- * see `cookieUtils` for why it is not the old `ub_theme`.
+ * THEME_INIT and BRAND_INIT — the theme and the tenant's brand ramp, resolved
+ * before first paint. Built in `src/utils/bootScripts.ts` from the same cookie
+ * name and storage key their writers use, and executed by a test there.
  */
-const THEME_INIT = `(function(){try{var m=document.cookie.match(/(?:^|; )${THEME_CHOICE_COOKIE}=([^;]*)/);var t=m&&decodeURIComponent(m[1]);document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
-
-/**
- * WLB-01 FR-4 — the tenant's brand ramp, before first paint.
- *
- * `WhiteLabelSync` writes the ramp it applied to `localStorage` (`ub.theme_cache`,
- * `{tenantId, vars}`); this replays it before React exists, so a teal shop does
- * not open in indigo and turn teal a moment later. The session that loads next
- * corrects it if the active business changed (EC-6) — at worst one frame of the
- * previous brand, never the previous business's data. Only `--primary-*` and
- * the two accent aliases are ever in the cache; anything else is ignored.
- */
-const BRAND_INIT = `(function(){try{var c=JSON.parse(localStorage.getItem('ub.theme_cache')||'null');if(!c||!c.vars)return;var s=document.documentElement.style;for(var k in c.vars){if(/^--(primary-[0-9]+|accent-quiet|accent-line)$/.test(k))s.setProperty(k,String(c.vars[k]));}}catch(e){}})();`;
-
 export const metadata: Metadata = {
   /**
    * CR-2026-09-19-D — a template rather than a bare name, so every route can
@@ -69,10 +55,31 @@ export const metadata: Metadata = {
    */
   title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
   applicationName: APP_NAME,
-  description: "Your shop's khata, bills and stock in one book.",
+  /**
+   * CR-2026-09-29-PLATFORM-C — relative metadata URLs (a canonical, an
+   * og:image) resolve against the public origin, not the request's Host, so a
+   * preview fetched from any address points at yourkhata.com. The default
+   * description is what /login, /signup and the legal pages inherit; it is the
+   * platform line, with none of the old shop-only jargon (vision §4).
+   */
+  metadataBase: new URL(SITE_URL),
+  description:
+    'Customers, money in and out, GST bills, stock and payments for your business, in one place.',
   manifest: '/manifest.webmanifest',
+  // Search Console / Bing ownership tags, when the build has the codes.
+  verification: siteVerification(GOOGLE_SITE_VERIFICATION, BING_SITE_VERIFICATION),
+  /**
+   * CR-2026-09-29-BRAND-C — K-c "Bandhan", the tied bahi cover. The PNGs are
+   * rendered from `public/brand/` by `scripts/render-brand.mjs`. The SVG
+   * favicon is the hand-cut 16 px file, not the master: a browser paints the
+   * SVG at tab size whatever the master was drawn for, and the master's hem
+   * and knot strings are sub-pixel noise there. The 16 px cut is on the pixel
+   * grid and stays sharp at 2x.
+   */
   icons: {
     icon: [
+      { url: '/brand/yourkhata-mark-16.svg', type: 'image/svg+xml' },
+      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
       { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
@@ -81,7 +88,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#4A47D6',
+  themeColor: '#0E7C86',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -100,7 +107,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       data-theme={theme}
-      className={`${dmSans.variable} ${inter.variable} ${fraunces.variable} ${epilogue.variable} ${notoDevanagari.variable}`}
+      className={`${jakarta.variable} ${mukta.variable}`}
       suppressHydrationWarning
     >
       <head>

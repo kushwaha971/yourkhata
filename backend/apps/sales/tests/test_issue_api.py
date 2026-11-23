@@ -12,7 +12,7 @@ from django.urls import reverse
 from apps.common.audit import AuditAction
 from apps.inventory.models import ItemStock, StockMovement
 from apps.ledger.models import LedgerEntry
-from apps.ledger.selectors.entry import computed_balance
+from apps.ledger.selectors.entry import computed_shop_balance
 from apps.platform_app.models import AuditLog, DocumentSequence, TenantSetting
 from apps.sales.models import SalesDocument
 from apps.sales.tests.conftest import INVOICES, cash, draft, invoice_url, issue, line, money
@@ -69,9 +69,9 @@ def test_credit_sale_posts_stock_ledger_number_and_audit(
     assert (entry.source_type, str(entry.source_id)) == ("sales_document", doc["id"])
     party.refresh_from_db()
     assert (
-        party.balance
+        party.shop_balance
         == Decimal("1772.00")
-        == computed_balance(tenant=party.tenant, party_id=party.id)
+        == computed_shop_balance(tenant=party.tenant, party_id=party.id)
     )
     moves = StockMovement.objects.filter(source_type="sales_document", source_id=doc["id"])
     assert sorted(m.qty for m in moves) == [Decimal("-4.000"), Decimal("-3.000"), Decimal("-2.000")]
@@ -157,7 +157,7 @@ def test_walk_in_requires_full_payment_and_posts_no_ledger(owner: Any, make_item
     none = issue(owner, doc["id"])
     assert none.status_code == 400 and "payment" in none.json()["error"]["details"]
     partial = issue(owner, doc["id"], payment=cash("100.00"))
-    assert partial.json()["error"]["details"]["payment"] == ["Walk-in sale must be paid in full"]
+    assert partial.json()["error"]["details"]["payment"] == ["quick sale must be paid in full"]
     split = {
         "mode_breakup": [
             {"mode": "upi", "amount": "150.00", "reference": "UTR1"},
@@ -172,13 +172,16 @@ def test_walk_in_requires_full_payment_and_posts_no_ledger(owner: Any, make_item
     assert not LedgerEntry.objects.exists()
 
 
-def test_party_payment_at_issue_is_deferred_to_payments(
+def test_party_payment_at_issue_is_recorded_through_payments(
     owner: Any, make_item: Any, make_party: Any
 ) -> None:
-    """The PAY-01 seam — a party sale takes no payment at issue this wave (no second payment writer)."""
+    """PAY-01 replaced the seam — a party sale may take a payment at issue, and it becomes
+    a receipt (the payments suite covers the allocation and the khata in full)."""
     doc = draft(owner, party_id=str(make_party().id), lines=[line(make_item())]).json()["data"]
     response = issue(owner, doc["id"], payment=cash("472.50"))
-    assert response.status_code == 400 and "payment" in response.json()["error"]["details"]
+    assert response.status_code == 200, response.json()
+    assert response.json()["data"]["amount_paid"] == "472.50"
+    assert response.json()["data"]["payment"]["number"].startswith("RCT/")
 
 
 def test_credit_limit_warn_block_and_override(

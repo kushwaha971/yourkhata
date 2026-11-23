@@ -55,6 +55,12 @@ const expenseFormSlice = createSlice({
   name: 'expenseForm',
   initialState,
   reducers: {
+    expenseRepeatOpened(state, action: PayloadAction<ExpenseFormValues>) {
+      if (state.open || state.draft) return;
+      state.draft = action.payload as Draft<ExpenseFormValues>;
+      state.open = true;
+      state.status = 'idle';
+    },
     expenseDrawerOpened(state) {
       state.open = true;
       state.status = 'idle';
@@ -139,6 +145,7 @@ const expenseFormSlice = createSlice({
 
 export const {
   expenseDrawerOpened,
+  expenseRepeatOpened,
   expenseDrawerClosed,
   expenseDraftDiscarded,
   expenseDetailOpened,

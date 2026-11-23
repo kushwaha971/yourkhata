@@ -365,7 +365,7 @@ def set_party_tags(*, ctx: Ctx, party: Party, names: list[str]) -> list[Tag]:
     # "Camp Area" and "camp area" among them — with "Up to 10 tags per party",
     # about a party that would have ended up carrying exactly ten.
     if len(wanted) > MAX_TAGS_PER_PARTY:
-        raise ValidationFailed({"tags": [f"Up to {MAX_TAGS_PER_PARTY} tags per party."]})
+        raise ValidationFailed({"tags": [f"Up to {MAX_TAGS_PER_PARTY} tags per contact."]})
 
     PartyTag.objects.filter(party=party).exclude(tag_id__in=wanted).delete()
     PartyTag.objects.bulk_create(
@@ -413,9 +413,9 @@ def bulk_tag(*, ctx: Ctx, party_ids: list[Any], tag_names: list[str], mode: str)
     if mode not in ("add", "replace", "remove"):
         raise ValidationFailed({"mode": ["Unknown mode."]})
     if not party_ids:
-        raise ValidationFailed({"party_ids": ["Select at least one party."]})
+        raise ValidationFailed({"party_ids": ["Select at least one contact."]})
     if len(party_ids) > MAX_BULK_PARTIES:
-        raise ValidationFailed({"party_ids": [f"Select up to {MAX_BULK_PARTIES} parties."]})
+        raise ValidationFailed({"party_ids": [f"Select up to {MAX_BULK_PARTIES} contacts."]})
     if not tag_names or len(tag_names) > 5:
         raise ValidationFailed({"tag_names": ["Choose between 1 and 5 tags."]})
 
@@ -481,7 +481,7 @@ def bulk_tag(*, ctx: Ctx, party_ids: list[Any], tag_names: list[str], mode: str)
     if mode == "replace" and len(tag_ids) > MAX_TAGS_PER_PARTY:
         # Unreachable while `tag_names` caps at five, and here so that raising
         # one limit cannot silently breach the other.
-        raise ValidationFailed({"tag_names": [f"Up to {MAX_TAGS_PER_PARTY} tags per party."]})
+        raise ValidationFailed({"tag_names": [f"Up to {MAX_TAGS_PER_PARTY} tags per contact."]})
 
     # Everything every selected party currently holds, in ONE query.
     #

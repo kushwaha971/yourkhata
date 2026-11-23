@@ -568,6 +568,8 @@ IX(tenant_id, payment_date DESC), IX(tenant_id, party_id, payment_date DESC), IX
 
 **`reports_export`** — `report_name`, `params jsonb`, `format`, `status`, `file_attachment_id`, `row_count`, `expires_at`. Files expire after 7 days.
 
+**`reports_snapshot`** — a cache of one computed report, never a record: `report_name varchar(64)`, `as_of date`, `params_hash varchar(64)` (what the payload was computed for), `payload jsonb`, `row_count int NULL`, `computed_at`. U(tenant_id, report_name, as_of, params_hash). Deleting every row loses only speed, so the full data export leaves it out.
+
 **`help_article`** (P2, global) — per research §D.4 content model: `slug`, `locale`, `title`, `body_md`, `topic`, `tags text[]`, `related text[]`, `screen_ids text[]`, `status`, `version`, `published_at`. **`help_feedback`**, **`help_search_log`**.
 
 ## 21.4 Index & performance strategy

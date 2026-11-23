@@ -1,0 +1,248 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+
+import type { ApiErrorShape } from 'src/types/api.types';
+import { toApiError } from 'src/utils/apiError';
+
+import type {
+  DebitNoteWireBody,
+  PurchaseBillListQuery,
+  PurchaseBillWireBody,
+  PurchasePaymentWireBody,
+} from '../api/purchaseBillService';
+import type {
+  DuplicateSupplierInvoice,
+  PurchaseBillEnvelope,
+  PurchaseBillListPage,
+  PurchaseKind,
+} from '../types/purchase.types';
+
+/** Shop item 3 — a thunk's argument names its kind when it is an order's. */
+type ById = string | { readonly id: string; readonly kind: PurchaseKind };
+const byId = (arg: ById): { readonly id: string; readonly kind: PurchaseKind } =>
+  typeof arg === 'string' ? { id: arg, kind: 'purchase_bill' } : arg;
+
+/**
+ * Part 19 §19.3.3 — one service call each, and a catch that normalises.
+ *
+ * The service is imported INSIDE each thunk (the expenses and sales thunks
+ * record why): a service imported at the top of this file would ship to every
+ * route through the invalidation registry, which imports every thunk.
+ */
+const service = () => import('../api/purchaseBillService');
+
+type Reject = { rejectValue: ApiErrorShape };
+
+/** QUERY. PUR-03 — one page of the list with its totals and tab counts. */
+export interface PurchaseBillListArg extends PurchaseBillListQuery {
+  readonly kind?: PurchaseKind;
+  /** Client presentation mode; `purchaseBillListQuery` whitelists wire parameters. */
+  readonly mode?: 'replace' | 'append';
+}
+
+export const fetchPurchaseBillList = createAsyncThunk<
+  PurchaseBillListPage,
+  PurchaseBillListArg,
+  Reject
+>('purchaseBillList/fetchPurchaseBillList', async (arg, { signal, rejectWithValue }) => {
+  const { kind = 'purchase_bill', mode: _mode, ...filters } = arg;
+  try {
+    return await (await service()).listPurchaseBills(filters, signal, kind);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'purchases.list.error.title'));
+  }
+});
+
+/** QUERY. PUR-01 FR-9 — one bill, for the detail page and for editing a draft. */
+export const fetchPurchaseBill = createAsyncThunk<PurchaseBillEnvelope, ById, Reject>(
+  'purchaseBill/fetchPurchaseBill',
+  async (arg, { signal, rejectWithValue }) => {
+    const { id, kind } = byId(arg);
+    try {
+      return await (await service()).getPurchaseBill(id, signal, kind);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'purchases.detail.error.title'));
+    }
+  }
+);
+
+export interface SavePurchaseDraftArg {
+  /** Shop item 3 — absent is a bill. */
+  readonly kind?: PurchaseKind;
+  readonly id: string | null;
+  readonly version: number | null;
+  readonly body: PurchaseBillWireBody;
+  /** Autosave: failures show in the header indicator, not as a toast. */
+  readonly quiet: boolean;
+}
+
+/** MUTATION. POST the first time, PATCH with the version read after that (FR-1, FR-8). */
+export const savePurchaseBillDraft = createAsyncThunk<
+  PurchaseBillEnvelope,
+  SavePurchaseDraftArg,
+  Reject
+>('purchaseBillEditor/savePurchaseBillDraft', async ({ id, version, body, quiet, kind }, api) => {
+  try {
+    const client = await service();
+    return id
+      ? await client.updatePurchaseBill(id, { ...body, version }, { quiet, kind })
+      : await client.createPurchaseBill(body, { quiet, kind });
+  } catch (error) {
+    return api.rejectWithValue(toApiError(error, 'purchases.editor.error.save'));
+  }
+});
+
+export interface RecordPurchaseBillArg {
+  readonly id: string;
+  readonly version: number;
+  readonly idempotencyKey: string;
+  /** PUR-01 FR-6h "Paid now" — PAY-01's `mode_breakup`; absent, the bill goes on credit. */
+  readonly payment?: PurchasePaymentWireBody | null;
+}
+
+/** MUTATION. FR-6 — the key is reused on a retry and rotated only on a new attempt (BR-13). */
+export const recordPurchaseBill = createAsyncThunk<
+  PurchaseBillEnvelope,
+  RecordPurchaseBillArg,
+  Reject
+>(
+  'purchaseBillEditor/recordPurchaseBill',
+  async ({ id, version, idempotencyKey, payment }, api) => {
+    try {
+      const body: PurchaseBillWireBody = payment ? { version, payment } : { version };
+      return await (await service()).recordPurchaseBill(id, body, idempotencyKey);
+    } catch (error) {
+      return api.rejectWithValue(toApiError(error, 'purchases.editor.error.record'));
+    }
+  }
+);
+
+/** MUTATION. FR-8 — drafts only; a recorded bill is voided. */
+export const deletePurchaseBillDraft = createAsyncThunk<string, ById, Reject>(
+  'purchaseBillEditor/deletePurchaseBillDraft',
+  async (arg, { rejectWithValue }) => {
+    const { id, kind } = byId(arg);
+    try {
+      await (await service()).deletePurchaseBill(id, kind);
+      return id;
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'purchases.editor.error.delete'));
+    }
+  }
+);
+
+/** MUTATION. PUR-04 — reverse stock and the supplier's khata, keep the number. */
+export const voidPurchaseBill = createAsyncThunk<
+  PurchaseBillEnvelope,
+  { readonly id: string; readonly reason: string },
+  Reject
+>('purchaseBill/voidPurchaseBill', async ({ id, reason }, { rejectWithValue }) => {
+  try {
+    return await (await service()).voidPurchaseBill(id, reason);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'purchases.void.error'));
+  }
+});
+
+/**
+ * MUTATION. Shop item 3 — an order's moves: `send` (numbered), `cancel` (with the
+ * reason) and `create-bill`, whose payload is the new DRAFT bill.
+ */
+export const movePurchaseOrder = createAsyncThunk<
+  PurchaseBillEnvelope,
+  {
+    readonly id: string;
+    readonly verb: 'send' | 'cancel' | 'create-bill';
+    readonly version?: number;
+    readonly reason?: string;
+  },
+  Reject
+>('purchaseBill/movePurchaseOrder', async ({ id, verb, version, reason }, { rejectWithValue }) => {
+  try {
+    const body: PurchaseBillWireBody = {};
+    if (version !== undefined) body.version = version;
+    if (reason) body.reason = reason;
+    return await (await service()).movePurchaseOrder(id, verb, body);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'purchases.order.error.move'));
+  }
+});
+
+/**
+ * MUTATION. Shop P0 (PUR-07) — goods back to the supplier: written and issued at once,
+ * stock out, the supplier's khata and the bill's due both less.
+ */
+export const issueDebitNote = createAsyncThunk<
+  PurchaseBillEnvelope,
+  DebitNoteWireBody & { readonly idempotencyKey: string },
+  Reject
+>('purchaseBill/issueDebitNote', async ({ idempotencyKey, ...body }, { rejectWithValue }) => {
+  try {
+    return await (await service()).issueDebitNote(body, idempotencyKey);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'purchases.debitNote.error'));
+  }
+});
+
+/** MUTATION. Shop P0 — the goods came back to the shelf, the bill owes again. */
+export const voidDebitNote = createAsyncThunk<
+  PurchaseBillEnvelope,
+  { readonly id: string; readonly reason: string },
+  Reject
+>('purchaseBill/voidDebitNote', async ({ id, reason }, { rejectWithValue }) => {
+  try {
+    return await (await service()).voidDebitNote(id, reason);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'purchases.debitNote.void.error'));
+  }
+});
+
+/** QUERY. FR-7 — on blur of the supplier invoice number; quiet, null on any failure. */
+export const checkDuplicateSupplierInvoice = createAsyncThunk<
+  DuplicateSupplierInvoice | null,
+  { readonly partyId: string; readonly number: string; readonly excludeId: string | null },
+  Reject
+>('purchaseBillEditor/checkDuplicateSupplierInvoice', async (arg) => {
+  try {
+    return await (
+      await service()
+    ).findDuplicateSupplierInvoice(arg.partyId, arg.number, arg.excludeId);
+  } catch {
+    return null;
+  }
+});
+
+export interface PurchaseContext {
+  readonly gstType: 'regular' | 'composition' | 'unregistered';
+  readonly stateCode: string;
+  readonly rates: Readonly<Record<string, { rate: string; cessRate: string }>>;
+  readonly rateOptions: readonly { code: string; name: string }[];
+  readonly ratesDate: string;
+}
+
+/** QUERY. The shop's GST type and state, and the rates selectable on the bill's date. */
+export const fetchPurchaseContext = createAsyncThunk<PurchaseContext, string, Reject>(
+  'purchaseBillEditor/fetchPurchaseContext',
+  async (asOf, { signal, rejectWithValue }) => {
+    try {
+      const [{ fetchTenant }, { listTaxRates }] = await Promise.all([
+        import('../../business-profile/api/businessProfileService'),
+        import('../../inventory/api/mastersService'),
+      ]);
+      const [profile, rates] = await Promise.all([
+        fetchTenant(signal),
+        listTaxRates(asOf, [], signal),
+      ]);
+      return {
+        gstType: profile.gstType,
+        stateCode: profile.stateCode,
+        rates: Object.fromEntries(
+          rates.map((row) => [row.code, { rate: row.rate, cessRate: row.cessRate }])
+        ),
+        rateOptions: rates.map((row) => ({ code: row.code, name: row.name })),
+        ratesDate: asOf,
+      };
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'purchases.editor.error.context'));
+    }
+  }
+);

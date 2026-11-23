@@ -1,0 +1,1010 @@
+[
+  {
+    "route": "/sales/challans/[id]/edit",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/challans/[id]/edit",
+    "field": "firstLoad",
+    "old": 397.4,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/sales/orders/[id]/edit",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/orders/[id]/edit",
+    "field": "firstLoad",
+    "old": 397.4,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/sales/estimates/[id]/edit",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/invoices/[id]/edit",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/invoices/[id]/edit",
+    "field": "firstLoad",
+    "old": 397.5,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/sales/challans/new",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/challans/new",
+    "field": "firstLoad",
+    "old": 397.5,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/sales/orders/new",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/orders/new",
+    "field": "firstLoad",
+    "old": 397.5,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/sales/estimates/new",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/invoices/new",
+    "field": "route",
+    "old": 157.7,
+    "new": 158.4,
+    "measured": 157.9
+  },
+  {
+    "route": "/sales/invoices/new",
+    "field": "firstLoad",
+    "old": 397.4,
+    "new": 398.1,
+    "measured": 397.6
+  },
+  {
+    "route": "/purchases/orders/[id]/edit",
+    "field": "route",
+    "old": 157,
+    "new": 157.6,
+    "measured": 157.1
+  },
+  {
+    "route": "/purchases/orders/[id]/edit",
+    "field": "firstLoad",
+    "old": 396.7,
+    "new": 397.4,
+    "measured": 396.9
+  },
+  {
+    "route": "/purchases/bills/[id]/edit",
+    "field": "route",
+    "old": 157,
+    "new": 157.6,
+    "measured": 157.1
+  },
+  {
+    "route": "/purchases/bills/[id]/edit",
+    "field": "firstLoad",
+    "old": 396.7,
+    "new": 397.4,
+    "measured": 396.9
+  },
+  {
+    "route": "/purchases/orders/new",
+    "field": "route",
+    "old": 156.9,
+    "new": 157.6,
+    "measured": 157.1
+  },
+  {
+    "route": "/purchases/orders/new",
+    "field": "firstLoad",
+    "old": 396.7,
+    "new": 397.3,
+    "measured": 396.8
+  },
+  {
+    "route": "/purchases/bills/new",
+    "field": "route",
+    "old": 156.9,
+    "new": 157.6,
+    "measured": 157.1
+  },
+  {
+    "route": "/purchases/bills/new",
+    "field": "firstLoad",
+    "old": 396.7,
+    "new": 397.3,
+    "measured": 396.8
+  },
+  {
+    "route": "/sales/credit-notes/new",
+    "field": "route",
+    "old": 147.3,
+    "new": 148.0,
+    "measured": 147.5
+  },
+  {
+    "route": "/settings/profile",
+    "field": "route",
+    "old": 142,
+    "new": 142.7,
+    "measured": 142.2
+  },
+  {
+    "route": "/settings/profile",
+    "field": "firstLoad",
+    "old": 381.8,
+    "new": 382.4,
+    "measured": 381.9
+  },
+  {
+    "route": "/lending/loans/new",
+    "field": "route",
+    "old": 139.1,
+    "new": 139.6,
+    "measured": 139.1
+  },
+  {
+    "route": "/lending/loans/new",
+    "field": "firstLoad",
+    "old": 378.7,
+    "new": 379.3,
+    "measured": 378.8
+  },
+  {
+    "route": "/library/settings",
+    "field": "route",
+    "old": 117.7,
+    "new": 118.4,
+    "measured": 117.9
+  },
+  {
+    "route": "/library/settings",
+    "field": "firstLoad",
+    "old": 357.5,
+    "new": 358.1,
+    "measured": 357.6
+  },
+  {
+    "route": "/reports/day-book",
+    "field": "route",
+    "old": 115.6,
+    "new": 116.3,
+    "measured": 115.8
+  },
+  {
+    "route": "/reports/day-book",
+    "field": "firstLoad",
+    "old": 355.4,
+    "new": 356.0,
+    "measured": 355.5
+  },
+  {
+    "route": "/reports/purchase-register",
+    "field": "route",
+    "old": 113,
+    "new": 113.7,
+    "measured": 113.2
+  },
+  {
+    "route": "/reports/purchase-register",
+    "field": "firstLoad",
+    "old": 352.8,
+    "new": 353.4,
+    "measured": 352.9
+  },
+  {
+    "route": "/reports/sales-register",
+    "field": "route",
+    "old": 113,
+    "new": 113.7,
+    "measured": 113.2
+  },
+  {
+    "route": "/reports/sales-register",
+    "field": "firstLoad",
+    "old": 352.8,
+    "new": 353.4,
+    "measured": 352.9
+  },
+  {
+    "route": "/reports/gst-summary",
+    "field": "route",
+    "old": 112.5,
+    "new": 113.2,
+    "measured": 112.7
+  },
+  {
+    "route": "/reports/gst-summary",
+    "field": "firstLoad",
+    "old": 352.3,
+    "new": 352.9,
+    "measured": 352.4
+  },
+  {
+    "route": "/parties/[id]",
+    "field": "route",
+    "old": 112.3,
+    "new": 112.8,
+    "measured": 112.3
+  },
+  {
+    "route": "/parties/[id]",
+    "field": "firstLoad",
+    "old": 351.9,
+    "new": 352.5,
+    "measured": 352
+  },
+  {
+    "route": "/reports/profit",
+    "field": "route",
+    "old": 108.1,
+    "new": 108.6,
+    "measured": 108.1
+  },
+  {
+    "route": "/reports/profit",
+    "field": "firstLoad",
+    "old": 347.7,
+    "new": 348.4,
+    "measured": 347.9
+  },
+  {
+    "route": "/settings",
+    "field": "route",
+    "old": 106.5,
+    "new": 107.2,
+    "measured": 106.7
+  },
+  {
+    "route": "/settings",
+    "field": "firstLoad",
+    "old": 346.3,
+    "new": 346.9,
+    "measured": 346.4
+  },
+  {
+    "route": "/items/[id]",
+    "field": "route",
+    "old": 106.3,
+    "new": 107.0,
+    "measured": 106.5
+  },
+  {
+    "route": "/items/[id]",
+    "field": "firstLoad",
+    "old": 346.1,
+    "new": 346.7,
+    "measured": 346.2
+  },
+  {
+    "route": "/reports/aging",
+    "field": "route",
+    "old": 98.3,
+    "new": 99.0,
+    "measured": 98.5
+  },
+  {
+    "route": "/reports/aging",
+    "field": "firstLoad",
+    "old": 338.1,
+    "new": 338.7,
+    "measured": 338.2
+  },
+  {
+    "route": "/ledger/aging",
+    "field": "route",
+    "old": 98.3,
+    "new": 99.0,
+    "measured": 98.5
+  },
+  {
+    "route": "/ledger/aging",
+    "field": "firstLoad",
+    "old": 338.1,
+    "new": 338.7,
+    "measured": 338.2
+  },
+  {
+    "route": "/settings/branding",
+    "field": "route",
+    "old": 94.2,
+    "new": 94.9,
+    "measured": 94.4
+  },
+  {
+    "route": "/settings/branding",
+    "field": "firstLoad",
+    "old": 334,
+    "new": 334.6,
+    "measured": 334.1
+  },
+  {
+    "route": "/settings/team",
+    "field": "route",
+    "old": 89.7,
+    "new": 90.4,
+    "measured": 89.9
+  },
+  {
+    "route": "/settings/team",
+    "field": "firstLoad",
+    "old": 329.4,
+    "new": 330.1,
+    "measured": 329.6
+  },
+  {
+    "route": "/items/price-lists/[id]",
+    "field": "route",
+    "old": 87.9,
+    "new": 88.7,
+    "measured": 88.2
+  },
+  {
+    "route": "/items/price-lists/[id]",
+    "field": "firstLoad",
+    "old": 327.7,
+    "new": 328.4,
+    "measured": 327.9
+  },
+  {
+    "route": "/library/members",
+    "field": "route",
+    "old": 84.9,
+    "new": 85.6,
+    "measured": 85.1
+  },
+  {
+    "route": "/library/members",
+    "field": "firstLoad",
+    "old": 324.7,
+    "new": 325.3,
+    "measured": 324.8
+  },
+  {
+    "route": "/sales/challans",
+    "field": "route",
+    "old": 84.8,
+    "new": 85.3,
+    "measured": 84.8
+  },
+  {
+    "route": "/sales/challans",
+    "field": "firstLoad",
+    "old": 324.4,
+    "new": 325.0,
+    "measured": 324.5
+  },
+  {
+    "route": "/sales/orders",
+    "field": "route",
+    "old": 84.8,
+    "new": 85.3,
+    "measured": 84.8
+  },
+  {
+    "route": "/sales/orders",
+    "field": "firstLoad",
+    "old": 324.4,
+    "new": 325.0,
+    "measured": 324.5
+  },
+  {
+    "route": "/library/members/[membershipId]",
+    "field": "route",
+    "old": 84.4,
+    "new": 85.1,
+    "measured": 84.6
+  },
+  {
+    "route": "/library/members/[membershipId]",
+    "field": "firstLoad",
+    "old": 324.2,
+    "new": 324.8,
+    "measured": 324.3
+  },
+  {
+    "route": "/library/catalogue",
+    "field": "route",
+    "old": 83.9,
+    "new": 84.4,
+    "measured": 83.9
+  },
+  {
+    "route": "/library/catalogue",
+    "field": "firstLoad",
+    "old": 323.5,
+    "new": 324.2,
+    "measured": 323.7
+  },
+  {
+    "route": "/sales/challans/[id]",
+    "field": "route",
+    "old": 81.6,
+    "new": 82.2,
+    "measured": 81.7
+  },
+  {
+    "route": "/sales/orders/[id]",
+    "field": "route",
+    "old": 81.6,
+    "new": 82.2,
+    "measured": 81.7
+  },
+  {
+    "route": "/sales/credit-notes/[id]",
+    "field": "route",
+    "old": 81.6,
+    "new": 82.2,
+    "measured": 81.7
+  },
+  {
+    "route": "/sales/estimates/[id]",
+    "field": "route",
+    "old": 81.6,
+    "new": 82.2,
+    "measured": 81.7
+  },
+  {
+    "route": "/sales/invoices/[id]",
+    "field": "route",
+    "old": 81.6,
+    "new": 82.1,
+    "measured": 81.6
+  },
+  {
+    "route": "/sales/invoices/[id]",
+    "field": "firstLoad",
+    "old": 321.3,
+    "new": 321.9,
+    "measured": 321.4
+  },
+  {
+    "route": "/library/counter",
+    "field": "route",
+    "old": 81.4,
+    "new": 82.1,
+    "measured": 81.6
+  },
+  {
+    "route": "/library/counter",
+    "field": "firstLoad",
+    "old": 321.2,
+    "new": 321.8,
+    "measured": 321.3
+  },
+  {
+    "route": "/purchases/orders",
+    "field": "route",
+    "old": 81.3,
+    "new": 82.0,
+    "measured": 81.5
+  },
+  {
+    "route": "/purchases/orders",
+    "field": "firstLoad",
+    "old": 321,
+    "new": 321.7,
+    "measured": 321.2
+  },
+  {
+    "route": "/purchases/debit-notes",
+    "field": "route",
+    "old": 81.3,
+    "new": 82.0,
+    "measured": 81.5
+  },
+  {
+    "route": "/purchases/debit-notes",
+    "field": "firstLoad",
+    "old": 321,
+    "new": 321.7,
+    "measured": 321.2
+  },
+  {
+    "route": "/library/copies",
+    "field": "route",
+    "old": 81.2,
+    "new": 81.9,
+    "measured": 81.4
+  },
+  {
+    "route": "/library/copies",
+    "field": "firstLoad",
+    "old": 321,
+    "new": 321.6,
+    "measured": 321.1
+  },
+  {
+    "route": "/library/seats",
+    "field": "route",
+    "old": 79.7,
+    "new": 80.3,
+    "measured": 79.8
+  },
+  {
+    "route": "/library/seats",
+    "field": "firstLoad",
+    "old": 319.3,
+    "new": 320.0,
+    "measured": 319.5
+  },
+  {
+    "route": "/library",
+    "field": "route",
+    "old": 77.7,
+    "new": 78.4,
+    "measured": 77.9
+  },
+  {
+    "route": "/library",
+    "field": "firstLoad",
+    "old": 317.5,
+    "new": 318.1,
+    "measured": 317.6
+  },
+  {
+    "route": "/library/fees",
+    "field": "route",
+    "old": 77.6,
+    "new": 78.3,
+    "measured": 77.8
+  },
+  {
+    "route": "/library/fees",
+    "field": "firstLoad",
+    "old": 317.3,
+    "new": 318.0,
+    "measured": 317.5
+  },
+  {
+    "route": "/lending/borrowers",
+    "field": "route",
+    "old": 77.4,
+    "new": 78.1,
+    "measured": 77.6
+  },
+  {
+    "route": "/lending/borrowers",
+    "field": "firstLoad",
+    "old": 317.2,
+    "new": 317.8,
+    "measured": 317.3
+  },
+  {
+    "route": "/ledger/reminders",
+    "field": "route",
+    "old": 76.6,
+    "new": 77.2,
+    "measured": 76.7
+  },
+  {
+    "route": "/ledger/reminders",
+    "field": "firstLoad",
+    "old": 316.2,
+    "new": 316.9,
+    "measured": 316.4
+  },
+  {
+    "route": "/library/copies/[copyId]",
+    "field": "route",
+    "old": 76.2,
+    "new": 76.7,
+    "measured": 76.2
+  },
+  {
+    "route": "/library/copies/[copyId]",
+    "field": "firstLoad",
+    "old": 315.8,
+    "new": 316.4,
+    "measured": 315.9
+  },
+  {
+    "route": "/lending/loans",
+    "field": "route",
+    "old": 75.3,
+    "new": 75.8,
+    "measured": 75.3
+  },
+  {
+    "route": "/lending/loans",
+    "field": "firstLoad",
+    "old": 314.9,
+    "new": 315.5,
+    "measured": 315
+  },
+  {
+    "route": "/library/attendance",
+    "field": "route",
+    "old": 73.8,
+    "new": 74.5,
+    "measured": 74
+  },
+  {
+    "route": "/library/attendance",
+    "field": "firstLoad",
+    "old": 313.6,
+    "new": 314.2,
+    "measured": 313.7
+  },
+  {
+    "route": "/library/money",
+    "field": "route",
+    "old": 73.6,
+    "new": 74.3,
+    "measured": 73.8
+  },
+  {
+    "route": "/library/money",
+    "field": "firstLoad",
+    "old": 313.4,
+    "new": 314.0,
+    "measured": 313.5
+  },
+  {
+    "route": "/library/catalogue/[titleId]",
+    "field": "route",
+    "old": 73.3,
+    "new": 73.8,
+    "measured": 73.3
+  },
+  {
+    "route": "/library/catalogue/[titleId]",
+    "field": "firstLoad",
+    "old": 312.9,
+    "new": 313.5,
+    "measured": 313
+  },
+  {
+    "route": "/library/messages",
+    "field": "route",
+    "old": 71.7,
+    "new": 72.2,
+    "measured": 71.7
+  },
+  {
+    "route": "/library/messages",
+    "field": "firstLoad",
+    "old": 311.3,
+    "new": 312.0,
+    "measured": 311.5
+  },
+  {
+    "route": "/library/catalogue/categories",
+    "field": "route",
+    "old": 71,
+    "new": 71.5,
+    "measured": 71
+  },
+  {
+    "route": "/library/catalogue/categories",
+    "field": "firstLoad",
+    "old": 310.6,
+    "new": 311.2,
+    "measured": 310.7
+  },
+  {
+    "route": "/library/catalogue/locations",
+    "field": "route",
+    "old": 71,
+    "new": 71.5,
+    "measured": 71
+  },
+  {
+    "route": "/library/catalogue/locations",
+    "field": "firstLoad",
+    "old": 310.6,
+    "new": 311.2,
+    "measured": 310.7
+  },
+  {
+    "route": "/stock/low",
+    "field": "route",
+    "old": 70.8,
+    "new": 71.4,
+    "measured": 70.9
+  },
+  {
+    "route": "/stock/low",
+    "field": "firstLoad",
+    "old": 310.5,
+    "new": 311.2,
+    "measured": 310.7
+  },
+  {
+    "route": "/lending",
+    "field": "route",
+    "old": 70.2,
+    "new": 70.9,
+    "measured": 70.4
+  },
+  {
+    "route": "/lending",
+    "field": "firstLoad",
+    "old": 310,
+    "new": 310.6,
+    "measured": 310.1
+  },
+  {
+    "route": "/purchases/debit-notes/[id]",
+    "field": "route",
+    "old": 70.1,
+    "new": 70.8,
+    "measured": 70.3
+  },
+  {
+    "route": "/purchases/debit-notes/[id]",
+    "field": "firstLoad",
+    "old": 309.8,
+    "new": 310.5,
+    "measured": 310
+  },
+  {
+    "route": "/purchases/orders/[id]",
+    "field": "route",
+    "old": 70.1,
+    "new": 70.8,
+    "measured": 70.3
+  },
+  {
+    "route": "/purchases/orders/[id]",
+    "field": "firstLoad",
+    "old": 309.8,
+    "new": 310.5,
+    "measured": 310
+  },
+  {
+    "route": "/purchases/bills/[id]",
+    "field": "route",
+    "old": 70.1,
+    "new": 70.7,
+    "measured": 70.2
+  },
+  {
+    "route": "/purchases/bills/[id]",
+    "field": "firstLoad",
+    "old": 309.8,
+    "new": 310.5,
+    "measured": 310
+  },
+  {
+    "route": "/lending/loans/[loanId]",
+    "field": "route",
+    "old": 69.8,
+    "new": 70.5,
+    "measured": 70
+  },
+  {
+    "route": "/lending/loans/[loanId]",
+    "field": "firstLoad",
+    "old": 309.6,
+    "new": 310.2,
+    "measured": 309.7
+  },
+  {
+    "route": "/parties/tags",
+    "field": "route",
+    "old": 68.6,
+    "new": 69.1,
+    "measured": 68.6
+  },
+  {
+    "route": "/parties/tags",
+    "field": "firstLoad",
+    "old": 308.2,
+    "new": 308.8,
+    "measured": 308.3
+  },
+  {
+    "route": "/payments/[id]",
+    "field": "route",
+    "old": 67.3,
+    "new": 67.9,
+    "measured": 67.4
+  },
+  {
+    "route": "/payments/[id]",
+    "field": "firstLoad",
+    "old": 307.1,
+    "new": 307.6,
+    "measured": 307.1
+  },
+  {
+    "route": "/settings/business-days",
+    "field": "route",
+    "old": 65.6,
+    "new": 66.3,
+    "measured": 65.8
+  },
+  {
+    "route": "/settings/business-days",
+    "field": "firstLoad",
+    "old": 305.4,
+    "new": 306.0,
+    "measured": 305.5
+  },
+  {
+    "route": "/lending/messages",
+    "field": "route",
+    "old": 64.8,
+    "new": 65.5,
+    "measured": 65
+  },
+  {
+    "route": "/lending/messages",
+    "field": "firstLoad",
+    "old": 304.6,
+    "new": 305.2,
+    "measured": 304.7
+  },
+  {
+    "route": "/lending/routes",
+    "field": "route",
+    "old": 61.8,
+    "new": 62.3,
+    "measured": 61.8
+  },
+  {
+    "route": "/lending/routes",
+    "field": "firstLoad",
+    "old": 301.4,
+    "new": 302.1,
+    "measured": 301.6
+  },
+  {
+    "route": "/settings/data",
+    "field": "route",
+    "old": 61.5,
+    "new": 62.2,
+    "measured": 61.7
+  },
+  {
+    "route": "/settings/data",
+    "field": "firstLoad",
+    "old": 301.3,
+    "new": 301.9,
+    "measured": 301.4
+  },
+  {
+    "route": "/settings/devices",
+    "field": "route",
+    "old": 59.5,
+    "new": 60.2,
+    "measured": 59.7
+  },
+  {
+    "route": "/settings/devices",
+    "field": "firstLoad",
+    "old": 299.2,
+    "new": 299.9,
+    "measured": 299.4
+  },
+  {
+    "route": "/imports/[id]",
+    "field": "route",
+    "old": 54.9,
+    "new": 55.6,
+    "measured": 55.1
+  },
+  {
+    "route": "/imports/[id]",
+    "field": "firstLoad",
+    "old": 294.7,
+    "new": 295.3,
+    "measured": 294.8
+  },
+  {
+    "route": "/imports",
+    "field": "route",
+    "old": 54.9,
+    "new": 55.6,
+    "measured": 55.1
+  },
+  {
+    "route": "/imports",
+    "field": "firstLoad",
+    "old": 294.7,
+    "new": 295.3,
+    "measured": 294.8
+  },
+  {
+    "route": "/items/masters",
+    "field": "route",
+    "old": 54.9,
+    "new": 55.6,
+    "measured": 55.1
+  },
+  {
+    "route": "/items/masters",
+    "field": "firstLoad",
+    "old": 294.7,
+    "new": 295.3,
+    "measured": 294.8
+  },
+  {
+    "route": "/items/price-lists",
+    "field": "firstLoad",
+    "old": 294.4,
+    "new": 295.0,
+    "measured": 294.5
+  },
+  {
+    "route": "/switch",
+    "field": "route",
+    "old": 53.8,
+    "new": 54.3,
+    "measured": 53.8
+  },
+  {
+    "route": "/switch",
+    "field": "firstLoad",
+    "old": 293.4,
+    "new": 294.1,
+    "measured": 293.6
+  },
+  {
+    "route": "/more",
+    "field": "firstLoad",
+    "old": 292.6,
+    "new": 293.3,
+    "measured": 292.8
+  },
+  {
+    "route": "/settings/plan",
+    "field": "route",
+    "old": 52.6,
+    "new": 53.3,
+    "measured": 52.8
+  },
+  {
+    "route": "/settings/plan",
+    "field": "firstLoad",
+    "old": 292.4,
+    "new": 293.0,
+    "measured": 292.5
+  },
+  {
+    "route": "/apps",
+    "field": "firstLoad",
+    "old": 291.9,
+    "new": 292.6,
+    "measured": 292.1
+  }
+]

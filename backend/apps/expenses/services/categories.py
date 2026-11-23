@@ -27,11 +27,7 @@ from django.db import IntegrityError, transaction
 from apps.common.audit import AuditAction, write_audit
 from apps.common.context import Ctx
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
-from apps.expenses.constants import (
-    CATEGORY_NAME_MAX_LENGTH,
-    MAX_ACTIVE_CATEGORIES,
-    CategoryStatus,
-)
+from apps.expenses.constants import CATEGORY_NAME_MAX_LENGTH, MAX_ACTIVE_CATEGORIES, CategoryStatus
 from apps.expenses.models import ExpenseCategory
 
 

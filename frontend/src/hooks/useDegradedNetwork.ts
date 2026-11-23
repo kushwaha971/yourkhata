@@ -120,13 +120,16 @@ export function useDegradedNetwork(options?: { readonly withProbe?: boolean }): 
     const arm = (): void => {
       window.clearTimeout(timer);
       if (cancelled || document.visibilityState === 'hidden') return;
-      timer = window.setTimeout(() => {
-        if (cancelled || document.visibilityState === 'hidden') return;
-        void probe().then((ok) => {
-          if (cancelled) return;
-          dispatch(ok ? probeSucceeded() : probeFailed());
-        });
-      }, jitter(netProbeSpacingMs(state, failedProbes)));
+      timer = window.setTimeout(
+        () => {
+          if (cancelled || document.visibilityState === 'hidden') return;
+          void probe().then((ok) => {
+            if (cancelled) return;
+            dispatch(ok ? probeSucceeded() : probeFailed());
+          });
+        },
+        jitter(netProbeSpacingMs(state, failedProbes))
+      );
     };
 
     arm();

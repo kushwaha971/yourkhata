@@ -3,10 +3,18 @@
 import { CheckCircle2 } from 'lucide-react';
 
 import { UbButton, UbDialog, UbStack, UbText } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
+
+import { salesWarningMessage } from '../view-model/invoiceDisplay';
+
 import type { SalesDocumentEnvelope } from '../types/sales.types';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/sales';
 
 /**
  * SAL-02 §8 — the success sheet, the only modal after issue: the number, the
@@ -24,7 +32,7 @@ export function InvoiceIssuedDialog({
   onView: () => void;
   onNewBill: () => void;
 }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const doc = issued.document;
   const party = doc.party?.name;
   const modes = doc.payment?.modeBreakup.map((row) => t(`ledger.mode.${row.mode}`)).join(' + ');
@@ -60,9 +68,9 @@ export function InvoiceIssuedDialog({
             {t('sales.issued.paid', { amount: formatInr(doc.amountPaid), modes: modes ?? '' })}
           </UbText>
         )}
-        {issued.warnings.map((warning) => (
-          <UbText key={warning.code} variant="caption" tone="warning">
-            {warning.message}
+        {issued.warnings.map((warning, index) => (
+          <UbText key={`${warning.code}-${index}`} variant="caption" tone="warning">
+            {salesWarningMessage(warning, t)}
           </UbText>
         ))}
       </UbStack>

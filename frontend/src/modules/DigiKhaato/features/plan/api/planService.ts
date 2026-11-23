@@ -1,6 +1,8 @@
 import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 
+import { sessionReadInFlight } from 'modules/DigiKhaato/features/auth/api/authService';
+
 import { PLAN_LIMIT_KEYS } from '../types/plan.types';
 
 import type {
@@ -50,10 +52,13 @@ const toSupportContact = (raw: PlanLimitsApiPayload['support_contact']): PlanSup
  * place with the request id and a Try again.
  */
 export const getPlanEntitlements = async (signal?: AbortSignal): Promise<PlanEntitlements> => {
-  const response = await api.get<SessionWithPlanApiResponse>(
-    API_PATHS.AUTH_ME,
-    ubConfig({ signal, suppressErrorSnackbar: true })
-  );
+  // The session read already on its way carries the same block: wait for it.
+  const shared = sessionReadInFlight();
+  const response = ((shared ? await shared.catch(() => null) : null) ??
+    (await api.get<SessionWithPlanApiResponse>(
+      API_PATHS.AUTH_ME,
+      ubConfig({ signal, suppressErrorSnackbar: true })
+    ))) as { data: SessionWithPlanApiResponse };
   const payload = response.data.data.plan_limits ?? null;
 
   const limits: PlanLimit[] = [];

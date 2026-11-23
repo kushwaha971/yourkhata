@@ -20,7 +20,7 @@ from typing import Any
 from rest_framework.exceptions import Throttled
 
 from apps.common.exceptions import PermissionDenied
-from apps.common.throttling import ScopedUserRateThrottle
+from apps.common.throttling import durable_throttle
 
 #: The one `Sec-Fetch-Site` value an export refuses. `same-origin` and
 #: `same-site` are our own pages (the SPA and the API are one site, which the
@@ -79,8 +79,12 @@ def charge_export_budget(request: Any, view: Any) -> None:
     assign `.scope = "export"` afterwards, and `get_cache_key` then replaced it
     with the statement view's `throttle_scope = "user"` — so statement exports
     ran on 600/min (F-1). Aging escaped only because its view has no scope.
+
+    The counter is DURABLE (`durable_throttle`, Part 27 §27.11): it was DRF's
+    LocMem counter, one per gunicorn worker, so ten an hour was ten per worker
+    per hour and a restart refilled it.
     """
-    throttle = ScopedUserRateThrottle("export")
+    throttle = durable_throttle("export")
     if not throttle.allow_request(request, view):
         raise Throttled(wait=throttle.wait())
 
@@ -204,14 +208,75 @@ def csv_lines(columns: Iterable[ExportColumn], rows: Iterable[Any]) -> Iterator[
         yield writer.writerow(cells)
 
 
+def _plain_cell(value: Any) -> str:
+    # Numbers stay numbers (a negative amount must not be "neutralised" into
+    # text); everything else is text and goes through the formula guard.
+    from decimal import Decimal
+
+    if isinstance(value, (Decimal, int)) and not isinstance(value, bool):
+        return str(value)
+    return neutralise(value)
+
+
+def rows_csv_lines(rows: Iterable[Any]) -> Iterator[str]:
+    """BOM on the first line, CRLF, for rows that are already sequences (header first)."""
+
+    class _Echo:
+        def write(self, value: str) -> str:
+            return value
+
+    writer = csv.writer(_Echo(), lineterminator="\r\n")
+    for index, row in enumerate(rows):
+        line = writer.writerow([_plain_cell(value) for value in row])
+        yield ("\ufeff" + line) if index == 0 else line
+
+
+def registered_csv_response(
+    request: Any, view: Any, tenant: Any, *, key: str, params: dict, rows: list
+) -> Any:
+    """A module report's file through the export rules (PLT-X13 §6): the cross-site
+    refusal, `reports.export` and the export budget, the row ceiling, the audit row.
+
+    Shared by core `GET /reports/<key>?format=csv` and a module's own report screen
+    (library, LIB-12 FR-3), so the two can never apply different rules to one file.
+    """
+    from django.http import StreamingHttpResponse
+
+    from apps.common.exceptions import BusinessRuleViolation
+
+    authorise_export(
+        request,
+        view,
+        codename="reports.export",
+        refusal="You do not have permission to export reports.",
+    )
+    count = max(len(rows) - 1, 0)
+    if count > MAX_EXPORT_ROWS:
+        raise BusinessRuleViolation(
+            "export_too_large",
+            "Narrow the date range — at most 1,00,000 rows per file.",
+            details={"count": count, "maximum": MAX_EXPORT_ROWS},
+        )
+    audit_export_request(request, tenant, key, params, count, sync=True)
+    response = StreamingHttpResponse(
+        (line.encode("utf-8") for line in rows_csv_lines(rows)),
+        content_type="text/csv; charset=utf-8",
+    )
+    filename = export_filename(key.replace(".", "-"), tenant)
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["X-Row-Count"] = str(count)
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
 def export_filename(resource: str, tenant: Any) -> str:
-    """`digikhaato-parties-20260918-1142.csv` in the tenant's own clock (FR-6)."""
+    """`yourkhata-parties-20260918-1142.csv` in the tenant's own clock (FR-6)."""
     from django.utils import timezone
 
     from apps.common.dates import tenant_timezone
 
     stamp = timezone.localtime(timezone.now(), tenant_timezone(tenant)).strftime("%Y%m%d-%H%M")
-    return f"digikhaato-{resource}-{stamp}.csv"
+    return f"yourkhata-{resource}-{stamp}.csv"
 
 
 def export_params(request: Any) -> dict[str, str]:
@@ -251,12 +316,20 @@ class CsvExportMixin:
         """The FILTERED set the list pages over. Override when `list()` does more."""
         return self.filter_queryset(self.get_queryset())  # type: ignore[attr-defined]
 
+    def export_file_name(self, tenant: Any) -> str:
+        """The download's name. Reports override it with RPT-08 FR-8's
+        `<slug>_<from>_<to>.csv`; lists keep the stamped default."""
+        return export_filename(self.export_resource, tenant)
+
     def allowed_export_columns(self, request: Any) -> tuple[ExportColumn, ...]:
         return tuple(
             column
             for column in self.export_columns
             if column.permission is None or request_has(request, column.permission)
         )
+
+    def authorize_export_scope(self, request: Any) -> None:
+        """Optional source-specific scope, shared by fresh and stored exports."""
 
     def csv_export(self, request: Any) -> Any:
         """Authorise, count, then stream (≤ 5,000) or queue (> 5,000)."""
@@ -266,6 +339,7 @@ class CsvExportMixin:
         from apps.common.responses import StandardResponse
         from apps.common.tenancy import get_effective_tenant
 
+        self.authorize_export_scope(request)
         authorise_export(
             request,
             self,
@@ -313,9 +387,7 @@ class CsvExportMixin:
             ),
             content_type="text/csv; charset=utf-8",
         )
-        response["Content-Disposition"] = (
-            f'attachment; filename="{export_filename(self.export_resource, tenant)}"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="{self.export_file_name(tenant)}"'
         response["X-Row-Count"] = str(count)
         return response
 
@@ -340,6 +412,11 @@ def _audit_export_request(
         entity_type="reports_export",
         metadata={"resource": resource, "filters": params, "row_count": count, "sync": sync},
     )
+
+
+#: The public name, for RPT-08's report exports (`apps.reports.views.export_support`):
+#: a report file is audited exactly as a list file is, through the same row.
+audit_export_request = _audit_export_request
 
 
 def queue_export(
@@ -388,7 +465,7 @@ def queue_export(
     return export
 
 
-def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
+def export_list_view(export: Any, reader: Any = None) -> Any:
     """Rebuild the list's filtered queryset in the scheduler (the async half).
 
     The view class is imported from the stored dotted path and must be a
@@ -399,6 +476,8 @@ def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
 
     from django.http import HttpRequest, QueryDict
     from rest_framework.request import Request
+
+    from apps.common.tenancy import get_effective_tenant
 
     path = export.params.get("view") or ""
     module_name, _, class_name = path.rpartition(".")
@@ -417,16 +496,25 @@ def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
     for key, value in (export.params.get("filters") or {}).items():
         query[key] = value
     raw.GET = query
-    raw.user = export.created_by
-    raw._ub_tenant = export.tenant  # the memo `get_effective_tenant` reads first
-    request = Request(raw)
-    request._request._ub_tenant = export.tenant
+    raw.user = reader.user if reader is not None else export.created_by
+    tenant = get_effective_tenant(reader) if reader is not None else export.tenant
+    raw._ub_tenant = tenant  # the memo `get_effective_tenant` reads first
+    request = Request(raw, authenticators=[])
+    request.user = raw.user
+    request.auth_claims = getattr(reader, "auth_claims", {}) if reader is not None else {}
+    request._request._ub_tenant = tenant
     view = view_class()
     view.request = request
     view.args = ()
     view.kwargs = {}
     view.format_kwarg = None
     view.action = "list"
+    return view
+
+
+def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
+    """Rebuild the same list source for the job; access is rechecked at download."""
+    view = export_list_view(export)
     wanted = set(export.params.get("columns") or [])
-    columns = tuple(column for column in view_class.export_columns if column.header in wanted)
+    columns = tuple(column for column in view.export_columns if column.header in wanted)
     return view.export_queryset(), columns

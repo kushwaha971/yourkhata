@@ -25,8 +25,10 @@ import type { UbSelectOption } from 'src/design-system/UbSelect/UbSelect';
  * in chrome uses this.** Same options shape, same props, so moving one to the
  * other is a one-word change.
  */
-export interface UbNativeSelectProps
-  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange' | 'children'> {
+export interface UbNativeSelectProps extends Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  'value' | 'onChange' | 'children'
+> {
   readonly value: string | null | undefined;
   readonly onChange: (value: string) => void;
   readonly options: readonly UbSelectOption[];

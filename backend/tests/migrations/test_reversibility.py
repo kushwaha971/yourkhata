@@ -19,6 +19,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from django.conf import settings
@@ -44,9 +45,36 @@ LOCAL_APP_LABELS = (
     "reports",
     "sales",
     "expenses",
+    "library",  # ── B01 ── (Track L; G1: this literal is not checked against INSTALLED_APPS)
+    "dues",  # ── DUE-01 ── the dues engine's migrations
+    "attendance",  # ── ATT ── the attendance engine's migrations
 )
 
-SCRATCH_DB = "test_ub_migration_roundtrip"
+
+def scratch_db_name(environ: Any = os.environ) -> str:
+    """The round trip's own database, per worktree.
+
+    It used to be one fixed name, and every track's worktree (each with its own
+    `UB_TEST_DB_NAME`, `scripts/worktree-bootstrap.sh`) dropped and re-created
+    the SAME scratch database: two tracks running this suite at once failed each
+    other (Wave A Track P, A1 QA item 5). Unset, the name is what it always was.
+    """
+    base = environ.get("UB_TEST_DB_NAME")
+    return f"{base}_migration_roundtrip" if base else "test_ub_migration_roundtrip"
+
+
+SCRATCH_DB = scratch_db_name()
+
+
+def test_the_scratch_database_follows_the_worktree_test_database() -> None:
+    """The defect this prevents: two worktrees sharing one scratch database."""
+    assert scratch_db_name({}) == "test_ub_migration_roundtrip"
+    assert scratch_db_name({"UB_TEST_DB_NAME": "test_ub_track_p"}) == (
+        "test_ub_track_p_migration_roundtrip"
+    )
+    assert scratch_db_name({"UB_TEST_DB_NAME": "test_ub_track_m"}) != scratch_db_name(
+        {"UB_TEST_DB_NAME": "test_ub_track_p"}
+    )
 
 
 def _local_migrations() -> list[tuple[str, str]]:
@@ -125,9 +153,9 @@ def test_migrations_round_trip_on_a_scratch_database() -> None:
 
         for label in LOCAL_APP_LABELS:
             backward = _manage(SCRATCH_DB, "migrate", label, "zero", "--noinput")
-            assert backward.returncode == 0, (
-                f"{label} could not be unapplied:\n{backward.stdout}{backward.stderr}"
-            )
+            assert (
+                backward.returncode == 0
+            ), f"{label} could not be unapplied:\n{backward.stdout}{backward.stderr}"
 
         again = _manage(SCRATCH_DB, "migrate", "--noinput")
         assert again.returncode == 0, again.stdout + again.stderr

@@ -136,3 +136,33 @@ class AcceptInvitationSerializer(serializers.Serializer):
     """`POST /invitations/{token}/accept` (PLT-05 FR-10, reached from PLT-04 FR-8)."""
 
     token = serializers.CharField(max_length=128)
+
+
+class MyProfileSerializer(serializers.Serializer):
+    """`PATCH /auth/me` — the signed-in person's own name and language (design S2).
+
+    Mobile and email are the sign-in and are not fields here: anything else sent
+    is ignored, never applied.
+    """
+
+    full_name = serializers.CharField(max_length=120, required=False)
+    locale = serializers.ChoiceField(choices=("en", "hi"), required=False)
+
+    def validate_full_name(self, value: str) -> str:
+        name = " ".join(value.split())
+        if not name:
+            raise serializers.ValidationError("Enter your name.")
+        return name
+
+
+class MobileChangeSerializer(serializers.Serializer):
+    """`POST /auth/me/mobile` — the new number a code is sent to."""
+
+    mobile = MobileField(max_length=20)
+
+
+class MobileChangeConfirmSerializer(serializers.Serializer):
+    """`POST /auth/me/mobile/confirm` — the code typed back."""
+
+    challenge_id = serializers.CharField(max_length=64)
+    code = serializers.CharField(max_length=12)

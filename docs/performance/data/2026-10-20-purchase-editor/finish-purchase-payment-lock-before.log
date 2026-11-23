@@ -1,0 +1,73 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx
+  ○ skipped previews the §17.7.0 bill at ₹2,921.00 from the draft it opened
+  ○ skipped saves, then records with the version read and an Idempotency-Key, then opens the bill
+  ○ skipped puts the duplicate supplier invoice under the number, with a link to the bill (FR-7)
+  ○ skipped keeps the item/GST caption and one server-save status beside the docked actions
+  ○ skipped asks "Paid now?" at Record and sends the money with the record call (PUR-01 FR-6h)
+  ○ skipped P-D4: "Paid now" by PhonePe is sent as UPI with upi_app phonepe, not Other UPI
+  ○ skipped "Pay later" records the bill on credit with no payment (PUR-01 FR-6h)
+  ○ skipped never opens the "Paid now" sheet for a role that cannot pay suppliers
+  ○ skipped never offers input tax credit to a composition shop (FR-11)
+  ○ skipped re-picking an item preserves this bill's edited cost and focuses the existing Qty
+  ○ skipped finds a numbered line on a long purchase bill, including identical item names
+  current draft safety (purchase §7)
+    ○ skipped does not claim current typing saved when an older save reply arrives
+    ○ skipped keeps an incomplete line visibly unsaved when the draft request omits it
+    ○ skipped guards a custom GST choice on an unfinished new line
+    ○ skipped asks before unsaved closing, lets the merchant stay, and guards a tab reload
+    ○ skipped does not offer server save or Record while offline or imply a device copy exists
+    ○ skipped never records a bill with a visible half-entered row and focuses that row
+    ○ skipped keeps an unchanged server cost saved when the input only removes trailing zeros
+    ○ skipped resolves a blank cost from the server before asking how much was paid
+    ○ skipped never replaces newer cost typing with a server-filled default from an older save
+    ○ skipped locks the editor and drops repeated Record taps during the save before Record
+  the supplier details on a 1280 laptop (WP-05 compact context)
+    ○ skipped folds a filled draft to one line naming the invoice number and the dates
+    ○ skipped opens the folded details when the number is a duplicate, so the warning is seen
+  SH-011 — first-save recovery and one save lane (ADR-063)
+    ○ skipped retries a lost first save with the same creation key
+    ○ skipped queues an overlapping save behind the first create instead of POSTing twice
+    ○ skipped adopts a recovered untouched draft with an explicit version-1 PATCH of current typing
+    ○ skipped asks for review instead of overwriting a recovered draft edited elsewhere
+    ○ skipped never records again a recovered bill that was already recorded
+    ○ skipped keeps typing made during a slow autosave dirty, and saves it next
+    ○ skipped ignores a late save reply after the editor and account are gone
+  purchase counter quick-add
+    ○ skipped adds a list pick as the third line, preserves purchase cost defaults and focuses its Qty
+    ○ skipped a repeated barcode raises the existing Qty from20 to21 without adding a row or moving the scan caret
+  purchase cost words and precision
+    ○ skipped keeps a newly typed four-place cost through Save instead of dropping the third digit
+    ○ skipped does not promise that sending an order updates the item purchase cost
+  purchase finish refusal and uncertain replies
+    ✕ locks payment fields and keeps the sheet open while the actual Record is pending (175 ms)
+    ○ skipped offers an explicit credit-only retry only for a definitive payment permission refusal
+    ○ skipped never offers Pay later for permission_denied outside the definitive payment403
+    ○ skipped never offers Pay later for precondition_failed outside the definitive payment403
+    ○ skipped never offers Pay later for network_error outside the definitive payment403
+    ○ skipped retries a lost Record reply with the original body/key without PATCHing the recorded bill
+    ○ skipped keeps recovery available when its outcome check fails, without offering an unsafe credit retry
+    ○ skipped opens an already recorded outcome without another Record POST or draft PATCH
+    ○ skipped shows a retry when the initial bill load fails rather than an endless skeleton
+
+  ● purchase finish refusal and uncertain replies › locks payment fields and keeps the sheet open while the actual Record is pending
+
+    expect(element).toBeDisabled()
+
+    Received element is not disabled:
+      <input aria-label="Amount" autocomplete="off" class="h-10 w-full rounded-control border bg-surface-card px-3 ds-body-base-regular text-text-primary placeholder:text-text-muted transition-colors duration-fast ease-standard disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-text-muted disabled:opacity-100 read-only:bg-surface-sunken border-border-hairline hover:border-border-subtle focus-visible:border-text-primary ds-num pl-7 text-right" id="_r_f_-amount-0" inputmode="decimal" placeholder="Enter the amount" type="text" value="2,921.00" />
+
+      1104 |     service.recordPurchaseBill.mockImplementationOnce(() => pending.promise);
+      1105 |     await pay();
+    > 1106 |     expect(screen.getByLabelText('Amount', {exact:true})).toBeDisabled();
+           |                                                           ^
+      1107 |     expect(screen.getByRole('radio', {name:'PhonePe'})).toBeDisabled();
+      1108 |     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Close'}));
+      1109 |     expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:1106:59)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 42 skipped, 43 total
+Snapshots:   0 total
+Time:        0.883 s, estimated 6 s
+Ran all test suites matching /PurchaseBillEditor.test.tsx/i with tests matching "locks payment fields".

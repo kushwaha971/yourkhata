@@ -31,7 +31,7 @@ from django.db import IntegrityError, transaction
 from apps.common.audit import AuditAction, write_audit
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
-from apps.platform_app.selectors.memberships import active_membership, default_membership
+from apps.platform_app.selectors.memberships import active_membership, preferred_membership
 from apps.platform_app.services import passwords, sessions, throttle
 
 VERIFY_TOKEN_BYTES = 32
@@ -94,12 +94,16 @@ def register(
     # rule must see the address being registered.
     candidate = User(email=email, mobile=mobile or None, full_name=full_name.strip()[:120])
     value = passwords.validate(user=candidate, password=password)
+    # Hashed before the transaction opens (`passwords.hash_outside_transaction`):
+    # a sign-up on a starved CPU used to sit idle-in-transaction through the
+    # whole PBKDF2 and be killed by the 30 s timeout as a 500.
+    encoded = passwords.hash_outside_transaction(value)
 
     try:
         with transaction.atomic():
             user = User.objects.create_user(
                 email=email,
-                password=value,
+                encoded_password=encoded,
                 mobile=mobile or None,
                 full_name=full_name.strip()[:120],
                 locale=locale or "en",
@@ -319,16 +323,20 @@ def start_session(
 ) -> LoggedIn:
     """Open a session and pick the landing tenant (PLT-01 FR-9, PLT-04 FR-9).
 
-    Landing rule, in order: the tenant explicitly asked for (invitation accept
-    routes this way), else the `is_default` membership, else the single active
-    membership, else none — and "none" is a legitimate answer that routes the
-    client to onboarding or to the chooser.
+    The business, in order: the one explicitly asked for (invitation accept
+    routes this way), else `preferred_membership` — the last used, then a usable
+    default — else none, which is a legitimate answer: the session's `landing`
+    then says create a business or choose one (docs/platform/14 §4.1).
     """
     membership = None
     if tenant_id is not None:
         membership = active_membership(user=user, tenant_id=tenant_id)
     if membership is None:
-        membership = default_membership(user=user)
+        membership = preferred_membership(user=user)
+        _open_starred_app(membership)
+    from apps.platform_app.services.memberships import touch
+
+    touch(membership)
 
     with transaction.atomic():
         issued = sessions.issue(
@@ -355,6 +363,24 @@ def start_session(
             metadata={"method": method, "device_label": issued.session.device_label},
         )
     return LoggedIn(user=user, membership=membership, tokens=issued, is_new=is_new)
+
+
+def _open_starred_app(membership: Any) -> None:
+    """A sign-in into the starred business opens the starred app (owner, 12 Nov
+    2026), by making it the app last used there — the one rule every screen
+    already follows. An app this person can no longer open is skipped."""
+    if membership is None or not membership.is_default or not membership.primary_app:
+        return
+    if membership.last_app == membership.primary_app:
+        return
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
+    from apps.platform_app.models import Membership
+
+    codes = {a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))}
+    if membership.primary_app in codes:
+        Membership.objects.filter(pk=membership.pk).update(last_app=membership.primary_app)
+        membership.last_app = membership.primary_app
 
 
 def logout(
@@ -385,3 +411,76 @@ def logout(
         metadata={"all_devices": bool(everywhere), "sessions_revoked": revoked},
     )
     return revoked
+
+
+def start_mobile_change(
+    *, user: Any, mobile: str, ip: str | None = None, request_id: str | None = None
+) -> Any:
+    """Your profile › Change mobile, step 1: send a code to the NEW number.
+
+    Refused before any code is sent when the number is already this person's,
+    or another account signs in with it — a code would only invite a change
+    that cannot be made.
+    """
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.models import User
+    from apps.platform_app.services import otp as otp_service
+
+    if user.mobile == mobile:
+        raise BusinessRuleViolation("mobile_unchanged", "This is already your number.")
+    if User.objects.filter(mobile=mobile).exclude(pk=user.pk).exists():
+        raise BusinessRuleViolation("mobile_taken", "Another account signs in with this number.")
+    return otp_service.request_otp(
+        mobile=mobile,
+        purpose=OtpPurpose.VERIFY,
+        ip=ip,
+        locale=user.locale or "en",
+        request_id=request_id,
+    )
+
+
+def finish_mobile_change(
+    *, user: Any, challenge_id: Any, code: str, ip: str | None = None, request_id: str | None = None
+) -> Any:
+    """Step 2: the code typed back proves the number; the sign-in moves to it.
+
+    The check that nobody else took the number runs again under a row lock,
+    between the code being sent and typed back somebody may have. A mobile-only
+    account's stand-in email is built from its number, so it follows.
+    """
+    from django.db import transaction
+
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.models import User
+    from apps.platform_app.services import otp as otp_service
+
+    challenge = otp_service.consume_challenge(
+        challenge_id=challenge_id,
+        code=code,
+        purpose=OtpPurpose.VERIFY,
+        request_id=request_id,
+        ip=ip,
+    )
+    with transaction.atomic():
+        row = User.objects.select_for_update().get(pk=user.pk)
+        if User.objects.filter(mobile=challenge.mobile).exclude(pk=row.pk).exists():
+            raise BusinessRuleViolation(
+                "mobile_taken", "Another account signs in with this number."
+            )
+        old = row.mobile
+        fields = ["mobile", "updated_at"]
+        if old and row.email == synthetic_email_for(old):
+            row.email = synthetic_email_for(challenge.mobile)
+            fields.append("email")
+        row.mobile = challenge.mobile
+        row.save(update_fields=fields)
+        write_audit(
+            ctx=Ctx(tenant=None, actor=row, actor_type="user", request_id=request_id or ""),
+            action=AuditAction.MOBILE_CHANGED,
+            entity_type="platform_user",
+            entity_id=row.pk,
+            metadata={"mobile_sha256": hashlib.sha256(challenge.mobile.encode()).hexdigest()},
+        )
+    return row

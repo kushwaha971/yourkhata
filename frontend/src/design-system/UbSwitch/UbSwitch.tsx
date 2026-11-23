@@ -1,9 +1,10 @@
 'use client';
 
-import { memo, useId, type ReactNode } from 'react';
+import { memo, useId, useRef, type ReactNode } from 'react';
 
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 
+import { useHiddenInputClickGuard } from 'src/design-system/primitives/hiddenInputClick';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -49,6 +50,8 @@ function UbSwitchBase({
   id,
   className,
 }: Readonly<UbSwitchProps>) {
+  const guard = useRef<HTMLLabelElement>(null);
+  useHiddenInputClickGuard(guard);
   const generated = useId();
   const switchId = id ?? generated;
   const descriptionId = description ? `${switchId}-description` : undefined;
@@ -56,6 +59,8 @@ function UbSwitchBase({
   return (
     <label
       htmlFor={switchId}
+      ref={guard}
+      data-ub-switch-row=""
       className={cn(
         'flex min-h-11 w-full cursor-pointer items-center justify-between gap-3',
         disabled && 'cursor-not-allowed opacity-60',
@@ -63,9 +68,10 @@ function UbSwitchBase({
       )}
     >
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="ds-body-sm text-text-primary">{label}</span>
+        {/* The design's .swr: a 14 px medium label over a 12.5 px tertiary line. */}
+        <span className="ds-body-sm-medium text-text-primary">{label}</span>
         {description && (
-          <span id={descriptionId} className="ds-caption text-text-tertiary">
+          <span id={descriptionId} className="ds-caption text-[12.5px] text-text-tertiary">
             {description}
           </span>
         )}
@@ -78,11 +84,13 @@ function UbSwitchBase({
         disabled={disabled}
         aria-describedby={descriptionId}
         className={cn(
-          'peer inline-flex h-[18px] w-[33px] shrink-0 items-center rounded-pill border-0',
+          // The row is the target where the switch has one (`min-h-11` label);
+          // `.ub-hit` covers a caller that tightens the row (a toolbar toggle).
+          'ub-hit peer inline-flex h-[18px] w-[33px] shrink-0 items-center rounded-pill border-0',
           'transition-colors duration-fast ease-standard',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed',
-          'data-[state=checked]:bg-accent data-[state=unchecked]:bg-border-strong'
+          'data-[state=checked]:bg-action data-[state=unchecked]:bg-border-strong'
         )}
       >
         <SwitchPrimitive.Thumb

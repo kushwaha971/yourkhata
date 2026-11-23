@@ -1,0 +1,199 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "payment-review",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "payment-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "payment-saved",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "payment-refreshed",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "home-after-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "state": "home-source-refresh",
+      "width": 320,
+      "theme": "light",
+      "amountDue": "213.00",
+      "itemCount": 1,
+      "status": "partially_paid"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-financial-proof",
+      "posts": 1,
+      "bucket": "shop",
+      "direction": "in",
+      "beforeDue": "214.00",
+      "afterDue": "213.00",
+      "payment": "01a157ed-63b4-70b4-9c8f-602cd2e04028"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "viewportWidth": 320,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-review",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-busy",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-saved",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "payment-refreshed",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "home-after-payment",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "state": "home-source-refresh",
+      "width": 1280,
+      "theme": "light",
+      "amountDue": "212.00",
+      "itemCount": 1,
+      "status": "partially_paid"
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-financial-proof",
+      "posts": 1,
+      "bucket": "shop",
+      "direction": "in",
+      "beforeDue": "213.00",
+      "afterDue": "212.00",
+      "payment": "01a157ed-7cbe-705f-8b78-82eb5375f2cd"
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "viewportWidth": 1280,
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "failures": []
+}

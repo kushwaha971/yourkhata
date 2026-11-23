@@ -8,6 +8,12 @@ import {
   type MLButtonSize,
   type MLButtonVariant,
 } from 'src/design-system/primitives';
+import {
+  SHEET_ROW_CLASSES,
+  useUbActionPresentation,
+} from 'src/design-system/UbActionSheet/actionPresentation';
+import { useUbViewOnly } from 'src/design-system/UbViewOnly';
+import { useAsyncAction } from 'src/hooks/useAsyncAction';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -63,7 +69,15 @@ export interface UbButtonProps extends Omit<
   readonly iconOnly?: boolean | 'mobile';
   readonly children: ReactNode;
   readonly className?: string;
+  /**
+   * CR-2026-09-29-SEC-A — stays enabled inside a `UbViewOnlyProvider`. Only for
+   * the few actions the server allows in a support session (ending it).
+   */
+  readonly viewOnlySafe?: boolean;
 }
+
+/** The variants that read as "do something" — a write, in this product. */
+const WRITE_VARIANTS: ReadonlySet<UbButtonVariant> = new Set(['primary', 'destructive']);
 
 /** Below `sm`: a 32 px square (owner: the 40 px ones "look so large" beside a
  *  title), label kept for AT. Still inside the 44 px row the header gives it. */
@@ -82,27 +96,45 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
     children,
     disabled,
     className,
+    viewOnlySafe = false,
+    title,
+    onClick,
     ...rest
   },
   ref
 ) {
+  const viewOnly = useUbViewOnly();
+  // 05 §3 — an async onClick locks the button until it settles, so a caller
+  // that forgets `busy` still cannot be tapped twice into a double write.
+  const action = useAsyncAction(onClick);
+  const working = busy || action.pending;
+  const locked =
+    viewOnly !== null && !viewOnlySafe && (WRITE_VARIANTS.has(variant) || rest.type === 'submit');
+  // Inside a ⋯ sheet the action is a worded row, whatever it is inline.
+  const inSheet = useUbActionPresentation() === 'sheet';
+  const shape = inSheet ? false : iconOnly;
   return (
     <MLButton
       ref={ref}
-      variant={variant}
+      variant={inSheet ? 'ghost' : variant}
       size={size}
-      disabled={disabled || busy}
-      aria-busy={busy || undefined}
-      aria-disabled={disabled || busy || undefined}
+      disabled={disabled || working || locked}
+      aria-busy={working || undefined}
+      aria-disabled={disabled || working || locked || undefined}
+      title={locked ? viewOnly : title}
+      data-view-only={locked || undefined}
       className={cn(
         fullWidth && 'w-full',
-        iconOnly === true && 'aspect-square px-0',
-        iconOnly === 'mobile' && ICON_ONLY_MOBILE,
-        className
+        shape === true && 'aspect-square px-0',
+        shape === 'mobile' && ICON_ONLY_MOBILE,
+        className,
+        inSheet && SHEET_ROW_CLASSES,
+        inSheet && variant === 'destructive' && 'text-error [&_svg]:text-error'
       )}
       {...rest}
+      onClick={onClick ? action.run : undefined}
     >
-      {busy ? <MLSpinner /> : icon}
+      {working ? <MLSpinner /> : icon}
       {/* `inline-flex items-center gap-2` rather than a bare `<span>`.
           Tailwind's preflight sets `svg { display: block }`, so an icon a
           caller passes as a CHILD instead of through `icon` becomes a block
@@ -114,11 +146,11 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
       <span
         className={cn(
           'inline-flex items-center gap-2',
-          iconOnly === true && 'sr-only',
-          iconOnly === 'mobile' && LABEL_ONLY_FROM_SM
+          shape === true && 'sr-only',
+          shape === 'mobile' && LABEL_ONLY_FROM_SM
         )}
       >
-        {busy ? (busyLabel ?? children) : children}
+        {working ? (busyLabel ?? children) : children}
       </span>
     </MLButton>
   );

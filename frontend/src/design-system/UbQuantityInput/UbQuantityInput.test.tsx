@@ -5,24 +5,20 @@ import userEvent from '@testing-library/user-event';
 
 import { sanitiseQuantity, UbQuantityInput } from './UbQuantityInput';
 
-/**
- * §17.6.0 quantity rules. A whole-number unit refuses the decimal point AT THE
- * KEYBOARD, so "1.5 pieces" is never typed and then refused by the server's
- * `qty_must_be_whole` after the merchant has moved on.
- */
+/** Quantity text keeps invalid fractions/signs for validation, never1.5→15 or-5→5. */
 describe('sanitiseQuantity', () => {
   it('keeps at most three decimals for a decimal unit', () => {
     expect(sanitiseQuantity('1.23456', 3, false)).toBe('1.234');
     expect(sanitiseQuantity('1.2.3', 3, false)).toBe('1.23');
   });
 
-  it('drops the point entirely for a whole-number unit', () => {
-    expect(sanitiseQuantity('1.5', 0, false)).toBe('15');
+  it('keeps an invalid fraction so whole-number validation can refuse it', () => {
+    expect(sanitiseQuantity('1.5', 0, false)).toBe('1.5');
   });
 
-  it('admits one leading minus only when signed (the adjustment "Adjust by")', () => {
+  it('preserves a leading minus instead of turning an invalid negative into positive stock', () => {
     expect(sanitiseQuantity('-3', 0, true)).toBe('-3');
-    expect(sanitiseQuantity('-3', 0, false)).toBe('3');
+    expect(sanitiseQuantity('-3', 0, false)).toBe('-3');
     expect(sanitiseQuantity('3-', 0, true)).toBe('3');
   });
 });
@@ -43,9 +39,24 @@ function Harness({ decimals }: Readonly<{ decimals: number }>) {
 describe('UbQuantityInput', () => {
   it('keeps the typed value a string and shows the unit beside it', async () => {
     const user = userEvent.setup();
-    render(<Harness decimals={0} />);
+    render(<Harness decimals={3} />);
     await user.type(screen.getByLabelText('Qty'), '12.5');
-    expect(screen.getByLabelText('Qty')).toHaveValue('125');
+    expect(screen.getByLabelText('Qty')).toHaveValue('12.5');
     expect(screen.getByText('NOS')).toBeInTheDocument();
+  });
+
+  /** Owner, 27 Oct 2026: a whole-number unit does not take a point, so "3.141 NOS" can never be typed or saved. */
+  it('refuses a point on a whole-number unit, typed or pasted', async () => {
+    const user = userEvent.setup();
+    render(<Harness decimals={0} />);
+    const box = screen.getByLabelText('Qty');
+    // Refusing only the point turned "3.141" into 3141 NOS.
+    await user.type(box, '3.141');
+    expect(box).toHaveValue('3');
+    await user.type(box, '{Backspace}7');
+    expect(box).toHaveValue('7');
+    await user.clear(box);
+    await user.paste('12.5');
+    expect(box).toHaveValue('12');
   });
 });

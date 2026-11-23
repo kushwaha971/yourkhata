@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useId } from 'react';
+import { useCallback, useId, useState } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
 import {
   UbButton,
+  UbOtpInput,
   UbDialog,
   UbField,
   UbForm,
@@ -15,9 +16,13 @@ import {
   UbTextArea,
   UbTextInput,
 } from 'src/design-system';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
+import { requestDeleteCode } from '../redux/accountDataThunk';
 import {
   DELETE_REASON_MAX,
   useAccountDataSchemas,
@@ -26,15 +31,24 @@ import {
 
 import type { UseAccountDataResult } from '../hooks/useAccountData';
 
-const FIELDS: readonly string[] = ['password', 'confirmName', 'reason'];
+// The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/auth';
+import 'src/i18n/catalogues/dataStatus';
+import 'src/i18n/catalogues/validation';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+
+const FIELDS: readonly string[] = ['code', 'confirmName', 'reason'];
 
 /**
  * PLT-10 FRD §6/§7 — the deletion confirmation. `dynamic()`-loaded by the page:
  * the form, its resolver and the schema belong in the chunk that OPENS them.
  *
  * It states exactly what happens and when (TSK-PLT-10-05), requires the
- * business name typed back, and re-verifies with the owner's PASSWORD — not
- * an OTP, which DEC-010 removed. The export gate is enforced before this
+ * business name typed back, and re-verifies the owner with a six-digit code
+ * sent to their own mobile — nobody using the app has a password (owner,
+ * 15 Nov 2026). The export gate is enforced before this
  * dialog can open; the server enforces it again.
  */
 export function DeleteBusinessDialog({
@@ -50,19 +64,24 @@ export function DeleteBusinessDialog({
   const formId = useId();
   const businessName = data.deletion?.businessName ?? '';
   const coolOff = data.deletion?.coolOffDays ?? 30;
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectSessionUser);
+  const [challenge, setChallenge] = useState<{ id: string; length: number } | null>(null);
+  const [sending, setSending] = useState(false);
   const { deleteBusinessSchema } = useAccountDataSchemas(businessName);
 
   const form = useForm<DeleteBusinessFormValues>({
     resolver: yupResolver(deleteBusinessSchema),
     mode: 'onTouched',
-    defaultValues: { password: '', confirmName: '', reason: '' },
+    defaultValues: { code: '', confirmName: '', reason: '' },
   });
   const { setError, reset } = form;
 
   const submit = useCallback(
     async (values: DeleteBusinessFormValues) => {
       const refusal = await data.submitDeletion({
-        password: values.password,
+        challengeId: challenge?.id ?? '',
+        code: values.code,
         confirmName: values.confirmName,
         reason: values.reason.trim(),
       });
@@ -73,8 +92,19 @@ export function DeleteBusinessDialog({
       }
       applyServerErrors(refusal, setError, FIELDS, t);
     },
-    [data, onClose, reset, setError, t]
+    [challenge, data, onClose, reset, setError, t]
   );
+
+  const sendCode = useCallback(async () => {
+    setSending(true);
+    const result = await dispatch(requestDeleteCode());
+    setSending(false);
+    if (requestDeleteCode.fulfilled.match(result)) {
+      setChallenge({ id: result.payload.challengeId, length: result.payload.codeLength });
+    } else {
+      setError('code', { message: t('data.delete.code.sendError') });
+    }
+  }, [dispatch, setError, t]);
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -131,22 +161,40 @@ export function DeleteBusinessDialog({
           >
             {(field) => <UbTextInput {...field} autoComplete="off" maxLength={200} />}
           </UbField>
-          <UbField
-            name="password"
-            label={t('data.delete.password.label')}
-            placeholder={t('data.delete.password.placeholder')}
-            required
-          >
-            {(field) => (
-              <UbTextInput
-                {...field}
-                type="password"
-                autoComplete="current-password"
-                revealLabel={t('auth.password.show')}
-                hideLabel={t('auth.password.hide')}
-              />
+          <UbStack gap={2}>
+            <UbText variant="body-sm" tone="secondary">
+              {t('data.delete.code.why')}
+            </UbText>
+            {challenge ? (
+              <UbField
+                name="code"
+                label={t('data.delete.code.label', {
+                  mobile: formatPhoneForDisplay(user?.mobile ?? ''),
+                })}
+                controlOwnsLabel
+                required
+              >
+                {(field) => (
+                  <UbOtpInput
+                    length={challenge.length}
+                    id={field.id}
+                    value={(field.value as string) ?? ''}
+                    onChange={field.onChange}
+                    invalid={field.invalid}
+                    label={t('data.delete.code.label', {
+                      mobile: formatPhoneForDisplay(user?.mobile ?? ''),
+                    })}
+                    cellLabel={(index, total) => t('auth.otp.cell', { index, total })}
+                    describedBy={field['aria-describedby']}
+                  />
+                )}
+              </UbField>
+            ) : (
+              <UbButton variant="secondary" busy={sending} onClick={() => void sendCode()}>
+                {t('data.delete.code.send')}
+              </UbButton>
             )}
-          </UbField>
+          </UbStack>
           <UbField
             name="reason"
             label={t('data.delete.reason.label')}

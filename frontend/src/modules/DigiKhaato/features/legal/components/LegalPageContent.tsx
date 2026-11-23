@@ -52,15 +52,6 @@ function LegalPageContentBase({ titleId }: Readonly<LegalPageContentProps>) {
           </UbText>
         </UbStack>
       </UbBox>
-
-      <UbStack direction="row" gap={4} wrap>
-        <UbLink href={ROUTES.LEGAL_TERMS} variant="body-sm">
-          {t('auth.legal.terms')}
-        </UbLink>
-        <UbLink href={ROUTES.LEGAL_PRIVACY} variant="body-sm">
-          {t('auth.legal.privacy')}
-        </UbLink>
-      </UbStack>
     </UbStack>
   );
 }

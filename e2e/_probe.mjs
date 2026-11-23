@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-const FE='http://localhost:3000', BE='http://localhost:8000/api/v1';
+const FE=(process.env.E2E_BASE ?? 'http://localhost:3000'), BE='http://localhost:8000/api/v1';
 const stamp=Date.now();
 const api=async(m,p,b,t,extra={})=>{const r=await fetch(BE+p,{method:m,headers:{'Content-Type':'application/json','X-Client':'api',...(t?{Authorization:`Bearer ${t}`}:{}),...extra},body:b?JSON.stringify(b):undefined});return {status:r.status, body:await r.json().catch(()=>null)};};
 const email=`probe-${stamp}@shop.test`, password='Dukaan2026x';
@@ -14,7 +14,7 @@ const partyId=r.body.data.id;
 const b=await chromium.launch();
 const ctx=await b.newContext({viewport:{width:1440,height:900}});
 const p=await ctx.newPage();
-await p.goto(`${FE}/login`,{waitUntil:'domcontentloaded'});
+await p.goto(`${FE}/login/email`,{waitUntil:'domcontentloaded'});
 await p.fill('input[type="email"]',email); await p.fill('input[type="password"]',password);
 await p.click('button[type="submit"]'); await p.waitForTimeout(2500);
 await p.goto(`${FE}/parties/${partyId}`,{waitUntil:'domcontentloaded'});

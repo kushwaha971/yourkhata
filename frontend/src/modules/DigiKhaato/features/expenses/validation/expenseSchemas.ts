@@ -15,7 +15,7 @@ import type { ExpenseFormValues } from '../types/expense.types';
  *
  * The cross-field rules sit at the OBJECT level with `createError({ path })`,
  * so each message lands under the control the merchant can see: "Choose how
- * you paid" only when Paid now is on, "Choose who you owe this to" and the
+ * you paid" only when Paid now is on, "Choose who you have to pay" and the
  * due date only when it is off. A `.when()` on the field would put the same
  * refusal on a control that is hidden.
  *
@@ -25,7 +25,6 @@ import type { ExpenseFormValues } from '../types/expense.types';
  */
 export interface ExpenseSchemas {
   readonly expenseSchema: Yup.ObjectSchema<ExpenseFormValues>;
-  readonly voidReasonSchema: Yup.ObjectSchema<{ reason: string }>;
 }
 
 export const useExpenseSchemas = (): ExpenseSchemas => {
@@ -68,10 +67,6 @@ export const useExpenseSchemas = (): ExpenseSchemas => {
       return true;
     }) as Yup.ObjectSchema<ExpenseFormValues>;
 
-    const voidReasonSchema = Yup.object({
-      reason: v.requiredBoundedText(160, 3, 'expenses.void.reason.required'),
-    }) as Yup.ObjectSchema<{ reason: string }>;
-
-    return { expenseSchema, voidReasonSchema };
+    return { expenseSchema };
   }, [v, t]);
 };

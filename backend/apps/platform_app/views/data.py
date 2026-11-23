@@ -128,7 +128,7 @@ class TenantExportDownloadView(APIView):
         response = FileResponse(
             default_storage.open(key, "rb"),
             as_attachment=True,
-            filename=f"digikhaato-export-{stamp}.zip",
+            filename=f"yourkhata-export-{stamp}.zip",
             content_type="application/zip",
         )
         response["Cache-Control"] = "no-store"
@@ -145,17 +145,19 @@ class DeletionView(APIView):
 
 
 class DeleteRequestSerializer(serializers.Serializer):
-    password = serializers.CharField(max_length=256, trim_whitespace=False)
+    # A code sent to the owner's own mobile (nobody has a password).
+    challenge_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    code = serializers.CharField(max_length=12, required=False, allow_blank=True)
     confirm_name = serializers.CharField(max_length=200)
     reason = serializers.CharField(max_length=500, required=False, allow_blank=True)
 
 
 class DeleteRequestView(APIView):
-    """`POST /tenants/current/delete-request` (FR-3) — password re-verified."""
+    """`POST /tenants/current/delete-request` (FR-3) — re-verified by a code."""
 
     permission_classes = [IsAuthenticated]
-    # The re-verification budget: a stolen session guessing the owner's password
-    # through this endpoint gets ten tries an hour.
+    # The re-verification budget: a stolen session guessing codes through this
+    # endpoint gets ten tries an hour, on top of the code's own five.
 
     def get_throttles(self) -> list:
         return [ScopedUserRateThrottle("reverify")]
@@ -167,11 +169,41 @@ class DeleteRequestView(APIView):
         data = serializer.validated_data
         tenant = delete_service.request_deletion(
             ctx=Ctx.from_request(request),
-            password=data["password"],
+            challenge_id=data.get("challenge_id") or None,
+            code=data.get("code") or None,
             confirm_name=data["confirm_name"],
             reason=data.get("reason") or None,
         )
         return StandardResponse.ok(deletion_state(tenant))
+
+
+class DeleteCodeView(APIView):
+    """`POST /tenants/current/delete-code` — a code to the owner's own mobile.
+
+    The delete's re-verification (owner, 15 Nov 2026: nobody has a password).
+    Same budget as the delete itself.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_throttles(self) -> list:
+        return [ScopedUserRateThrottle("reverify")]
+
+    def post(self, request: Any) -> Any:
+        _owner_tenant(request)
+        issued = delete_service.send_delete_code(
+            user=request.user,
+            ip=request.META.get("REMOTE_ADDR"),
+            request_id=getattr(request, "request_id", None),
+        )
+        return StandardResponse.ok(
+            {
+                "challenge_id": str(issued.challenge_id),
+                "retry_after": issued.retry_after,
+                "code_length": issued.code_length,
+                "channel": issued.channel,
+            }
+        )
 
 
 class DeleteCancelView(APIView):

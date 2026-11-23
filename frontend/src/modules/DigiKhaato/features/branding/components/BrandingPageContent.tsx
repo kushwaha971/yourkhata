@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Lock } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -13,9 +15,9 @@ import {
   UbFileUpload,
   UbForm,
   UbGrid,
+  UbDisclosure,
   UbImagePreview,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbPanelSection,
   UbSkeleton,
@@ -29,6 +31,8 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useSettingsAccess } from '../../settings/hooks/useSettingsAccess';
 import { useBranding } from '../hooks/useBranding';
@@ -50,6 +54,13 @@ import type {
   LockableKey,
 } from '../types/branding.types';
 
+// Design S4 "On every bill" reads the tenant settings; its hook and slice load
+// with it rather than with the logo form every visit pays for.
+const BillDefaultsPanel = dynamic(
+  () => import('./BillDefaultsPanel').then((m) => m.BillDefaultsPanel),
+  { ssr: false }
+);
+
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
 const FIELD_KEY: Readonly<Record<keyof BrandingFormValues, BrandingTextKey>> = {
@@ -60,7 +71,7 @@ const FIELD_KEY: Readonly<Record<keyof BrandingFormValues, BrandingTextKey>> = {
 };
 
 const toForm = (branding: Branding | null): BrandingFormValues => ({
-  primaryHex: branding?.primaryHex ?? '#4A47D6',
+  primaryHex: branding?.primaryHex ?? '#0E7C86',
   appName: branding?.appName ?? '',
   docHeader: branding?.docHeader ?? '',
   docFooter: branding?.docFooter ?? '',
@@ -182,7 +193,7 @@ export function BrandingPageContent(): React.JSX.Element {
 
   if (status === 'failed') {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="branding" header={header} wide>
         <UbEmptyState
           variant="error"
           title={t('branding.error.title')}
@@ -195,14 +206,14 @@ export function BrandingPageContent(): React.JSX.Element {
             </UbButton>
           }
         />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   if (!data) {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="branding" header={header} wide>
         <UbSkeleton variant="form" count={5} />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
 
@@ -210,7 +221,7 @@ export function BrandingPageContent(): React.JSX.Element {
   const disabled = !canEdit;
 
   return (
-    <UbPageShell header={header}>
+    <SettingsFrame page="branding" header={header} wide>
       <UbGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <UbForm form={form} onSubmit={submit}>
           <UbPanel as="section">
@@ -240,89 +251,96 @@ export function BrandingPageContent(): React.JSX.Element {
                 </UbStack>
               </UbStack>
             </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.colour.label')}
-              action={sourceBadge('primary_hex', 'primary_hex')}
-            >
-              <UbField
-                name="primaryHex"
-                label={t('branding.colour.hex')}
-                placeholder={t('branding.colour.placeholder')}
-                labelHidden
-              >
-                {(field) => (
-                  <ColourField
-                    field={field}
-                    disabled={disabled || locked('primary_hex')}
-                    suggestedHex={branding.suggestedHex}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.appName.label')}
-              action={sourceBadge('app_name', 'app_name')}
-            >
-              <UbField
-                name="appName"
-                label={t('branding.appName.label')}
-                placeholder={t('branding.appName.placeholder')}
-                hint={t('branding.appName.hint')}
-                labelHidden
-              >
-                {(field) => (
-                  <UbTextInput
-                    {...field}
-                    maxLength={APP_NAME_MAX}
-                    disabled={disabled || locked('app_name')}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.docHeader.label')}
-              action={sourceBadge('doc_header')}
-            >
-              <UbField
-                name="docHeader"
-                label={t('branding.docHeader.label')}
-                placeholder={t('branding.docHeader.placeholder')}
-                labelHidden
-              >
-                {(field) => (
-                  <UbTextArea
-                    {...field}
-                    rows={2}
-                    maxLength={DOC_HEADER_MAX}
-                    counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
-                    disabled={disabled}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
-            <UbPanelSection
-              title={t('branding.docFooter.label')}
-              action={sourceBadge('doc_footer', 'doc_footer')}
-            >
-              <UbField
-                name="docFooter"
-                label={t('branding.docFooter.label')}
-                placeholder={t('branding.docFooter.placeholder')}
-                hint={data.legalFooter ? t('branding.docFooter.legalHint') : undefined}
-                labelHidden
-              >
-                {(field) => (
-                  <UbTextArea
-                    {...field}
-                    rows={3}
-                    maxLength={DOC_FOOTER_MAX}
-                    counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
-                    disabled={disabled || locked('doc_footer')}
-                  />
-                )}
-              </UbField>
-            </UbPanelSection>
           </UbPanel>
+          {/* Design S4: "On every bill" right after the logo. */}
+          <BillDefaultsPanel />
+          {/* The brand look the design has no place for stays, closed. */}
+          <UbDisclosure label={t('branding.more.title')} hint={t('branding.more.hint')}>
+            <UbPanel as="section">
+              <UbPanelSection
+                title={t('branding.colour.label')}
+                action={sourceBadge('primary_hex', 'primary_hex')}
+              >
+                <UbField
+                  name="primaryHex"
+                  label={t('branding.colour.hex')}
+                  placeholder={t('branding.colour.placeholder')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <ColourField
+                      field={field}
+                      disabled={disabled || locked('primary_hex')}
+                      suggestedHex={branding.suggestedHex}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.appName.label')}
+                action={sourceBadge('app_name', 'app_name')}
+              >
+                <UbField
+                  name="appName"
+                  label={t('branding.appName.label')}
+                  placeholder={t('branding.appName.placeholder')}
+                  hint={t('branding.appName.hint')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextInput
+                      {...field}
+                      maxLength={APP_NAME_MAX}
+                      disabled={disabled || locked('app_name')}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.docHeader.label')}
+                action={sourceBadge('doc_header')}
+              >
+                <UbField
+                  name="docHeader"
+                  label={t('branding.docHeader.label')}
+                  placeholder={t('branding.docHeader.placeholder')}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextArea
+                      {...field}
+                      rows={2}
+                      maxLength={DOC_HEADER_MAX}
+                      counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
+                      disabled={disabled}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+              <UbPanelSection
+                title={t('branding.docFooter.label')}
+                action={sourceBadge('doc_footer', 'doc_footer')}
+              >
+                <UbField
+                  name="docFooter"
+                  label={t('branding.docFooter.label')}
+                  placeholder={t('branding.docFooter.placeholder')}
+                  hint={data.legalFooter ? t('branding.docFooter.legalHint') : undefined}
+                  labelHidden
+                >
+                  {(field) => (
+                    <UbTextArea
+                      {...field}
+                      rows={3}
+                      maxLength={DOC_FOOTER_MAX}
+                      counterLabel={t('branding.counter', { count: '{count}', max: '{max}' })}
+                      disabled={disabled || locked('doc_footer')}
+                    />
+                  )}
+                </UbField>
+              </UbPanelSection>
+            </UbPanel>
+          </UbDisclosure>
           {canEdit && (
             <UbStack direction="row" justify="end">
               <UbButton
@@ -357,6 +375,6 @@ export function BrandingPageContent(): React.JSX.Element {
           />
         </UbStack>
       </UbGrid>
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

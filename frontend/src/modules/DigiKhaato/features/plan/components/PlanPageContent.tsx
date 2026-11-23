@@ -1,7 +1,9 @@
 'use client';
 
-import { UbPageHeader, UbPageShell, UbStack } from 'src/design-system';
+import { UbPageHeader, UbStack } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { PlanLimitBanner } from './PlanLimitBanner';
 import { PlanUsageCard } from './PlanUsageCard';
@@ -18,13 +20,14 @@ export function PlanPageContent(): React.JSX.Element {
   const { t } = useTranslation();
 
   return (
-    <UbPageShell
+    <SettingsFrame
+      page="plan"
       header={<UbPageHeader title={t('plan.card.title')} subtitle={t('plan.page.subtitle')} />}
     >
       <UbStack gap={4}>
         <PlanLimitBanner />
         <PlanUsageCard />
       </UbStack>
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

@@ -39,7 +39,8 @@ import { cn } from 'src/utils/cn';
  * mouse; the accessible name is the full string either way, because a screen
  * reader is not short of horizontal space.
  */
-export type UbTagColor = 'viz-1' | 'viz-2' | 'viz-3' | 'viz-4' | 'viz-5' | 'viz-6' | 'viz-7' | 'viz-8';
+export type UbTagColor =
+  'viz-1' | 'viz-2' | 'viz-3' | 'viz-4' | 'viz-5' | 'viz-6' | 'viz-7' | 'viz-8';
 
 export const UB_TAG_COLORS: readonly UbTagColor[] = [
   'viz-1',

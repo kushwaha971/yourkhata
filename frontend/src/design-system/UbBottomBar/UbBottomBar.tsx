@@ -37,6 +37,8 @@ export interface UbBottomBarProps extends HTMLAttributes<HTMLElement> {
    * not be given `position: sticky` it never had.
    */
   readonly sticky?: boolean;
+  /** Include navigation/gaps below this bar when clearing the global snackbar. */
+  readonly clearToBottom?: boolean;
   readonly className?: string;
   readonly children?: ReactNode;
 }
@@ -44,11 +46,12 @@ export interface UbBottomBarProps extends HTMLAttributes<HTMLElement> {
 function UbBottomBarBase({
   as = 'div',
   sticky = true,
+  clearToBottom = false,
   className,
   children,
   ...rest
 }: Readonly<UbBottomBarProps>): React.JSX.Element {
-  const ref = useBottomInset<HTMLElement>();
+  const ref = useBottomInset<HTMLElement>(true, clearToBottom);
 
   return createElement(
     as,
@@ -57,7 +60,9 @@ function UbBottomBarBase({
       // Not read by any stylesheet: it is the marker that makes "what is at the
       // bottom of this page" greppable, and answerable in a DOM snapshot.
       'data-ub-bottom-bar': '',
-      className: cn(sticky && 'sticky bottom-0 z-10', className),
+      // `--ub-nav-offset` is 0 except on a phone screen that shows `UbBottomNav`,
+      // where a sticky action bar must ride above the bar rather than under it.
+      className: cn(sticky && 'sticky bottom-[var(--ub-nav-offset)] z-10', className),
       ...rest,
     },
     children

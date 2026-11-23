@@ -20,11 +20,11 @@ import * as tenantSwitcherService from '../api/tenantSwitcherService';
 /** MUTATION — PLT-04 FR-5. Exactly one default per user; the server clears the rest. */
 export const setDefaultTenant = createAsyncThunk<
   SessionPayload,
-  { readonly membershipId: string },
+  { readonly membershipId: string; readonly primaryApp?: string },
   { rejectValue: ApiErrorShape }
->('tenantSwitcher/setDefaultTenant', async ({ membershipId }, { rejectWithValue }) => {
+>('tenantSwitcher/setDefaultTenant', async ({ membershipId, primaryApp }, { rejectWithValue }) => {
   try {
-    await tenantSwitcherService.setDefaultMembership(membershipId);
+    await tenantSwitcherService.setDefaultMembership(membershipId, primaryApp);
     return await getSession();
   } catch (error) {
     return rejectWithValue(toApiError(error, 'tenant.switcher.setDefault.error'));

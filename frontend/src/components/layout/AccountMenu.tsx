@@ -1,21 +1,23 @@
 'use client';
 
-import { useCallback } from 'react';
+import {
+  Check,
+  ChevronDown,
+  LogOut,
+  MessageSquare,
+  MonitorSmartphone,
+  ShieldCheck,
+} from 'lucide-react';
 
-import { useRouter } from 'next/navigation';
-
-import { Check, ChevronDown, LogOut, MonitorSmartphone, ShieldCheck } from 'lucide-react';
-
+import { useFeedback } from 'src/analytics/feedback';
+import { THEME_MODES, useAccountActions } from 'src/components/layout/useAccountActions';
 import { UbAvatar, UbBox, UbDivider, UbText } from 'src/design-system';
 import { MLMenu, MLMenuItem, MLMenuLabel } from 'src/design-system/primitives';
-import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { useLocaleSwitch } from 'src/hooks/useLocaleSwitch';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectImpersonation, selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
+import { accountContact, accountDisplayName } from 'src/utils/accountIdentity';
 import { cn } from 'src/utils/cn';
-
-import { logout } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
 
 /**
  * The account menu — who is signed in, the language, and Sign out.
@@ -38,19 +40,15 @@ export function AccountMenu({
   compact = false,
 }: Readonly<{ compact?: boolean }>): React.JSX.Element | null {
   const { t } = useTranslation();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  const user = useAppSelector(selectSessionUser);
-  const impersonating = useAppSelector(selectImpersonation) !== null;
-  const { locale, options, setLocale } = useLocaleSwitch();
-
-  const signOut = useCallback(async () => {
-    await dispatch(logout());
-    router.replace(ROUTES.LOGIN);
-  }, [dispatch, router]);
+  const router = useAppRouter();
+  const feedback = useFeedback();
+  const { user, impersonating, locale, options, setLocale, theme, setTheme, signOut } =
+    useAccountActions();
 
   if (!user) return null;
-  const displayName = user.name || user.email;
+  // Never the placeholder address of a mobile-number account (accountIdentity.ts).
+  const displayName = accountDisplayName(user);
+  const contact = accountContact(user);
 
   return (
     <MLMenu
@@ -67,7 +65,7 @@ export function AccountMenu({
         ) : (
           <>
             <UbAvatar name={displayName} size="sm" />
-            <AccountIdentity name={user.name} email={user.email} />
+            <AccountIdentity name={user.name} email={contact} />
             <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
           </>
         )
@@ -77,7 +75,7 @@ export function AccountMenu({
         <>
           <UbBox className="flex items-center gap-3 px-3 py-2">
             <UbAvatar name={displayName} size="md" />
-            <AccountIdentity name={user.name} email={user.email} wide />
+            <AccountIdentity name={user.name} email={contact} wide />
           </UbBox>
           <UbDivider decorative className="my-1" />
         </>
@@ -93,7 +91,18 @@ export function AccountMenu({
           <UbText as="span" variant="inherit" lang={option.value} className="flex-1">
             {option.label}
           </UbText>
-          {option.value === locale && <Check aria-hidden className="h-4 w-4 text-accent" />}
+          {option.value === locale && <Check aria-hidden className="h-4 w-4 text-text-accent" />}
+        </MLMenuItem>
+      ))}
+
+      <UbDivider decorative className="my-1" />
+      <MLMenuLabel>{t('theme.label')}</MLMenuLabel>
+      {THEME_MODES.map((mode) => (
+        <MLMenuItem key={mode} selected={mode === theme} onSelect={() => setTheme(mode)}>
+          <UbText as="span" variant="inherit" className="flex-1">
+            {t(`theme.${mode}`)}
+          </UbText>
+          {mode === theme && <Check aria-hidden className="h-4 w-4 text-text-accent" />}
         </MLMenuItem>
       ))}
 
@@ -105,6 +114,12 @@ export function AccountMenu({
         <MonitorSmartphone aria-hidden className="h-4 w-4" />
         {t('sessions.nav')}
       </MLMenuItem>
+      {feedback && (
+        <MLMenuItem onSelect={feedback}>
+          <MessageSquare aria-hidden className="h-4 w-4" />
+          {t('feedback.tab.label')}
+        </MLMenuItem>
+      )}
       {/* PLT-14 FR-1 — the console link, for operators only and never from
           inside a support session (the console refuses a support token). */}
       {user?.isSuperAdmin && !impersonating ? (

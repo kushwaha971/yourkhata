@@ -37,6 +37,10 @@ interface ReminderWire {
   readonly note: string;
   readonly sent_at: string | null;
   readonly created_at: string;
+  /** A7 — additive; an older server sends none of these. */
+  readonly module?: string;
+  readonly subject_label?: string;
+  readonly recipient?: { readonly id: string; readonly name: string } | null;
 }
 
 const toReminder = (row: ReminderWire): Reminder => ({
@@ -51,6 +55,9 @@ const toReminder = (row: ReminderWire): Reminder => ({
   note: row.note,
   sentAt: row.sent_at,
   createdAt: row.created_at,
+  module: row.module ?? '',
+  subjectLabel: row.subject_label ?? '',
+  recipient: row.recipient ?? null,
 });
 
 interface WarningWire {
@@ -82,6 +89,7 @@ export const listReminders = async (
   }>(
     `${API_PATHS.REMINDERS}${toQueryString({
       party_id: params.partyId || undefined,
+      book: params.book,
       kind: params.kind || undefined,
       status: params.status || undefined,
       page: params.page > 1 ? params.page : undefined,
@@ -157,23 +165,27 @@ interface BucketWire {
 export const getCollectionSummary = async (signal?: AbortSignal): Promise<CollectionSummary> => {
   const response = await api.get<{
     data: { due_today: BucketWire; overdue: BucketWire; upcoming_7d: BucketWire; as_of: string };
+    meta?: { has_any?: boolean };
   }>(API_PATHS.LEDGER_SUMMARY, ubConfig({ signal, suppressErrorSnackbar: true }));
-  const { data } = response.data;
+  const { data, meta } = response.data;
   return {
     dueToday: data.due_today,
     overdue: data.overdue,
     upcoming: data.upcoming_7d,
     asOf: data.as_of,
+    ...(typeof meta?.has_any === 'boolean' ? { hasAny: meta.has_any } : {}),
   };
 };
 
 export const previewReminder = async (
   partyId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  book?: 'main' | 'shop'
 ): Promise<ReminderPreview> => {
   const response = await api.post<{
     data: {
       party_id: string;
+      book?: 'main' | 'shop';
       balance: string;
       text: string;
       sms_text: string;
@@ -181,10 +193,15 @@ export const previewReminder = async (
       has_upi: boolean;
       warnings: readonly WarningWire[];
     };
-  }>(API_PATHS.REMINDER_PREVIEW, { party_id: partyId }, ubConfig({ signal }));
+  }>(
+    API_PATHS.REMINDER_PREVIEW,
+    { party_id: partyId, ...(book ? { book } : {}) },
+    ubConfig({ signal })
+  );
   const { data } = response.data;
   return {
     partyId: data.party_id,
+    ...(data.book ? { book: data.book } : {}),
     balance: data.balance,
     text: data.text,
     smsText: data.sms_text,
@@ -198,18 +215,25 @@ export const previewReminder = async (
 export const createReminder = async (
   partyId: string,
   channel: ReminderChannel,
-  note?: string
+  note?: string,
+  book?: 'main' | 'shop'
 ): Promise<Reminder> => {
   const response = await api.post<{ data: ReminderWire }>(API_PATHS.REMINDERS, {
     party_id: partyId,
     channel,
     ...(note ? { note } : {}),
+    ...(book ? { book } : {}),
   });
   return toReminder(response.data.data);
 };
 
-export const sendReminder = async (reminderId: string): Promise<void> => {
-  await api.post(API_PATHS.REMINDER_SEND(reminderId));
+/**
+ * Records the tap. `text` is the message as the merchant sent it, after any
+ * edit (WP-04 MSG-10): the server logs those words, not its own template.
+ * Omitted for a call, which carries none.
+ */
+export const sendReminder = async (reminderId: string, text?: string): Promise<void> => {
+  await api.post(API_PATHS.REMINDER_SEND(reminderId), text ? { text } : undefined);
 };
 
 export const markReminder = async (
@@ -234,6 +258,7 @@ export const bulkReminders = async (
         reminder_id: string;
         balance: string;
         text: string;
+        mobile: string | null;
         wa_url: string;
         sms_url: string;
       }[];
@@ -251,6 +276,7 @@ export const bulkReminders = async (
       reminderId: i.reminder_id,
       balance: i.balance,
       text: i.text,
+      mobile: i.mobile ?? null,
       waUrl: i.wa_url,
       smsUrl: i.sms_url,
     })),
@@ -262,12 +288,26 @@ interface SettingsWire {
   readonly auto_sms: boolean;
   readonly party_sms_on_entry: boolean;
   readonly sms_configured: boolean;
+  readonly windows?: Readonly<
+    Record<string, { start: string; end: string; policy_start: string; policy_end: string }>
+  >;
 }
 
 const toSettings = (data: SettingsWire): ReminderSettings => ({
   autoSms: data.auto_sms,
   partySmsOnEntry: data.party_sms_on_entry,
   smsConfigured: data.sms_configured,
+  /* A7 — present only when a module has sending hours to narrow. */
+  ...(data.windows
+    ? {
+        windows: Object.fromEntries(
+          Object.entries(data.windows).map(([module, w]) => [
+            module,
+            { start: w.start, end: w.end, policyStart: w.policy_start, policyEnd: w.policy_end },
+          ])
+        ),
+      }
+    : {}),
 });
 
 export const getReminderSettings = async (signal?: AbortSignal): Promise<ReminderSettings> => {
@@ -284,6 +324,7 @@ export const updateReminderSettings = async (
   const response = await api.patch<{ data: SettingsWire }>(API_PATHS.REMINDER_SETTINGS, {
     ...(patch.autoSms !== undefined ? { auto_sms: patch.autoSms } : {}),
     ...(patch.partySmsOnEntry !== undefined ? { party_sms_on_entry: patch.partySmsOnEntry } : {}),
+    ...(patch.windows ? { windows: patch.windows } : {}),
   });
   return toSettings(response.data.data);
 };

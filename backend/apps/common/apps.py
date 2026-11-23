@@ -18,7 +18,14 @@ class CommonConfig(AppConfig):
 
     def ready(self) -> None:
         """Warn about unrecognised `UB_` variables (Part 20 §20.13.2)."""
+        from django.utils.translation import gettext_lazy as _
+        from rest_framework import serializers
+
         from apps.common.env_catalogue import KNOWN_UB_VARIABLES
+
+        # Every id the app sends is a choice from a list; DRF's "Must be a valid
+        # UUID." reached a shopkeeper under Supplier (16 Nov 2026). Plain words.
+        serializers.UUIDField.default_error_messages["invalid"] = _("Choose one from the list.")
 
         unknown = sorted(
             key for key in os.environ if key.startswith("UB_") and key not in KNOWN_UB_VARIABLES

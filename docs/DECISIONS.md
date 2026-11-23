@@ -306,3 +306,280 @@ ADR-021 ↔ §26.14 contradiction recorded as `CR-j`.
   `password_expired` (401). Neither could reuse an existing code without sending the person
   to the wrong screen. Carried in `CR-LOG`.
 - **Links:** `PLT-05` · canon §0.7 · `ADR-021` · Part 27 §27.4.2, §27.4.4 · `BACKLOG.md`
+
+### DEC-013 — Sign-up and sign-in are mobile number + OTP, by Fast2SMS; this reverses DEC-010
+
+- **Status:** `decided` (2026-10-09, by the owner, in the project thread)
+- **The owner's words:** "for registration and login I want to use only mobile number and
+  OTP, not email/password … stay logged in just like other mobile apps, on mobile as well
+  as desktop … also handle proper resend OTP logic, timer of 2 min", with Fast2SMS as the
+  provider.
+- **Decided:**
+  - `/login` and `/signup` are one flow: an Indian mobile, then a six-digit code. A number
+    with no account becomes one at its first verified code (`is_new` → onboarding).
+    `UB_AUTH_OTP_ENABLED` now defaults to **on**; the routes, service, model and tests DEC-010
+    retired were intact and are what runs.
+  - Codes live 10 minutes (`UB_OTP_TTL_SECONDS=600`); a resend waits **2 minutes**
+    (`OTP_RESEND_GAP_SECONDS=120`), enforced by the server and only shown by the screen;
+    five codes per number per hour; five wrong tries ends a code.
+  - Sessions slide: `UB_REFRESH_TOKEN_DAYS=90`, rotated on every refresh, so a person stays
+    signed in until they sign out or do not open the app for ninety days.
+  - Fast2SMS (`apps/common/integrations/sms/fast2sms.py`, standard library only): the
+    `otp` route carries only the digits. Reminders over its paid `q` route stay off unless
+    `UB_FAST2SMS_ALLOW_QUICK=1`. Without `UB_FAST2SMS_API_KEY` the code is printed in the
+    API log (console backend), which is how a local run signs in without paying.
+  - India only for sign-in (Fast2SMS delivers in India): the sign-in field is
+    `UbPhoneInput lockCountry`. Every other mobile field keeps the country picker.
+  - **Staff (amends DEC-012):** an owner adds a member by name, mobile and role; no password
+    is minted or shown, and the member signs in with that number. The temporary-password
+    path stays on the server for accounts made before this.
+- **Kept, unlinked:** `/login/email` — the email + password screen, for the platform
+  operator's console account and for any account made before the change that has no
+  mobile yet. Nothing in the product links to it. The `/auth/login` and `/auth/register`
+  endpoints are unchanged, which is also what the e2e harnesses sign in through.
+- **Not done:** DLT template registration (Fast2SMS's `otp` route needs the account
+  verified for it; the owner's dashboard), moving existing email accounts onto a mobile.
+- **Links:** DEC-010 · DEC-012 · `PLT-01` · `e2e/otpsignin.mjs`
+
+### DEC-014 — The sign-in OTP is Message Central VerifyNow; Fast2SMS is removed
+
+- **Status:** `decided` (2026-10-10, by the owner, in the project thread)
+- **Why:** Fast2SMS refused every OTP with 996 (its OTP route needs website verification
+  on the account), including the owner's own first sign-up. The owner chose Message
+  Central VerifyNow instead.
+- **Decided:**
+  - **Message Central generates, sends and validates the code.** With
+    `UB_OTP_PROVIDER=message_central` (the default whenever `MC_CUSTOMER_ID` and
+    `MC_PASSWORD` are both set) this product never creates or stores a code: the challenge
+    row keeps their `verificationId` and an empty `code_hash`.
+  - **Django only.** `apps/platform_app/services/message_central.py` is the one module that
+    calls `https://cpaas.messagecentral.com` — token (cached 30 min in Django's cache,
+    refreshed once on a 401), `send`, `validateOtp`, 10-second timeouts. Nothing of theirs
+    — credentials, token, `verificationId` — is ever returned to the browser.
+  - **The endpoints did not move:** `POST /auth/otp/request` and `POST /auth/otp/verify`,
+    same bodies and the same session response, so the frontend changed only in length and
+    timing. The browser holds our `challenge_id`, which stands in for their
+    `verificationId` and binds the mobile, the attempt count and the single use to it. The
+    owner's brief sketched `{mobile, verificationId, code}` on verify; the id is kept
+    server-side instead because a client-supplied pair would let one number's verification
+    be replayed against another's.
+  - **Four digits, sixty seconds.** Codes are their default four digits (the API accepts
+    four to six); a resend waits 60 s (`OTP_RESEND_GAP_SECONDS`), which is also their own
+    gap. This replaces DEC-013's six digits and two minutes.
+  - **`console` provider for everything that must not text anybody** — a local run with no
+    credentials, the test suite (`config/settings/test.py` pins it) and the e2e API
+    (`e2e/serve-api.sh` pins it). The code is made here and printed in the API log.
+  - **No `requests` dependency.** The brief suggested it; ADR-021 admits no new package, so
+    the client is `urllib`, as the removed Fast2SMS adapter was.
+  - India only (`countryCode=91`). Reminder texts are untouched: adapter-only, console.
+- **Removed:** `integrations/sms/fast2sms.py`, its tests, `UB_FAST2SMS_API_KEY`,
+  `UB_FAST2SMS_ALLOW_QUICK`.
+- **Links:** DEC-013 · `apps/platform_app/tests/test_message_central.py` · `e2e/otpsignin.mjs`
+
+### DEC-015 — Library and Lending are released; Gym and Hotel are hidden from the landing page
+
+- **Status:** `decided` (2026-10-10, by the owner, in the project thread)
+- **The owner's words:** the landing page is to present Shop, Library and Lending for the
+  coming deployment, with Gym and Hotel hidden; and, told that Library and Lending were still
+  behind the production release gate, "enable this".
+- **Released (PLT-X11 BR-4, all in one commit):** `lending` and `library` left
+  `UNRELEASED_MODULES`; both joined `seed_plans.MVP_MODULES`; and each app ships a release data
+  migration (`lending/0004_release`, `library/0010_release`) that adds the module to every plan
+  and to every partner that already allows the whole MVP set. A fresh database and an existing
+  one converge. No tenant's `enabled_modules` is changed: a business gets a module when it is
+  created for it or its owner turns it on. The migrations reverse.
+- **Still gated:** `gym` and `hospitality` stay in `UNRELEASED_MODULES`; nothing of theirs
+  reaches a merchant.
+- **Hidden from the landing page, not removed:** `NEXT_PUBLIC_LANDING_HIDDEN_MODULES`
+  (default `gym,hotel`, `frontend/src/constants.ts`) filters the module map, the cards, "Who
+  it's for", the FAQ's list, the page title and description, and the structured data. Their
+  copy, config rows and icons are untouched. To show them again build with the variable empty.
+- **What the release was checked against:** the backend suites for both modules and the
+  release gate; the demo stack (`e2e/demo/`) walking both modules end to end. It was **not**
+  checked on a production deployment — run `manage.py migrate` there and confirm a new
+  business can turn Library on.
+- **Links:** `docs/platform/frd/00-core-and-engines.md` PLT-X11 · ADR-041 ·
+  `apps/platform_app/tests/test_release_gate.py`
+
+### DEC-016 — A new business chooses what it runs at sign-up
+
+- **Status:** `decided` (2026-10-11, by the owner, in the project thread). Reverses decision 3
+  of `docs/platform/14` §6 ("a new business starts with the Shop and its owner adds apps from
+  the switcher").
+- **The owner's words:** "Why are the Library and Lending modules missing from the initial
+  module-selection screen? … Display all available modules … Allow users to select only the
+  modules they need … Do not force users to enable modules that are unrelated to their
+  business … investigate why these modules are missing rather than simply adding them to the UI."
+- **Why they were missing (the root cause, in four layers):**
+  1. *There was no module-selection screen.* Step 1 asked for a name, a state and one of nine
+     kinds of SHOP. `business_type` is a shop preset, not a module choice.
+  2. *`POST /tenants` gave every business the Shop.* `create_tenant` wrote
+     `enabled_modules = _seed_modules(…)`, the business-type preset, and had no other input.
+  3. *Finishing setup wrote the preset back.* `apply_preset` replaced the whole of
+     `enabled_modules` with the shop preset at step 4 — so even a business created with a
+     library would have been turned back into a shop by pressing Finish.
+  4. *Until DEC-015 (one day earlier) both modules were unreleased*, so nothing could have
+     offered them. The hint under the shop tiles said it outright: "A library, lending or
+     another app sits beside the Shop: add it from the business menu."
+  Registration, the plan and the release gate were all correct: both apps are in the registry,
+  on the default plan and released. Only the creation path never asked.
+- **What changed:**
+  - `GET /onboarding/apps` lists what a new business may choose: registered ∩ released ∩ the
+    default plan ∩ the partner. The client draws its tiles from this and nothing else, so an app
+    registered tomorrow appears at sign-up with no frontend release, and an unreleased one
+    (Gym, Hotel) cannot be picked.
+  - `POST /tenants` takes `apps: [codes]`. Absent means the Shop, exactly as before, so every
+    older client and script is untouched. `business_type` is required only when the Shop is one
+    of them. Each chosen app is switched on through `business_apps.set_app_running` — the same
+    service the switcher uses — so the plan check, dependencies, enable hooks and audit rows are
+    the ones an app added a month later gets.
+  - `apply_preset` governs only the shop's capabilities, and only for a business that runs the
+    Shop. Everything else that is on stays on.
+  - `PATCH /tenants/current {apps}` changes the choice until setup is finished (owner only);
+    after that it is refused and the switcher is the place, with its open-work checks.
+  - The tenant payload carries `apps`, so the wizard restores its choice after a reload.
+  - Step 1 has a "What do you want to use?" group of checkboxes (nothing pre-ticked, one line on
+    what each is for); the kind-of-shop tiles appear only when the Shop is ticked; step 4 says
+    the choice back; Finish lands on the server's `landing` (the chosen app's home), not always
+    the Shop dashboard.
+- **Not changed:** adding or turning off an app after setup (already in the business menu,
+  `TenantSwitcherMenu`); plans and pricing (see `docs/MODULE-SUBSCRIPTIONS.md` for the review).
+- **Checked:** `apps/platform_app/tests/test_onboarding_apps.py` (20 tests);
+  `OnboardingStepPageContent.test.tsx` (9 new); and `e2e/onboarding-apps.mjs` — five app
+  combinations × desktop and a 360 px phone, signing up through the real screens: 186 checks.
+- **Links:** DEC-015 · `docs/ONBOARDING-AND-DEMO-AUDIT.md`
+
+### DEC-017 — PostHog for product analytics and feedback
+
+- **Status:** `decided` (2026-10-11, by the owner, in the project thread). An exception to
+  ADR-021's "no Sentry/OTel/Prometheus" and to its closed runtime dependency list, made by the
+  person who owns that list: `posthog-js` is the one runtime dependency added.
+- **The owner's words:** "this is my posthog I want to integrate here for feedback, analytics
+  and other stuff", with the project key and `posthog.init(…, { api_host:
+  'https://us.i.posthog.com', defaults: '2026-05-30' })`.
+- **Three rules bound it** (`frontend/src/analytics/analyticsRules.ts`), because every screen
+  of this product is somebody's accounts:
+  1. **Never on a page a merchant's customer opens** — `/d/<token>`, `/pay/<token>`, the
+     reading room's `/in/…`. Those people are not our users. The SDK is not downloaded there.
+  2. **Never on an address that carries a credential** — the same pages, `/reset-password/…`,
+     `/accept-invite/…`, `/set-password`. A page view records the address.
+  3. **No names, numbers or amounts.** A person is known by account id only (plus language,
+     business id, role and the apps the business runs). Clicks carry no text
+     (`mask_all_text`, `mask_all_element_attributes`); session replay masks all text and every
+     input; `before_send` cuts the query and hash off every address, so a search term or a
+     `?next=` link never leaves.
+- **Amended the same day, by the owner:** session replay shows the words on the screen. His
+  words, after watching replays that were rows of asterisks: "why in that tracking I'm not
+  able to see the text, I want to see the text in recording". So a replay of a khata screen
+  now contains the names and balances that were on it, held by PostHog. What a person TYPES is
+  still never recorded, clicks still carry no text, and the excluded pages are still excluded.
+  `NEXT_PUBLIC_POSTHOG_REPLAY_MASK_TEXT=true` puts the asterisks back. Analytics is also on
+  unless a build says `false`.
+- **How it loads:** off unless the build has `NEXT_PUBLIC_ANALYTICS_ENABLED=true` **and**
+  `NEXT_PUBLIC_POSTHOG_KEY`. The SDK is `import()`ed after the page is idle, in its own chunk;
+  the host is `React.lazy`. Cost on every route: 0.3 KB.
+- **Feedback:** PostHog surveys are served by the same SDK; a survey made in the PostHog
+  dashboard appears with no release. Nothing is built for them here.
+- **Checked on the wire, with nothing sent:** `e2e/analytics.mjs` answers every request to
+  posthog.com locally and reads the payloads — 13 checks. It found one leak the unit tests
+  could not: the page view was clean while the click and the identify beside it carried
+  `/customers?q=Ramesh`.
+- **Not done, and the owner's to decide:** a consent notice (India's DPDP Act, and any visitor
+  from the EU); whether session replay should be on at all — it is masked, but it is a
+  recording; the privacy page does not yet name PostHog.
+- **Links:** ADR-021 · `frontend/src/components/providers/AnalyticsHost.tsx` ·
+  `frontend/src/analytics/posthogClient.ts`
+
+### DEC-018 — An offline desktop edition is planned and announced on the landing page
+
+- **Status:** `decided` (2026-10-12, by the owner, in the session thread). Announcement only;
+  nothing of the edition is built.
+- **Why:** many merchants will not keep their accounts on someone else's server — the reason
+  Tally's install-it-yourself model is still trusted. A desktop edition for **Windows and Mac**
+  would keep the books on the merchant's own computer and work offline for everyday entries.
+- **What is shipped now:** one landing section ("Coming soon · Offline app for Windows and Mac"),
+  with no date, no price, no sign-up form and no button. "Offline for everyday entries", not
+  "fully offline": reminders, share links, UPI and OTP sign-in need the internet.
+- **What it reverses, narrowly:** the landing rules "never mention offline mode" and "no status
+  word". Only `landing.desktop.*` is exempt (`src/tests/moduleVocabulary.ts`
+  `isDesktopSoonKey`); every other landing string is still held to both, and the section has its
+  own test (says "coming soon" plainly, no date, price or figure).
+- **Guardrails until it is built**, so the option stays open at no cost: keep ADR-021 (no
+  cloud-only dependencies; local files; jobs in the database); keep the full data export; keep
+  the email/password sign-in path (a desktop install cannot rely on the OTP provider); keep
+  every external service behind an adapter that can be switched off.
+- **Sequencing (recommendation recorded with it):** after the hosted product has traction. The
+  edition is the same code packaged — a desktop shell (Tauri or Electron) around the local
+  Django + PostgreSQL + Next.js stack — plus a local PIN/password sign-in, automatic backups to
+  a chosen drive, safe self-updating migrations and an offline-tolerant licence check.
+
+### DEC-019 — Each app keeps only its own money; the udhaar book is its own app
+
+- **Status:** `decided` (2026-10-12, by the owner, answering the QA report of the same day).
+- **The owner's words:** "in case of lender or library why there is need of you gave, you
+  got … they are asking for money … give and collection … library asking and enter fees";
+  "want core and required functionality, not any shared functionality — work for what that
+  thing is made, only do that, not other stuff"; "that you gave, you got is a udhar book app
+  and basically it's a different section, it should not relate to any module like khatabook
+  app did". Asked to choose, they confirmed: strictly separate, the contact (name, mobile) the
+  only shared thing; and the udhaar book separate from the Shop too — a Shop bill on credit
+  stays in the Shop.
+- **What it answers:** QA B3 (Lending ₹1,164 vs Shop ₹964 for one borrower; Shop "You got"
+  never reaching the loan), B9 (library fees shown as "You gave" on a Shop page), B10 (Shop
+  expenses in the Library's profit), B36 (Old dues headline including loans its table did not),
+  B39 (an opening balance not payable from Shop's Record payment), and the wording complaint.
+- **The rule.** Five kinds of money, each its own ledger bucket, its own party cache, its own
+  screens, its own words:
+
+  | Bucket | App | Cache | Words |
+  |---|---|---|---|
+  | `main` | Udhaar book (You gave / You got, opening, write-off, reminders, statement, old dues) | `party.balance` | You gave · You got |
+  | `shop` | Shop (bills, purchases, credit/debit notes, expenses on credit, receipts) | `party.shop_balance` | Bill · Payment received/made |
+  | `loan` | Lending | `party.loan_balance` | Lent · Collected |
+  | `library` | Library (fees, fines, charges, waivers, fee payments) | `party.library_balance` | Fee · Paid |
+  | `deposit` | held, refundable | `party.deposit_held` | Security |
+
+  No cache includes another's; no screen subtracts one from another (the old
+  `balance − loan_balance` "trade figure" was applied on half the screens and forgotten on the
+  rest, which is how a loan appeared as shop credit). A payment settles one bucket only, so a
+  Shop receipt can never land on a library fee or a loan (FIFO already filters by bucket).
+  An expense belongs to the app it was recorded in; there is no "shared".
+- **Three apps, never combined (owner, the same day).** "Keep all three separate, not
+  combined — other users may want to use the udhaar book like the Khatabook app." So:
+  the **Udhaar book** is a standalone app any business can switch on by itself, with its own
+  people list, You gave / You got, reminders, statement and old dues; the **Shop** keeps its
+  own **Customers** and **Suppliers**, two separate tabs, showing what is due on bills; and
+  Library and Lending keep theirs. The person (name, mobile) is the one shared record.
+- **Words (owner, the same day).** "My target users are rural shopkeepers, not highly
+  qualified, they know basic English." Every label is plain everyday English (and simple
+  Hindi): no jargon, no codes, no word cut by an ellipsis.
+- **Consequences, accepted.** B39 is closed by the rule rather than by a fix: a khata opening
+  balance is settled with "You got" in the udhaar book, not with a Shop receipt. The credit
+  limit applies to each app's own balance. "Last entry" on a list moves only for that app's
+  own entries.
+- **How it is built (phase 2, 12 Oct 2026).** The Udhaar book is the `khata` app, anchored
+  on a new `khata` module (`MODULE_DEPENDENCIES` parties + ledger), registered beside the Shop
+  with `order=95` so a business running both still lands in the Shop. `platform/0018`
+  releases it to every plan and switches it on for every business that runs the Shop —
+  they had the udhaar book yesterday inside the Shop — and for nobody else (DEC-016). For
+  the same reason a new business created with no `apps` (an old client, a script) gets the
+  Shop AND the Udhaar book: "no apps means the Shop, as it always did", and the Shop always
+  did include it. A business that chooses its apps gets exactly what it chose. Its
+  menu is People (`/khata`), Old dues and Reminders; the last two left the Shop's menu
+  because both read `balance`. The person's page (`/parties/<id>`) stays shared and reads
+  the OPEN app's book (`AppManifest.book`): from the Shop it is the person's bills —
+  `shop_balance`, `?book=shop` on the timeline and the statement, no You gave / You got,
+  no opening balance, credit limit or reminders; from the Udhaar book it is the khata.
+  The party list takes `?book=shop` too (rows, chips, header and sort all read
+  `shop_balance`), and the Shop's home reads `shop_balance` for To collect / To pay / top
+  debtors and drops Due today and Upcoming (the udhaar book's promise dates).
+  Expenses (QA B10): each carries the `app` it was recorded in (`expenses/0003`; old rows
+  filed under the Shop, or the Library / Lending for a business without the Shop). Each
+  app's Expenses page lists its own; the Library's profit reads only its own through the
+  spend seam; the Shop's profit, charts, day book, cashbook and home read only the Shop's.
+  An expense ON CREDIT is owed to a supplier in the Shop's book, so only the Shop records
+  one — the Library and Lending record an expense when it is paid.
+  Not yet done: manual You gave / You got is not refused by the server for a business
+  without `khata` (the client offers it nowhere else); the cashbook still counts payments
+  of every bucket (a library fee taken in cash is in the Shop's till figure).
+- **Links:** ADR-043 (buckets), ADR-044 (deposits), DEC-016 (apps chosen at sign-up).

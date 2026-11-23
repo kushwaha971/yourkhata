@@ -1,0 +1,4 @@
+
+=== 390px — signing in as scale@digikhaato.test
+nav   390 unthrottled r1 shop.home→customers: first change 17 (childList body) · url 44 · content 534 · loading UI 17 · prefetched 2 · nav RSC 63→81 · js done 85 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.home→suppliers: first change 25 (childList body) · url 48 · content 138 · loading UI 25 · prefetched 2 · nav RSC 58→74 · js done 78 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32

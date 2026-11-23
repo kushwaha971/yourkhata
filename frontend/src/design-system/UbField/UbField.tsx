@@ -80,6 +80,19 @@ export interface UbFieldProps {
   /** Hides the label visually; it stays in the accessible name. */
   readonly labelHidden?: boolean;
   /**
+   * `false` holds no space under the control until there is a message — for a
+   * field inside a table row (a bill line, A4), where the reserved line lifted
+   * the input above the row's text. A form keeps the default `true`.
+   */
+  readonly reserveError?: boolean;
+  /**
+   * The message is drawn by the caller, under the whole row, with the id
+   * `${name}-error` this field already points `aria-describedby` at — a bill
+   * line's cells are too narrow for a sentence, and one wrapped under a 76 px
+   * box read "This / unit / takes / whole / numbers" (owner, 27 Oct 2026).
+   */
+  readonly messageElsewhere?: boolean;
+  /**
    * The control renders its OWN `<label>` — `UbSwitch` and `UbCheckbox` both
    * do, because their label is part of their layout rather than above them.
    *
@@ -92,6 +105,13 @@ export interface UbFieldProps {
    * association and for anything that needs to say which field failed.
    */
   readonly controlOwnsLabel?: boolean;
+  /**
+   * B1 (design pPick / dPick / pOtherKind) — the line that explains a QUESTION,
+   * shown under the label and before the control ("Tap one. This sets your
+   * menus…"), where a hint below a grid of ten tiles is read last or not at
+   * all. Part of the control's description for a screen reader.
+   */
+  readonly description?: string;
   readonly children: (field: UbFieldRenderProps) => ReactNode;
   readonly className?: string;
 }
@@ -104,24 +124,33 @@ export function UbField({
   required,
   optionalLabel,
   labelHidden,
+  reserveError = true,
+  messageElsewhere,
   controlOwnsLabel,
+  description,
   children,
   className,
 }: Readonly<UbFieldProps>): React.JSX.Element {
   const { control, formState } = useFormContext();
   const error = getFieldError(formState.errors, name);
   const describedBy =
-    [hint && !error ? `${name}-hint` : null, error ? `${name}-error` : null]
+    [
+      description ? `${name}-description` : null,
+      hint && !error ? `${name}-hint` : null,
+      error ? `${name}-error` : null,
+    ]
       .filter(Boolean)
       .join(' ') || undefined;
 
   return (
-    <div className={cn('flex w-full flex-col gap-1', className)}>
+    <div data-ub-field="" className={cn('flex w-full flex-col gap-1', className)}>
       {!controlOwnsLabel && (
         <label
           htmlFor={name}
+          data-part="label"
           className={cn(
-            'ds-body-base-medium flex items-baseline gap-2 text-text-primary',
+            // The design's `.lbl`: 13 px semibold ink, on every form.
+            'flex items-baseline gap-2 text-[13px] font-semibold leading-5 text-text-primary',
             labelHidden && 'sr-only'
           )}
         >
@@ -133,6 +162,11 @@ export function UbField({
             <span className="ds-caption font-normal text-text-muted">{optionalLabel}</span>
           )}
         </label>
+      )}
+      {description && (
+        <UbInputHint id={`${name}-description`} className="-mt-0.5 mb-1">
+          {description}
+        </UbInputHint>
       )}
       <Controller
         control={control}
@@ -166,10 +200,12 @@ export function UbField({
        * before there is anything in it and nothing moves when there is. A field
        * that never shows a message pays 20px of deliberate space; a form that
        * jumps on validation costs more than that. */}
-      <div className="min-h-5">
-        {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
-        {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}
-      </div>
+      {!messageElsewhere && (reserveError || error || hint) && (
+        <div data-part="message" className={cn(reserveError && 'min-h-5')}>
+          {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
+          {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}
+        </div>
+      )}
     </div>
   );
 }

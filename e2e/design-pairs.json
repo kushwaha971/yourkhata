@@ -1,0 +1,287 @@
+[
+ {
+  "mock": "pHome",
+  "route": "/dashboard"
+ },
+ {
+  "mock": "dShell",
+  "route": "/dashboard",
+  "section": "d12"
+ },
+ {
+  "mock": "pCustomers",
+  "route": "/customers"
+ },
+ {
+  "mock": "dCustomers",
+  "route": "/customers"
+ },
+ {
+  "mock": "pItems",
+  "route": "/items"
+ },
+ {
+  "mock": "dItems",
+  "route": "/items"
+ },
+ {
+  "mock": "pItemForm",
+  "route": "/items?add=1"
+ },
+ {
+  "mock": "dItemForm",
+  "route": "/items?add=1"
+ },
+ {
+  "mock": "pBillEmpty",
+  "route": "/sales/invoices/new"
+ },
+ {
+  "mock": "dJewelBill",
+  "route": "/sales/invoices/new"
+ },
+ {
+  "mock": "pPurchase",
+  "route": "/purchases/bills/new"
+ },
+ {
+  "mock": "dPurchase",
+  "route": "/purchases/bills/new"
+ },
+ {
+  "mock": "pEstimate",
+  "route": "/sales/estimates/new"
+ },
+ {
+  "mock": "pCount",
+  "route": "/stock/count"
+ },
+ {
+  "mock": "dCount",
+  "route": "/stock/count"
+ },
+ {
+  "mock": "pRate",
+  "route": "/stock/rates"
+ },
+ {
+  "mock": "dRate",
+  "route": "/stock/rates"
+ },
+ {
+  "mock": "pJOrder",
+  "route": "/sales/custom-orders"
+ },
+ {
+  "mock": "dJOrders",
+  "route": "/sales/custom-orders"
+ },
+ {
+  "mock": "dMessages",
+  "route": "/settings/messages"
+ },
+ {
+  "mock": "pFeatures",
+  "route": "/settings/shop-features"
+ },
+ {
+  "mock": "dFeatures",
+  "route": "/settings/shop-features"
+ },
+ {
+  "mock": "F-bills-p",
+  "route": "/sales/invoices"
+ },
+ {
+  "mock": "F-bills-d",
+  "route": "/sales/invoices"
+ },
+ {
+  "mock": "F-est-p",
+  "route": "/sales/estimates"
+ },
+ {
+  "mock": "F-est-d",
+  "route": "/sales/estimates"
+ },
+ {
+  "mock": "F-cn-p",
+  "route": "/sales/credit-notes"
+ },
+ {
+  "mock": "F-cn-d",
+  "route": "/sales/credit-notes"
+ },
+ {
+  "mock": "F-pur-p",
+  "route": "/purchases/bills"
+ },
+ {
+  "mock": "F-pur-d",
+  "route": "/purchases/bills"
+ },
+ {
+  "mock": "F-dn-p",
+  "route": "/purchases/debit-notes"
+ },
+ {
+  "mock": "F-dn-d",
+  "route": "/purchases/debit-notes"
+ },
+ {
+  "mock": "F-exp-p",
+  "route": "/expenses"
+ },
+ {
+  "mock": "F-exp-d",
+  "route": "/expenses"
+ },
+ {
+  "mock": "F-stock-p",
+  "route": "/stock/summary"
+ },
+ {
+  "mock": "F-stock-d",
+  "route": "/stock/summary"
+ },
+ {
+  "mock": "F-low-p",
+  "route": "/stock/low"
+ },
+ {
+  "mock": "F-low-d",
+  "route": "/stock/low"
+ },
+ {
+  "mock": "F-pl-p",
+  "route": "/items/price-lists"
+ },
+ {
+  "mock": "F-pl-d",
+  "route": "/items/price-lists"
+ },
+ {
+  "mock": "F-pay-p",
+  "route": "/payments"
+ },
+ {
+  "mock": "F-pay-d",
+  "route": "/payments"
+ },
+ {
+  "mock": "F-cb-p",
+  "route": "/cashbook"
+ },
+ {
+  "mock": "F-cb-d",
+  "route": "/cashbook"
+ },
+ {
+  "mock": "F-rep-p",
+  "route": "/reports"
+ },
+ {
+  "mock": "F-rep-d",
+  "route": "/reports"
+ },
+ {
+  "mock": "F-cat-p",
+  "route": "/items/masters"
+ },
+ {
+  "mock": "F-cat-d",
+  "route": "/items/masters"
+ },
+ {
+  "mock": "F-supp-p",
+  "route": "/suppliers"
+ },
+ {
+  "mock": "F-supp-d",
+  "route": "/suppliers"
+ },
+ {
+  "mock": "pExpiry",
+  "route": "/stock/expiry"
+ },
+ {
+  "mock": "dExpiry",
+  "route": "/stock/expiry"
+ },
+ {
+  "mock": "pImei",
+  "route": "/items/imei"
+ },
+ {
+  "mock": "dImei",
+  "route": "/items/imei"
+ },
+ {
+  "mock": "pLabels",
+  "route": "/items/labels"
+ },
+ {
+  "mock": "dLabels",
+  "route": "/items/labels"
+ },
+ {
+  "mock": "dTransfer",
+  "route": "/stock/transfer"
+ },
+ {
+  "mock": "pOldGold",
+  "route": "/sales/old-gold"
+ },
+ {
+  "mock": "dRepairs",
+  "route": "/sales/repairs"
+ },
+ {
+  "mock": "dExchange",
+  "route": "/sales/exchange"
+ },
+ {
+  "mock": "dSite",
+  "route": "/sales/sites"
+ },
+ {
+  "mock": "pVehicle",
+  "route": "/sales/vehicles/parts"
+ },
+ {
+  "mock": "dVehicle",
+  "route": "/sales/vehicles"
+ },
+ {
+  "mock": "dSchemes",
+  "route": "/sales/schemes"
+ },
+ {
+  "mock": "dOpenOrders",
+  "route": "/sales/open-orders"
+ },
+ {
+  "mock": "dPhoneOrders",
+  "route": "/sales/phone-orders"
+ },
+ {
+  "mock": "pRepair",
+  "route": "/sales/repairs"
+ },
+ {
+  "mock": "pAdvance",
+  "route": "/sales/open-orders"
+ },
+ {
+  "mock": "pSite",
+  "route": "/sales/sites"
+ },
+ {
+  "mock": "pOtherKind",
+  "route": "/onboarding/step/1"
+ },
+ {
+  "mock": "dOtherKind",
+  "route": "/onboarding/step/1"
+ }
+]

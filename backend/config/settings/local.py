@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
-from .base import *  # noqa: F403
+from .base import *
 
 DEBUG = True
 ENV_NAME = "local"
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
 UB_LOG_FORMAT = "console"
-LOGGING = build_logging_config(level="DEBUG", fmt="console")  # noqa: F405
+LOGGING = build_logging_config(level="DEBUG", fmt="console")
+
+# ── One database connection per request, locally ────────────────────────────
+# `runserver` is threaded: a thread per request, and with `CONN_MAX_AGE` > 0
+# each one keeps its connection when the request ends. The thread then exits
+# without closing it, so a long e2e run left 100 idle connections on the
+# server and every next request answered 500 "too many clients already" (seen
+# twice in the 9 Oct 2026 regression runs). Production runs a process server
+# with a fixed worker count, where reuse is the point; it keeps base's 60 s.
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("UB_DB_CONN_MAX_AGE", 0)
 
 # ── E2E: lift the shared per-IP auth budgets (local ONLY) ────────────────────
 # Every e2e harness signs up and signs in from 127.0.0.1, so the budgets keyed
@@ -28,10 +37,15 @@ LOGGING = build_logging_config(level="DEBUG", fmt="console")  # noqa: F405
 # `tests/architecture/test_settings.py`. The budgets are module constants in
 # `apps/platform_app/services/throttle.py`, read at call time as
 # `throttle.<NAME>`, so rebinding them here is the whole mechanism.
-UB_E2E_RELAX_THROTTLES = env.bool("UB_E2E_RELAX_THROTTLES", False)  # noqa: F405
+UB_E2E_RELAX_THROTTLES = env.bool("UB_E2E_RELAX_THROTTLES", False)
 if UB_E2E_RELAX_THROTTLES:
     from apps.platform_app.services import throttle as _ub_throttle
 
     _ub_throttle.REGISTRATIONS_PER_IP = 100_000
     _ub_throttle.LOGIN_FAILURES_PER_IP = 100_000
     _ub_throttle.RESET_REQUESTS_PER_IP = 100_000
+    _ub_throttle.RESET_CONFIRMS_PER_IP = 100_000
+    # DEC-013 — every harness that signs in by OTP asks from 127.0.0.1 too. The
+    # per-NUMBER budget and the two-minute resend gap stay as shipped: the
+    # otpsignin harness asserts the server refuses an early resend.
+    _ub_throttle.OTP_REQUESTS_PER_IP = 100_000

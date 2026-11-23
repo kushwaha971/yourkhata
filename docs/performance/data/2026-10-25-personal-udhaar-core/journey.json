@@ -1,0 +1,89 @@
+{
+  "checks": [
+    {
+      "label": "Add person has no amount field",
+      "ok": true
+    },
+    {
+      "label": "Contact wire contains only name and mobile",
+      "ok": true
+    },
+    {
+      "label": "Contact saved",
+      "ok": true
+    },
+    {
+      "label": "No business Details section",
+      "ok": true
+    },
+    {
+      "label": "Gave money shows no date or payment-method control",
+      "ok": true
+    },
+    {
+      "label": "Gave money three fast taps issue one write",
+      "ok": true
+    },
+    {
+      "label": "Gave money saved",
+      "ok": true
+    },
+    {
+      "label": "Gave money note remains optional",
+      "ok": true
+    },
+    {
+      "label": "Gave money does not invent Cash",
+      "ok": true
+    },
+    {
+      "label": "Gave money has correct server balance",
+      "ok": true
+    },
+    {
+      "label": "Got money shows no date or payment-method control",
+      "ok": true
+    },
+    {
+      "label": "Got money three fast taps issue one write",
+      "ok": true
+    },
+    {
+      "label": "Got money saved",
+      "ok": true
+    },
+    {
+      "label": "Got money note remains optional",
+      "ok": true
+    },
+    {
+      "label": "Got money does not invent Cash",
+      "ok": true
+    },
+    {
+      "label": "Got money has correct server balance",
+      "ok": true
+    },
+    {
+      "label": "Exactly two entries remain in history",
+      "ok": true
+    },
+    {
+      "label": "Received entry keeps unknown method",
+      "ok": true
+    },
+    {
+      "label": "Reminder is editable",
+      "ok": true
+    },
+    {
+      "label": "SMS composer has only SMS action",
+      "ok": true
+    },
+    {
+      "label": "SMS handoff uses the edited words",
+      "ok": true
+    }
+  ],
+  "contact": "01a17374-7858-705a-8b9f-50c0ef33f7a4"
+}

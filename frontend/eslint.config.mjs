@@ -6,6 +6,8 @@
 // `react-hooks`. Re-declaring them here is a hard ConfigError
 // ("Cannot redefine plugin"), so the `plugins` key is dropped and the rules —
 // every one of which is verbatim — bind to next's registrations.
+import { readdirSync } from 'node:fs';
+
 import tsparser from '@typescript-eslint/parser';
 import prettier from 'eslint-config-prettier';
 import next from 'eslint-config-next/core-web-vitals';
@@ -25,6 +27,21 @@ const RESTRICTED_SYNTAX_BASE = [
   },
 ];
 
+/**
+ * F01 (ADR-062, 1 Oct amendment) — a module registers its invalidation map in
+ * exactly one file, `features/<module>/redux/<module>Invalidation.ts`, which
+ * every thunk file of the module bare-imports. A call anywhere else is a map
+ * that may not be registered when a thunk is dispatched (it would depend on
+ * which chunk happened to load first), so it is refused everywhere else.
+ */
+const MODULE_INVALIDATION_SYNTAX = [
+  {
+    selector: "CallExpression[callee.name='registerInvalidation']",
+    message:
+      'registerInvalidation() is called only from features/<module>/redux/<module>Invalidation.ts, which every thunk file of the module bare-imports (ADR-062).',
+  },
+];
+
 const RESTRICTED_IMPORTS_BASE = {
   paths: [
     { name: 'lodash', message: 'Not on the ADR-021 list (R-D-1).' },
@@ -41,6 +58,19 @@ const RESTRICTED_IMPORTS_BASE = {
     },
     { group: ['../../../*'], message: 'Use a path alias (R-IM-2).' },
   ],
+};
+
+/**
+ * Revamp F2 — a `router.push` must announce itself, or the tapped row stands
+ * still until the server answers (299–312 ms throttled after F1). Feature code
+ * takes `useAppRouter()`, which is `useRouter()` plus that announcement. Kept
+ * out of RESTRICTED_IMPORTS_BASE so the party-fetch allowlist block, which also
+ * covers every test file, does not forbid tests from mocking `useRouter`.
+ */
+const ROUTER_IMPORT = {
+  name: 'next/navigation',
+  importNames: ['useRouter'],
+  message: 'Use useAppRouter() from src/hooks/useAppRouter, so a push shows progress (revamp F2).',
 };
 
 /**
@@ -122,6 +152,126 @@ const PARTY_FETCH_ALLOWED = [
   'src/tests/**',
 ];
 
+// ── A11 ── module boundaries (ADR-041, 10-architecture §3 and §6.7, FRD 00 PLT-X14) ──
+//
+// Verticals over shared engines over core, never sideways — the frontend half
+// of `backend/tests/architecture/test_import_rules.py`, with the same matrix:
+//
+//  - an engine folder never imports another engine, a vertical, or Shop &
+//    billing (`sales`, `purchases`, `inventory`, `expenses`);
+//  - a vertical never imports another vertical, Shop & billing, or an engine it
+//    does not use. It may import the engines it uses, core features and `src/`.
+//
+// Written as `import/no-restricted-paths` zones rather than per-folder
+// `no-restricted-imports` patterns, deliberately. This rule matches the
+// RESOLVED file, so `modules/…`, `src/modules/…` and `../../library/…` are one
+// zone instead of three spellings to keep in step; it sees the `import()` inside
+// `dynamic()`, which `no-restricted-imports` does not — and a lazily loaded
+// panel is exactly how one module would reach into another; and its zones sit
+// in the one main block, where no later `files` block (the party-fetch
+// allowlist covers every test file) can quietly replace them.
+//
+// Proven by src/tests/moduleBoundaryLintRule.test.ts, which plants a bad import
+// of each kind and expects this rule to fire on it.
+const FEATURES_DIR = './src/modules/DigiKhaato/features';
+const ENGINE_FEATURES = ['dues', 'bookings', 'attendance'];
+const SHOP_AND_BILLING_FEATURES = ['sales', 'purchases', 'inventory', 'expenses'];
+/** vertical -> the engines it may import (the backend matrix, 10-architecture §10.1). */
+const VERTICAL_ENGINES = {
+  lending: ['dues'],
+  library: ['dues', 'bookings', 'attendance'],
+  gym: ['dues', 'attendance', 'bookings'],
+  hospitality: ['bookings', 'dues'],
+};
+const VERTICAL_FEATURES = Object.keys(VERTICAL_ENGINES);
+const MODULE_BOUNDARY_MESSAGE =
+  'Module boundary (ADR-041): verticals import engines they use and core; engines import core; nobody imports sideways or Shop & billing. Go through a core registry instead.';
+
+const boundaryZone = (target, from) => ({
+  target: `${FEATURES_DIR}/${target}`,
+  from: `${FEATURES_DIR}/${from}`,
+  message: MODULE_BOUNDARY_MESSAGE,
+});
+
+const MODULE_BOUNDARY_ZONES = [
+  ...ENGINE_FEATURES.flatMap((engine) =>
+    [
+      ...ENGINE_FEATURES.filter((other) => other !== engine),
+      ...VERTICAL_FEATURES,
+      ...SHOP_AND_BILLING_FEATURES,
+    ].map((from) => boundaryZone(engine, from))
+  ),
+  ...VERTICAL_FEATURES.flatMap((vertical) =>
+    [
+      ...VERTICAL_FEATURES.filter((other) => other !== vertical),
+      ...SHOP_AND_BILLING_FEATURES,
+      ...ENGINE_FEATURES.filter((engine) => !VERTICAL_ENGINES[vertical].includes(engine)),
+    ].map((from) => boundaryZone(vertical, from))
+  ),
+];
+
+// ── F01 ── core never imports a vertical or an engine (ADR-061 amendment, G2) ──
+//
+// A11 left this direction out on purpose: with no vertical, a zone could only
+// forbid the registration mechanism before it existed. ADR-061 now gives core
+// exactly ONE sanctioned road to a vertical — `src/modules/registrations.ts`,
+// imported by the registry readers — and that file sits outside every target
+// below, which is the one hole. Everything else in core (every feature folder
+// that is not an engine or a vertical, `src/components`, `src/redux`,
+// `src/hooks`, `src/print`, `src/utils`, `src/api`, `src/i18n`, and every route
+// file outside a module's own route group) may not import a vertical or an
+// engine: a core screen that renders a module's component directly cannot be
+// switched off, released or rewritten without the module (ADR-041). Core
+// folders are read from disk, so a core feature added later is covered the day
+// it appears.
+const MODULE_FEATURES = [...VERTICAL_FEATURES, ...ENGINE_FEATURES];
+const CORE_FEATURES = readdirSync(new URL('./src/modules/DigiKhaato/features', import.meta.url), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory() && !entry.name.startsWith('__'))
+  .map((entry) => entry.name)
+  .filter((name) => !MODULE_FEATURES.includes(name));
+/** `app/(app)/<module>` route groups belong to their module, not to core. */
+const APP_GROUP_DIRS = readdirSync(new URL('./app/(app)', import.meta.url), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !MODULE_FEATURES.includes(entry.name))
+  .map((entry) => `./app/(app)/${entry.name}/**`);
+const CORE_TARGETS = [
+  ...CORE_FEATURES.map((name) => `${FEATURES_DIR}/${name}/**`),
+  './src/components/**',
+  './src/redux/**',
+  './src/hooks/**',
+  './src/print/**',
+  './src/utils/**',
+  './src/api/**',
+  './src/i18n/**',
+  ...APP_GROUP_DIRS,
+  './app/(admin)/**',
+  './app/(auth)/**',
+  './app/(internal)/**',
+  './app/(public)/**',
+  './app/*.{ts,tsx}',
+  './app/(app)/*.{ts,tsx}',
+];
+const CORE_BOUNDARY_ZONES = CORE_TARGETS.flatMap((target) =>
+  MODULE_FEATURES.map((module) => ({
+    target,
+    from: `${FEATURES_DIR}/${module}`,
+    message: MODULE_BOUNDARY_MESSAGE,
+  }))
+);
+/** W-F1 — a vertical's route files obey the vertical's own matrix row. */
+const VERTICAL_ROUTE_ZONES = VERTICAL_FEATURES.flatMap((vertical) =>
+  [
+    ...VERTICAL_FEATURES.filter((other) => other !== vertical),
+    ...SHOP_AND_BILLING_FEATURES,
+    ...ENGINE_FEATURES.filter((engine) => !VERTICAL_ENGINES[vertical].includes(engine)),
+  ].map((from) => ({
+    target: `./app/(app)/${vertical}/**`,
+    from: `${FEATURES_DIR}/${from}`,
+    message: MODULE_BOUNDARY_MESSAGE,
+  }))
+);
+
 const config = [
   {
     ignores: [
@@ -139,6 +289,9 @@ const config = [
       // Ignored so that an `npm run lint` running at the same moment neither
       // reports them nor crashes on a file deleted mid-walk.
       'src/modules/DigiKhaato/features/__lint_probe_*/**',
+      // src/tests/moduleBoundaryLintRule.test.ts plants its probes INSIDE the
+      // engine and vertical folders, because the zones key on those folders.
+      'src/modules/DigiKhaato/features/*/__lint_probe_*/**',
     ],
   },
   ...next,
@@ -166,7 +319,12 @@ const config = [
         { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'warn',
-      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX_BASE, ...PARTY_FETCH_SYNTAX],
+      'no-restricted-syntax': [
+        'error',
+        ...RESTRICTED_SYNTAX_BASE,
+        ...PARTY_FETCH_SYNTAX,
+        ...MODULE_INVALIDATION_SYNTAX,
+      ],
 
       // ── React ─────────────────────────────────────────────────────────────
       'react-hooks/rules-of-hooks': 'error',
@@ -229,6 +387,9 @@ const config = [
               from: './src/api',
               message: 'Route files are thin (Part 19 §19.1.4).',
             },
+            ...MODULE_BOUNDARY_ZONES,
+            ...CORE_BOUNDARY_ZONES,
+            ...VERTICAL_ROUTE_ZONES,
           ],
         },
       ],
@@ -260,7 +421,7 @@ const config = [
       'no-restricted-imports': [
         'error',
         {
-          paths: RESTRICTED_IMPORTS_BASE.paths,
+          paths: [...RESTRICTED_IMPORTS_BASE.paths, ROUTER_IMPORT],
           patterns: [...RESTRICTED_IMPORTS_BASE.patterns, ...PARTY_FETCH_IMPORT_PATTERNS],
         },
       ],
@@ -376,9 +537,25 @@ const config = [
      */
     files: PARTY_FETCH_ALLOWED,
     rules: {
-      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX_BASE],
+      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX_BASE, ...MODULE_INVALIDATION_SYNTAX],
       'no-restricted-imports': ['error', RESTRICTED_IMPORTS_BASE],
     },
+  },
+  {
+    /**
+     * ADR-062 — the module invalidation files are the one place
+     * `registerInvalidation` may be called; tests may call it to plant a
+     * module. Flat config REPLACES a rule's options per block, so each list is
+     * restated in full rather than "minus one entry".
+     */
+    files: ['src/modules/DigiKhaato/features/*/redux/*Invalidation.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX_BASE, ...PARTY_FETCH_SYNTAX],
+    },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}', 'src/tests/**'],
+    rules: { 'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX_BASE] },
   },
   {
     // The one module allowed to read navigator.onLine — it is the state machine.

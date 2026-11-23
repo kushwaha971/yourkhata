@@ -56,6 +56,7 @@ class MovementSource(models.TextChoices):
     PURCHASE_DOCUMENT = "purchase_document", _("Purchase document")
     SALES_DOCUMENT = "sales_document", _("Sales document")
     STOCK_TRANSFER = "stock_transfer", _("Stock transfer")
+    STOCK_COUNT = "stock_count", _("Stock count")
 
 
 class AdjustmentReason(models.TextChoices):
@@ -130,7 +131,9 @@ UNIT_NAME_MAX_LENGTH = 40
 ADJUSTMENT_NOTE_MAX_LENGTH = 255
 ADJUSTMENT_NOTE_MIN_LENGTH_OTHER = 3
 ADJUSTMENT_MAX_LINES = 100
-MAX_AMOUNT = "999999999999.99"
+# An item price may not exceed what a bill line accepts (FB-020, apps.common.limits
+# LINE_RATE_LIMIT; the client's MAX_AMOUNT): a dearer item could never be billed.
+MAX_AMOUNT = "99999999.99"
 MAX_QTY = "9999999999.999"
 MAX_UNIT_COST = "9999999999.9999"
 MIN_STOCK_DATE = "2000-01-01"
@@ -154,3 +157,10 @@ SUMMARY_ORDERINGS = ("name", "-name", "on_hand", "-on_hand", "value", "-value")
 MOVEMENTS_PAGE_DEFAULT = 50
 MOVEMENTS_RECENT = 10
 HSN_RESULTS_MAX = 20
+
+
+class StockCountStatus(models.TextChoices):
+    """C3 (R-DEC-68) — a count is open until it is saved; saved is final."""
+
+    OPEN = "open", _("Open")
+    SAVED = "saved", _("Saved")

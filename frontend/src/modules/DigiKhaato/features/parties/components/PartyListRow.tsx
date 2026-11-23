@@ -2,12 +2,14 @@
 
 import { memo } from 'react';
 
-import { UbAmount, UbBox, UbStatusBadge, UbTagList, UbText } from 'src/design-system';
+import { UbAmount, UbBox, UbButton, UbStatusBadge, UbTagList, UbText } from 'src/design-system';
+import type { TranslateFn } from 'src/hooks/useTranslation';
+import { compareMoney } from 'src/utils/money';
 
 import { balanceView } from '../view-model/partyDisplay';
 import { toTagListItems } from '../view-model/partyTagDisplay';
 
-import type { PartyTag } from '../types/party.types';
+import type { Party, PartyTag } from '../types/party.types';
 
 /**
  * What a party row is MADE OF: the five cells, memoised, each taking exactly
@@ -30,6 +32,10 @@ import type { PartyTag } from '../types/party.types';
 
 export interface PartyNameCellProps {
   readonly name: string;
+  readonly wrap?: boolean;
+  readonly contact?: string;
+  readonly statusLabel?: string;
+  readonly roleLabel?: string;
   /** PTY-05. Empty for an untagged party, which is most of them. */
   readonly tags: readonly PartyTag[];
   /**
@@ -55,6 +61,10 @@ export interface PartyNameCellProps {
 
 function PartyNameCellBase({
   name,
+  wrap = false,
+  contact,
+  statusLabel,
+  roleLabel,
   tags,
   reserveTagLane,
   tagsLabel,
@@ -62,10 +72,35 @@ function PartyNameCellBase({
   maxTags,
 }: Readonly<PartyNameCellProps>) {
   return (
-    <UbBox as="span" className="flex min-w-0 flex-col gap-1">
-      <UbText as="span" variant="body-sm-medium" truncate>
+    <UbBox as="span" className="flex min-w-0 flex-col">
+      <UbText
+        as="span"
+        variant="body-sm-medium"
+        truncate={!wrap}
+        /* The design's tables (dCustomers, F-supp-d) set the name at 400; a
+           phone row keeps it at 500. */
+        className={wrap ? 'whitespace-normal break-words lg:font-normal' : 'lg:font-normal'}
+      >
         {name}
       </UbText>
+      {roleLabel && (
+        <UbStatusBadge
+          tone="warning"
+          label={roleLabel}
+          className="max-w-full self-start whitespace-normal"
+        />
+      )}
+      {statusLabel && <UbStatusBadge tone="neutral" label={statusLabel} />}
+      {contact && (
+        <UbText
+          as="span"
+          variant="caption"
+          tone="tertiary"
+          className="whitespace-normal break-words"
+        >
+          {contact}
+        </UbText>
+      )}
       {reserveTagLane || tags.length > 0 ? (
         <UbTagList
           tags={toTagListItems(tags)}
@@ -82,17 +117,20 @@ PartyNameCellBase.displayName = 'PartyNameCell';
 export const PartyNameCell = memo(PartyNameCellBase);
 
 export interface PartyBalanceCellProps {
+  readonly labelHidden?: boolean;
   /** Decimal string; never a number, never preformatted (R-TS-7). */
   readonly balance: string;
   /** The three direction words, pre-translated by the screen. */
   readonly labels: Readonly<Record<string, string>>;
 }
 
-function PartyBalanceCellBase({ balance, labels }: Readonly<PartyBalanceCellProps>) {
+function PartyBalanceCellBase({ balance, labels, labelHidden }: Readonly<PartyBalanceCellProps>) {
   const view = balanceView(balance);
   return (
     <UbAmount
       value={balance}
+      labelHidden={labelHidden}
+      className="whitespace-normal"
       tone={view.tone}
       sign={view.sign}
       /* §23.2.6 rule 2 — the label sits beside the figure at every width. The
@@ -107,12 +145,18 @@ export const PartyBalanceCell = memo(PartyBalanceCellBase);
 
 export interface PartyMetaCellProps {
   readonly text: string;
+  readonly wrap?: boolean;
 }
 
 /** The supporting facts: how stale the party is, and how to reach them. */
-function PartyMetaCellBase({ text }: Readonly<PartyMetaCellProps>) {
+function PartyMetaCellBase({ text, wrap = false }: Readonly<PartyMetaCellProps>) {
   return (
-    <UbText as="span" variant="inherit" truncate>
+    <UbText
+      as="span"
+      variant="inherit"
+      truncate={!wrap}
+      className={wrap ? 'whitespace-normal break-words' : undefined}
+    >
       {text}
     </UbText>
   );
@@ -130,3 +174,85 @@ function PartyStatusCellBase({ label, archived }: Readonly<PartyStatusCellProps>
 }
 PartyStatusCellBase.displayName = 'PartyStatusCell';
 export const PartyStatusCell = memo(PartyStatusCellBase);
+
+/** Same action and permission/recipient gate in a table or phone row. */
+export const ShopPartyRowActions = memo(function ShopPartyRowActions({
+  party,
+  t,
+  onOpen,
+  onRemind,
+  onPay,
+  onSettle,
+  supplier = false,
+}: Readonly<{
+  party: Party;
+  t: TranslateFn;
+  onOpen?: (party: Party) => void;
+  onRemind?: (party: Party) => void;
+  onPay?: (party: Party) => void;
+  /** BP-08 — offered when this person owes AND is owed in the Shop. */
+  onSettle?: (party: Party) => void;
+  supplier?: boolean;
+}>) {
+  /* Counter Mode `#customers`: a person in both lists, owing both ways, gets
+     "Settle…" as the row's action in either list (a contra entry starts from the
+     ledger list in Sage 200 too). Once one side is zero it is Remind or Pay again. */
+  const settleable = Boolean(
+    onSettle &&
+    party.isCustomer &&
+    party.isSupplier &&
+    party.status !== 'archived' &&
+    party.shop &&
+    compareMoney(party.shop.customerBalance, '0') > 0 &&
+    compareMoney(party.shop.supplierBalance, '0') > 0
+  );
+  if (settleable) {
+    const label = t('parties.list.shop.settle');
+    return (
+      <UbButton
+        variant="outlineNeutral"
+        size="sm"
+        aria-label={t('parties.list.shop.settleLabel', { name: party.name })}
+        onClick={() => onSettle?.(party)}
+        data-testid="party-row-settle"
+      >
+        {label}
+      </UbButton>
+    );
+  }
+  const remindable = Boolean(
+    !supplier &&
+    onRemind &&
+    party.shop &&
+    party.mobile &&
+    party.status !== 'archived' &&
+    compareMoney(party.balance, '0') > 0
+  );
+  const payable = Boolean(
+    supplier && onPay && party.status !== 'archived' && compareMoney(party.balance, '0') < 0
+  );
+  const label = t(
+    payable
+      ? 'parties.list.supplier.pay'
+      : remindable
+        ? 'parties.list.shop.remind'
+        : 'parties.list.shop.viewBills'
+  );
+  if (!remindable && !payable && !onOpen) return null;
+  return (
+    <UbButton
+      variant="outlineNeutral"
+      size="sm"
+      // A settled phone row is its figure and nothing else (design pCustomers); the row itself opens.
+      className={!payable && !remindable ? 'max-lg:hidden' : undefined}
+      aria-label={`${label} · ${party.name}`}
+      onClick={() => {
+        if (payable) onPay?.(party);
+        else if (remindable) onRemind?.(party);
+        else onOpen?.(party);
+      }}
+    >
+      {label}
+    </UbButton>
+  );
+});

@@ -1,8 +1,85 @@
-"""Filtersets for the payments app (Part 26 §26.7 R7.3).
+"""Payment list filters (PAY-01 FR-10, §14; CCR-6's `status` and `q`).
 
-Sprint 0 creates the package so the app label, the table prefix and the
-import matrix of Part 20 §20.1.4 are reserved. The models, services and
-views land in the sprint that owns the feature.
+Every parameter is DECLARED — django-filter drops an undeclared one silently,
+and a list that claims to be filtered while showing everything is the defect
+PTY-02 shipped once.
 """
 
 from __future__ import annotations
+
+from typing import Any
+
+import django_filters
+from django.db.models import Q, QuerySet
+
+from apps.common.constants import LedgerBucket, PaymentMode
+from apps.common.filters import BaseTenantFilterSet
+from apps.payments.constants import PaymentDirection, PaymentStatus
+from apps.payments.models import Payment
+
+
+class PaymentFilterSet(BaseTenantFilterSet):
+    direction = django_filters.ChoiceFilter(
+        field_name="direction", choices=PaymentDirection.choices
+    )
+    party_id = django_filters.UUIDFilter(field_name="party_id")
+    trade_role = django_filters.ChoiceFilter(
+        method="filter_trade_role", choices=(("customer", "Customer"), ("supplier", "Supplier"))
+    )
+
+    def filter_trade_role(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """BP-09: receipts/payments for one Shop role; refunds are not supplier payments."""
+        direction = "in" if value == "customer" else "out"
+        rows = queryset.filter(bucket=LedgerBucket.SHOP, direction=direction)
+        return (
+            rows.exclude(meta__has_key="credit_note_id")
+            .exclude(meta__has_key="debit_note_id")
+            .exclude(Q(meta__has_key="context") & Q(meta__context__endswith="_refund"))
+        )
+
+    date_from = django_filters.DateFilter(field_name="payment_date", lookup_expr="gte")
+    date_to = django_filters.DateFilter(field_name="payment_date", lookup_expr="lte")
+    #: A split payment matches every mode it carries (PAY-02 FR-7), not only its primary.
+    mode = django_filters.ChoiceFilter(method="filter_mode", choices=PaymentMode.choices)
+    #: `?status=recorded,void` (CCR-6).
+    status = django_filters.CharFilter(method="filter_status")
+    q = django_filters.CharFilter(method="filter_search")
+    #: A4a (PLT-X03 §11) — "Advances": recorded payments with money not yet applied, and which
+    #: kind of balance they sit in (`?unallocated=true&bucket=main`).
+    unallocated = django_filters.BooleanFilter(method="filter_unallocated")
+    bucket = django_filters.ChoiceFilter(field_name="bucket", choices=LedgerBucket.choices)
+
+    class Meta:
+        model = Payment
+        fields: list[str] = []
+
+    def filter_mode(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        return queryset.filter(mode_breakup__contains=[{"mode": value}])
+
+    def filter_status(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        wanted = [s.strip() for s in str(value or "").split(",") if s.strip()]
+        if not wanted:
+            return queryset
+        # An unknown status matches nothing rather than being ignored — ignoring
+        # it would widen the list the merchant thinks they narrowed.
+        return queryset.filter(status__in=[s for s in wanted if s in PaymentStatus.values])
+
+    def filter_search(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """Number (prefix or suffix, so "0017" finds RCT/26-27/0017), party name, reference."""
+        term = " ".join(str(value or "").split())[:64]
+        if not term:
+            return queryset
+        return queryset.filter(
+            Q(number__icontains=term)
+            | Q(party__name__icontains=term)
+            | Q(reference__icontains=term)
+        )
+
+    def filter_unallocated(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """`true` — the open advances; `false` — every payment fully applied (voids excluded)."""
+        if value is None:
+            return queryset
+        recorded = queryset.filter(status=PaymentStatus.RECORDED)
+        if value:
+            return recorded.filter(unallocated_amount__gt=0)
+        return recorded.filter(unallocated_amount=0)

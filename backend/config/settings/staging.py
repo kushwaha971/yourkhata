@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .prod import *  # noqa: F403
+from .prod import *
 
 ENV_NAME = "staging"

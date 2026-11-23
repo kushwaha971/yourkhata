@@ -9,6 +9,12 @@ import { ArrowUpDown } from 'lucide-react';
 import { UbButton } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
+import {
+  PHONE_SORT_CHOICES,
+  SHOP_SORT_CHOICES,
+  SUPPLIER_SORT_CHOICES,
+} from '../view-model/partyListSort';
+
 /* The sheet itself loads when the button is pressed, and is mounted only while
    open — see `PartyListSortDialog`. `ssr: false` because `open` is false in
    every server pass. */
@@ -33,12 +39,20 @@ const PartyListSortDialogLazy = /* @__PURE__ */ dynamic(
  */
 export interface PartyListSortSheetProps {
   readonly t: TranslateFn;
+  readonly className?: string;
+  readonly labelled?: boolean;
+  readonly shop?: boolean;
+  readonly supplier?: boolean;
   readonly ordering: string;
   readonly onOrderingChange: (ordering: string) => void;
 }
 
 function PartyListSortSheetBase({
   t,
+  className,
+  labelled = false,
+  shop = false,
+  supplier = false,
   ordering,
   onOrderingChange,
 }: Readonly<PartyListSortSheetProps>): React.JSX.Element {
@@ -49,16 +63,29 @@ function PartyListSortSheetBase({
     <>
       <UbButton
         variant="secondary"
-        iconOnly
+        className={className}
+        iconOnly={!labelled}
         icon={<ArrowUpDown className="h-4 w-4" aria-hidden />}
         onClick={openSheet}
         aria-haspopup="dialog"
       >
-        {t('parties.list.sort.label')}
+        {labelled
+          ? t(
+              (shop
+                ? supplier
+                  ? SUPPLIER_SORT_CHOICES
+                  : SHOP_SORT_CHOICES
+                : PHONE_SORT_CHOICES
+              ).find((choice) => choice.ordering === ordering)?.labelKey ??
+                'parties.list.sort.label'
+            )
+          : t('parties.list.sort.label')}
       </UbButton>
       {open && (
         <PartyListSortDialogLazy
           t={t}
+          shop={shop}
+          supplier={supplier}
           open={open}
           onOpenChange={setOpen}
           ordering={ordering}

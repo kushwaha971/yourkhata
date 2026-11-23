@@ -83,7 +83,8 @@ def test_get_returns_every_key_numbering_and_an_etag(owner: Any) -> None:
     """FR-2 and CR-011: the whole object, keyed by setting, with an ETag header."""
     response = _get(owner)
     data = response.json()["data"]
-    assert set(data["values"]) == set(schema.SETTINGS)
+    # A8 (owner Q14): the unwired `sales.default_kind` is not shown.
+    assert set(data["values"]) == set(schema.SETTINGS) - {"sales.default_kind"}
     assert data["values"]["ledger.credit_limit_mode"] == {"mode": "warn"}
     assert data["numbering"]["invoice"]["prefix"] == "INV"
     assert data["numbering"]["invoice"]["preview"].startswith("INV/")
@@ -226,14 +227,18 @@ def test_block_mode_saved_here_is_what_the_credit_check_reads(owner: Any, tenant
     assert credit_mode(tenant) == "block"
 
 
-def test_a_composition_business_cannot_default_to_tax_invoices(owner: Any) -> None:
-    """EC-2: `invoice` is for regular registration only (400 `kind_not_allowed`)."""
+def test_a_composition_business_cannot_default_to_tax_invoices(tenant: Any) -> None:
+    """EC-2: `invoice` is for regular registration only (`kind_not_allowed`).
+
+    Owner Q14 (A8) took `sales.default_kind` off the settings payload until
+    sales reads it, so a PUT no longer reaches this rule; the validator is kept
+    and pinned here directly, ready for the day the key is wired."""
     value = {
         "by_gst_type": {"regular": "invoice", "composition": "invoice", "unregistered": "estimate"}
     }
-    response = owner.put(reverse(URL), {"values": {"sales.default_kind": value}}, format="json")
-    assert response.status_code == 400
-    assert response.json()["error"]["code"] == "kind_not_allowed"
+    with pytest.raises(schema.SettingError) as refused:
+        schema.SETTINGS["sales.default_kind"].validate(value, tenant)
+    assert refused.value.code == "kind_not_allowed"
 
 
 def test_the_defaults_endpoint_returns_the_business_type_preset(owner: Any) -> None:
@@ -292,7 +297,12 @@ def test_a_module_with_live_data_cannot_be_switched_off(
     assert response.status_code == 409
     body = response.json()["error"]
     assert body["code"] == "module_has_data"
-    assert body["details"] == {"module": "inventory", "count": 12}
+    # A12 (R14) added `breakdown` beside the unchanged `module` and `count`.
+    assert body["details"] == {
+        "module": "inventory",
+        "count": 12,
+        "breakdown": [{"label_id": None, "count": 12}],
+    }
 
 
 def test_core_modules_stay_on_whatever_is_sent(owner: Any, tenant: Any) -> None:
@@ -323,3 +333,13 @@ def test_a_modules_only_patch_does_not_touch_the_profile(owner: Any, tenant: Any
         reverse("v1:tenant-current"), {"enabled_modules": tenant.enabled_modules}, format="json"
     )
     assert not AuditLog.objects.filter(action="tenant.updated", tenant=tenant).exists()
+
+
+def test_kind_messages_refuse_an_unknown_message_or_word() -> None:
+    """D15: a typo like {nmae} would reach the customer as literal braces."""
+    clean = schema._kind_messages({"order_ready": {"en": " {name} is ready ", "hi": ""}}, None)
+    assert clean == {"order_ready": {"en": "{name} is ready", "hi": ""}}
+    with pytest.raises(schema.SettingError):
+        schema._kind_messages({"order_ready": {"en": "{amount}"}}, None)
+    with pytest.raises(schema.SettingError):
+        schema._kind_messages({"refill": {"en": "hello"}}, None)

@@ -14,7 +14,7 @@
  */
 import { chromium } from 'playwright';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 
 const results = [];
@@ -66,7 +66,7 @@ async function run() {
   }
 
   // ── The browser, typing a protected URL directly ────────────────────────
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || process.env.CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
 

@@ -5,4 +5,4 @@ The definitions live in `tests/fixtures.py`; see its docstring for why.
 
 from __future__ import annotations
 
-from tests.fixtures import *  # noqa: F401,F403
+from tests.fixtures import *  # noqa: F401,F403 — reason: shared pytest fixtures

@@ -5,6 +5,14 @@ import { Suspense, use } from 'react';
 import { UbPageSkeleton } from 'src/design-system';
 
 import { PartyDetailPageContent } from 'modules/DigiKhaato/features/parties/components/PartyDetailPageContent';
+import { ShopBookOnly } from 'modules/DigiKhaato/features/parties/components/ShopBookOnly';
+
+// The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/ledger';
+import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/parties';
+import 'src/i18n/catalogues/paymentActions';
+import 'src/i18n/catalogues/share';
 
 /**
  * Part 19 §19.1.4 — a route is a Suspense boundary and one page-content import.
@@ -22,7 +30,9 @@ export default function PartyDetailPage({
 
   return (
     <Suspense fallback={<UbPageSkeleton variant="card" />}>
-      <PartyDetailPageContent id={id} />
+      <ShopBookOnly>
+        <PartyDetailPageContent id={id} />
+      </ShopBookOnly>
     </Suspense>
   );
 }

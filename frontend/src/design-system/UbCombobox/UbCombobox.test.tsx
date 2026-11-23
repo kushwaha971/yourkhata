@@ -80,3 +80,42 @@ describe('UbCombobox inside an overlay', () => {
     expect(screen.queryByPlaceholderText('Search')).not.toBeInTheDocument();
   });
 });
+
+it('treats searching in the open picker as focus inside the same field', async () => {
+  const user = userEvent.setup();
+  const blur = jest.fn();
+  render(
+    <UbCombobox
+      aria-label="Plan"
+      value=""
+      onChange={jest.fn()}
+      onBlur={blur}
+      options={OPTIONS}
+      searchPlaceholder="Search plans"
+    />
+  );
+  await user.click(screen.getByRole('combobox', { name: 'Plan' }));
+  await screen.findByPlaceholderText('Search plans');
+  expect(blur).not.toHaveBeenCalled();
+  await user.keyboard('{Escape}');
+  expect(blur).toHaveBeenCalledTimes(1);
+});
+
+it('wraps a long option instead of cutting it with an ellipsis', async () => {
+  /* Prevents: "Line 1 · Radhe Krishna Enterprises Copper Ele…" on a phone, the
+     half of the name that tells two cables apart cut off (live QA, 20 Oct). */
+  const user = userEvent.setup();
+  const long = 'Line 1 · Radhe Krishna Enterprises Copper Electrical Cable 2.5 sq mm · 2 NOS';
+  render(
+    <UbCombobox
+      aria-label="Find a line"
+      value={null}
+      onChange={jest.fn()}
+      options={[{ value: '0', label: long }]}
+    />
+  );
+  await user.click(screen.getByRole('combobox', { name: 'Find a line' }));
+  const text = await screen.findByText(long);
+  expect(text.className).not.toContain('truncate');
+  expect(text.className).toContain('break-words');
+});

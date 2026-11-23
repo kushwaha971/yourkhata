@@ -9,15 +9,17 @@ import { LogOut } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbEmptyState,
   UbGrid,
   UbPageHeader,
-  UbPageShell,
   UbSkeleton,
   UbStack,
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatTimestamp } from 'src/utils/dates';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useDevices } from '../hooks/useDevices';
 import { deviceCaption, deviceTitle } from '../view-model/deviceDisplay';
@@ -26,7 +28,7 @@ import { DeviceCard } from './DeviceCard';
 
 const RenameDeviceDialog = dynamic(
   () => import('./RenameDeviceDialog').then((module) => module.RenameDeviceDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -132,7 +134,7 @@ export function DevicesPageContent(): React.JSX.Element {
   const revokeTitle = devices.revokeTarget ? deviceTitle(devices.revokeTarget, t) : '';
 
   return (
-    <UbPageShell header={header} width="measure">
+    <SettingsFrame page="devices" header={header}>
       <UbStack gap={4}>{body}</UbStack>
 
       {devices.renameTarget && <RenameDeviceDialog devices={devices} />}
@@ -164,6 +166,6 @@ export function DevicesPageContent(): React.JSX.Element {
         destructive
         onConfirm={() => void devices.confirmLogoutAll()}
       />
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

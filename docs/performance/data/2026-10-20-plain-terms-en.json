@@ -1,0 +1,325 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "quick-sale",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "saved-customer-picker",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "locale": "en",
+      "state": "contact-form",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "failures": []
+}

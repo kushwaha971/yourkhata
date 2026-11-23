@@ -1,6 +1,6 @@
 import type { Locale, ModuleCode } from 'src/types/domain.types';
 
-import type { BusinessType, GstType } from '../constants/businessTypes';
+import type { BusinessType, GstType, SignupFeature } from '../constants/businessTypes';
 
 /**
  * Part 19 §19.2.3 — the onboarding feature's own types.
@@ -25,6 +25,23 @@ export interface OnboardingBusinessStep {
   readonly stateCode: string | null;
   /** FR-2 / BR-7 — written to `platform_user.full_name` when that is blank. */
   readonly ownerName: string | null;
+  /**
+   * What the business will run, as app codes from `GET /onboarding/apps`.
+   * `null` when the server offered no choice (an older server, or the read
+   * failed): nothing is sent and the server gives the Shop, as it always did.
+   */
+  readonly apps?: readonly string[] | null;
+  /** R-DEC-64 "Wholesale of what?" — `shop.wholesale`. Shop only. */
+  readonly sellsWholesale?: boolean;
+  /** R-DEC-66 / G12 — "Anything your shop needs?", `shop.features.<key>`. */
+  readonly features?: Readonly<Partial<Record<SignupFeature, boolean>>>;
+}
+
+/** One app a new business may choose, as the server's registry describes it. */
+export interface OfferedApp {
+  readonly code: string;
+  /** The message id of its name — the same one the switcher shows. */
+  readonly labelId: string;
 }
 
 export interface OnboardingGstStep {
@@ -68,6 +85,8 @@ export interface TenantApiPayload {
   readonly id: string;
   readonly name: string;
   readonly business_type: BusinessType;
+  /** R-DEC-64 — `shop.wholesale`; absent from an older server. */
+  readonly sells_wholesale?: boolean;
   readonly state_code: string;
   readonly gst_type: GstType;
   readonly gstin: string | null;
@@ -78,6 +97,8 @@ export interface TenantApiPayload {
   readonly locale: Locale;
   readonly onboarding_step: number;
   readonly enabled_modules: readonly ModuleCode[];
+  /** The apps the business runs; absent from a server before 11 Oct 2026. */
+  readonly apps?: readonly string[];
   readonly address: {
     readonly line1?: string | null;
     readonly line2?: string | null;
@@ -92,6 +113,8 @@ export interface OnboardingTenant {
   readonly id: string;
   readonly name: string;
   readonly businessType: BusinessType;
+  /** R-DEC-64 — the kind is sold wholesale (`shop.wholesale`). */
+  readonly sellsWholesale: boolean;
   readonly stateCode: string;
   readonly gstType: GstType;
   readonly gstin: string | null;
@@ -102,6 +125,8 @@ export interface OnboardingTenant {
   readonly locale: Locale;
   readonly onboardingStep: number;
   readonly enabledModules: readonly ModuleCode[];
+  /** The apps the business runs; `null` when the server did not say. */
+  readonly apps?: readonly string[] | null;
   readonly address: OnboardingAddress;
 }
 

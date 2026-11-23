@@ -1,0 +1,102 @@
+[
+  {
+    "width": 390,
+    "profile": "unthrottled",
+    "old": [
+      75,
+      63,
+      68,
+      81,
+      70,
+      67
+    ],
+    "new": [
+      371,
+      60,
+      75,
+      77,
+      73,
+      75
+    ],
+    "oldMedian": 69.0,
+    "newMedian": 75.0,
+    "oldP95": 81,
+    "newP95": 371,
+    "newFirstChangeMax": 3
+  },
+  {
+    "width": 390,
+    "profile": "throttled",
+    "old": [
+      1305,
+      421,
+      430,
+      1325,
+      433,
+      429
+    ],
+    "new": [
+      1372,
+      424,
+      425,
+      1390,
+      451,
+      436
+    ],
+    "oldMedian": 431.5,
+    "newMedian": 443.5,
+    "oldP95": 1325,
+    "newP95": 1390,
+    "newFirstChangeMax": 8
+  },
+  {
+    "width": 1280,
+    "profile": "unthrottled",
+    "old": [
+      416,
+      71,
+      63,
+      433,
+      66,
+      65
+    ],
+    "new": [
+      398,
+      64,
+      64,
+      426,
+      63,
+      61
+    ],
+    "oldMedian": 68.5,
+    "newMedian": 64.0,
+    "oldP95": 433,
+    "newP95": 426,
+    "newFirstChangeMax": 53
+  },
+  {
+    "width": 1280,
+    "profile": "throttled",
+    "old": [
+      1290,
+      550,
+      551,
+      1309,
+      561,
+      558
+    ],
+    "new": [
+      1348,
+      552,
+      546,
+      1356,
+      559,
+      555
+    ],
+    "oldMedian": 559.5,
+    "newMedian": 557.0,
+    "oldP95": 1309,
+    "newP95": 1356,
+    "newFirstChangeMax": 72
+  }
+]

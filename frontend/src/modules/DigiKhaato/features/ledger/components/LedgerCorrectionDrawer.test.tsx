@@ -174,12 +174,12 @@ describe('the correction drawer', () => {
   it('asks an opening balance the question an opening balance is asked', async () => {
     /* "You gave" is the wrong tense and the wrong claim on a row where nothing
        changed hands: it is the position the book started from. LED-02's form
-       asks "They owe me" / "I owe them", and a correction that relabelled the
+       asks "I will get" / "I will give", and a correction that relabelled the
        same control would be asking a different question about the same row. */
     store.dispatch(correctionOpened(entry({ entryType: 'opening', note: 'Opening balance' })));
     renderWithProviders(<Harness />);
 
-    expect(await screen.findByRole('radio', { name: 'They owe me' })).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: 'I will get' })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'You gave' })).not.toBeInTheDocument();
     // No note field: the server owns that string, in English, so a merchant who
     // typed one and watched it vanish would have learned the app loses work.

@@ -82,6 +82,9 @@ class QueryBudget:
 
 AUTH_FLOOR = (
     "platform_user — the authentication class loads the request user",
+    "platform_session — the authentication class checks this device was not signed "
+    "out elsewhere (owner, 18 Nov 2026: a phone signed out from the desktop stayed in "
+    "for up to fifteen minutes)",
     "platform_membership — tenancy resolves the membership, tenant, role, plan and partner",
 )
 MODULE_GATE = ("platform_tenant_setting — entitlements.for_tenant reads the plan overrides",)
@@ -91,7 +94,7 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="parties-list",
         label="GET /parties",
         url=lambda w: reverse("v1:party-list"),
-        budget=7,
+        budget=8,
         composition=(
             *AUTH_FLOOR,
             *MODULE_GATE,
@@ -117,7 +120,7 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="parties-list-search",
         label="GET /parties?q=",
         url=lambda w: reverse("v1:party-list") + "?q=budget",
-        budget=7,
+        budget=8,
         composition=(
             *AUTH_FLOOR,
             *MODULE_GATE,
@@ -138,7 +141,7 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="parties-list-status",
         label="GET /parties?status=active",
         url=lambda w: reverse("v1:party-list") + "?status=active",
-        budget=7,
+        budget=8,
         composition=(
             *AUTH_FLOOR,
             *MODULE_GATE,
@@ -155,7 +158,7 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="parties-detail",
         label="GET /parties/{id}",
         url=lambda w: reverse("v1:party-detail", args=[w["party"].id]),
-        budget=6,
+        budget=7,
         composition=(
             *AUTH_FLOOR,
             *MODULE_GATE,
@@ -184,11 +187,15 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="auth-me",
         label="GET /auth/me",
         url=lambda w: reverse("v1:auth-me"),
-        budget=7,
+        budget=10,
         composition=(
             *AUTH_FLOOR,
             "platform_membership — `active_membership` for the tenant in the `tid` claim",
+            "platform_tenant_setting — B2 / BP-22: the business's words and features, "
+            "one read of its labels, wholesale and `shop.features.*` rows",
             "platform_membership — the caller's other memberships, for the switcher",
+            "platform_membership — `blocked_from`: businesses whose owner blocked this person "
+            "(owner, 12 Oct 2026: a blocked member is told why on sign-in)",
             *MODULE_GATE,
             "platform_membership — the seat count behind `plan_limits.max_users`",
             "platform_session — the current device, for the session card",
@@ -202,8 +209,12 @@ QUERY_BUDGETS: tuple[QueryBudget, ...] = (
         id="tenants-current",
         label="GET /tenants/current",
         url=lambda w: reverse("v1:tenant-current"),
-        budget=2,
-        composition=AUTH_FLOOR,
+        budget=4,
+        composition=(
+            *AUTH_FLOOR,
+            "platform_tenant_setting — B1 / R-DEC-64: `sells_wholesale`, so the wizard "
+            "re-lights Wholesale after a reload",
+        ),
         spec_note=(
             "§20.14.1 has no row for it. It is the bare per-request floor with no module "
             "gate, which is why it is worth keeping measured: if this number moves, every "

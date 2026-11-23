@@ -13,7 +13,13 @@ import {
 } from 'modules/DigiKhaato/features/ledger/redux/ledgerEntryThunk';
 
 import { archiveParty, restoreParty } from './partyArchiveThunk';
-import { fetchPartyDetail, saveCollectionDate } from './partyDetailThunk';
+import {
+  fetchPartyDetail,
+  saveCollectionDate,
+  partyDetailArgId,
+  partyDetailArgBook,
+  type PartyDetailArg,
+} from './partyDetailThunk';
 
 import type { PartyCredit, PartyDetail, PartySummary } from '../types/party.types';
 
@@ -29,6 +35,7 @@ import type { PartyCredit, PartyDetail, PartySummary } from '../types/party.type
  * when the abort is issued.
  */
 export interface PartyDetailState {
+  book?: 'main' | 'shop';
   /** Which party this state is about. `null` before the first fetch. */
   id: string | null;
   party: PartyDetail | null;
@@ -74,12 +81,15 @@ const partyDetailSlice = createSlice({
      * FR-1: navigating list → party → back → the same party must not blank the
      * header while a fetch it already has the answer to goes out.
      */
-    partyDetailOpened(state, action: PayloadAction<string>) {
-      if (state.id === action.payload) {
+    partyDetailOpened(state, action: PayloadAction<PartyDetailArg>) {
+      const id = partyDetailArgId(action.payload);
+      const book = partyDetailArgBook(action.payload);
+      if (state.id === id && (state.book ?? 'main') === book) {
         state.error = null;
         return;
       }
-      state.id = action.payload;
+      state.id = id;
+      state.book = book;
       state.party = null;
       state.summary = null;
       state.credit = null;
@@ -98,7 +108,8 @@ const partyDetailSlice = createSlice({
       .addCase(fetchPartyDetail.pending, (state, action) => {
         // A refetch of what is already on screen keeps it there; a first load
         // shows the skeleton.
-        state.status = state.party && state.id === action.meta.arg ? 'refreshing' : 'loading';
+        state.status =
+          state.party && state.id === partyDetailArgId(action.meta.arg) ? 'refreshing' : 'loading';
         state.error = null;
         state.readSeq[action.meta.requestId] = state.staleSeq;
       })
@@ -108,7 +119,12 @@ const partyDetailSlice = createSlice({
            merchant opened another party before this one landed, and writing it
            anyway puts one party's name above another's balance. */
         const startedAt = takeReadSeq(state.readSeq, action.meta.requestId);
-        if (state.id !== null && state.id !== action.meta.arg) return;
+        if (
+          state.id !== null &&
+          (state.id !== partyDetailArgId(action.meta.arg) ||
+            (state.book ?? 'main') !== partyDetailArgBook(action.meta.arg))
+        )
+          return;
         /* NEW-2 — the stale-read guard. This read was requested BEFORE the
            latest write this slice was told about, so it cannot contain that
            write: two quick entries, and the first one's credit refetch landing
@@ -124,7 +140,8 @@ const partyDetailSlice = createSlice({
           return;
         }
         state.status = 'succeeded';
-        state.id = action.meta.arg;
+        state.id = partyDetailArgId(action.meta.arg);
+        state.book = partyDetailArgBook(action.meta.arg);
         state.party = action.payload.party as Draft<PartyDetail>;
         state.summary = action.payload.summary as Draft<PartySummary>;
         state.credit = action.payload.credit as Draft<PartyCredit> | null;
@@ -135,7 +152,12 @@ const partyDetailSlice = createSlice({
       .addCase(fetchPartyDetail.rejected, (state, action) => {
         takeReadSeq(state.readSeq, action.meta.requestId);
         if (action.meta.aborted) return;
-        if (state.id !== null && state.id !== action.meta.arg) return;
+        if (
+          state.id !== null &&
+          (state.id !== partyDetailArgId(action.meta.arg) ||
+            (state.book ?? 'main') !== partyDetailArgBook(action.meta.arg))
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

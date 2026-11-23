@@ -72,7 +72,7 @@ function UbTooltipBase({
             className={cn(
               'relative z-[60] max-w-[200px] overflow-visible rounded-card p-3',
               'ds-caption bg-surface-raised font-medium text-text-secondary shadow-ub-popover',
-              'data-[state=delayed-open]:animate-fade-in data-[state=closed]:animate-fade-out',
+              'data-[state=closed]:animate-fade-out data-[state=delayed-open]:animate-fade-in',
               className
             )}
           >

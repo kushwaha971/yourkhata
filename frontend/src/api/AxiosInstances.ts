@@ -23,7 +23,7 @@ import { newRequestId } from 'src/utils/requestId';
 
 import { API_PATHS, isTenantTransitionPath, requiresIdempotency } from './APIPaths';
 import { __resetTenantTransition, adoptTenant, effectiveTenantId } from './tenantTransition';
-import { transportHost } from './transportBridge';
+import { transportHost, type RequestIdentity } from './transportBridge';
 
 /** Requests that must never trigger a refresh, or that carry no auth. */
 const AUTH_FREE_PATHS: readonly string[] = [
@@ -32,6 +32,10 @@ const AUTH_FREE_PATHS: readonly string[] = [
   // any of them is the answer, not a stale token: refreshing on it would turn
   // "that password is wrong" into a redirect to the screen the user is on.
   API_PATHS.AUTH_REGISTER,
+  // Owner, 9 Oct 2026 — the sign-in code. A refused code, or an inactive
+  // account's 401 at verify, is the answer and must not start a refresh.
+  API_PATHS.AUTH_OTP_REQUEST,
+  API_PATHS.AUTH_OTP_VERIFY,
   API_PATHS.AUTH_PASSWORD_RESET_REQUEST,
   API_PATHS.AUTH_PASSWORD_RESET_CONFIRM,
   API_PATHS.AUTH_REFRESH,
@@ -55,6 +59,7 @@ export interface UbRequestConfig extends InternalAxiosRequestConfig {
    * from one another tab's switch has redirected.
    */
   _tenantAtIssue?: string | null;
+  _identityAtIssue?: RequestIdentity | null;
 }
 
 /**
@@ -85,10 +90,43 @@ export const publicApi: AxiosInstance = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+let contextMismatchHandled = false;
+const accountTransition = (url?: string): boolean =>
+  [
+    API_PATHS.AUTH_LOGIN,
+    API_PATHS.AUTH_REGISTER,
+    API_PATHS.AUTH_OTP_VERIFY,
+    API_PATHS.AUTH_LOGOUT,
+  ].some((path) => path === ((url ?? '').split('?')[0] ?? ''));
+const staleIdentity = (request?: UbRequestConfig): boolean => {
+  if (!request || accountTransition(request.url)) return false;
+  const current = transportHost()?.getRequestIdentity?.();
+  if (current === undefined) return false;
+  if (contextMismatchHandled) return true;
+  return Boolean(request._identityAtIssue && request._identityAtIssue.userId !== current?.userId);
+};
+const staleRequestContext = (request?: UbRequestConfig): boolean => {
+  if (staleIdentity(request)) return true;
+  if (!request || accountTransition(request.url) || !request._tenantAtIssue) return false;
+  return request._tenantAtIssue !== effectiveTenantId(transportHost()?.getActiveTenantId() ?? null);
+};
+const cancelledContext = (request?: UbRequestConfig) =>
+  new axios.CanceledError('This response belongs to a previous session.', request);
+const accountMismatch = (): void => {
+  if (contextMismatchHandled) return;
+  contextMismatchHandled = true;
+  const host = transportHost();
+  if (host?.onAccountMismatch) host.onAccountMismatch();
+  else host?.onSessionExpired();
+};
+
 // ── Request interceptors (§19.4.2) ───────────────────────────────────────────
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const request = config as UbRequestConfig;
+  if (staleRequestContext(request)) return Promise.reject(cancelledContext(request));
+  if (request._identityAtIssue === undefined)
+    request._identityAtIssue = transportHost()?.getRequestIdentity?.() ?? null;
 
   // 1. Request id — echoed by the server in every response and every error,
   //    surfaced to the user on error screens (Part 22 §22.1 "Tracing").
@@ -98,7 +136,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
   // 2. CSRF double-submit for the cookie session (Part 22 §22.1 "Auth
   //    transport"). The access token itself is httpOnly and is attached by the
-  //    browser; no tenant header is ever sent — `X-Tenant-Id` is not trusted
+  //    browser; `X-Tenant-Id` is never sent or trusted for tenant selection
   //    and the active tenant is the `tid` claim inside the token (R-SEC-3).
   if (request.method && request.method.toLowerCase() !== 'get') {
     const csrf = readCsrfToken();
@@ -109,7 +147,15 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   request.headers.set('Accept-Language', transportHost()?.getLocale() ?? 'en');
 
   // 3b. M3 — which tenant this request was asked under (see the guard below).
-  request._tenantAtIssue = effectiveTenantId(transportHost()?.getActiveTenantId() ?? null);
+  if (request._tenantAtIssue === undefined)
+    request._tenantAtIssue = effectiveTenantId(transportHost()?.getActiveTenantId() ?? null);
+  if (!accountTransition(request.url)) {
+    if (request._identityAtIssue?.userId)
+      request.headers.set('X-Expected-User-Id', request._identityAtIssue.userId);
+    // Session discovery also follows intentional no-tenant/support transitions.
+    if (request._tenantAtIssue && request.url !== API_PATHS.AUTH_ME)
+      request.headers.set('X-Expected-Tenant-Id', request._tenantAtIssue);
+  }
 
   // 4. Idempotency key — required on every POST that creates a document,
   //    payment or ledger entry (canon §0.11 rule 5). The CALLER supplies it so
@@ -204,6 +250,7 @@ export const __resetTransportState = (): void => {
   pendingQueue.length = 0;
   redirected = false;
   __resetTenantTransition();
+  contextMismatchHandled = false;
 };
 
 // ── Response interceptors ────────────────────────────────────────────────────
@@ -212,6 +259,34 @@ api.interceptors.response.use(
   (response) => {
     // §19.10.3 signal 1: the server answered, so the network works.
     const config = response.config as UbRequestConfig;
+    if (staleIdentity(config)) return Promise.reject(cancelledContext(config));
+    if (
+      config._tenantAtIssue &&
+      effectiveTenantId(transportHost()?.getActiveTenantId() ?? null) === null
+    )
+      return Promise.reject(cancelledContext(config));
+    const identity = transportHost()?.getRequestIdentity?.();
+    if (!accountTransition(config.url) && identity) {
+      const actor = response.headers?.['x-user-id'];
+      if (typeof actor === 'string' && actor !== identity.userId) {
+        accountMismatch();
+        return Promise.reject(cancelledContext(config));
+      }
+      const revision = response.headers?.['x-membership-version'];
+      if (
+        revision !== undefined &&
+        response.headers?.['x-tenant-id'] === identity.tenantId &&
+        identity.version !== null &&
+        Number(revision) < identity.version
+      )
+        return Promise.reject(cancelledContext(config));
+      if (
+        revision === undefined &&
+        config._identityAtIssue?.tenantId === identity.tenantId &&
+        config._identityAtIssue.version !== identity.version
+      )
+        return Promise.reject(cancelledContext(config));
+    }
     if ((config.net ?? 'interactive') !== 'background') {
       transportHost()?.onResponseObserved();
     }
@@ -282,6 +357,21 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const config = error.config as UbRequestConfig | undefined;
 
+    if (staleRequestContext(config)) return Promise.reject(cancelledContext(config));
+    const conflict = (error.response?.data as { error?: { code?: string } } | undefined)?.error
+      ?.code;
+    if (conflict === 'session_context_changed') {
+      accountMismatch();
+      return Promise.reject(cancelledContext(config));
+    }
+    if (conflict === 'tenant_context_changed') {
+      if (!contextMismatchHandled) {
+        contextMismatchHandled = true;
+        transportHost()?.onTenantMismatch(String(error.response?.headers?.['x-tenant-id'] ?? ''));
+      }
+      return Promise.reject(cancelledContext(config));
+    }
+
     // Aborted requests are superseded keystrokes, never errors.
     if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
       return Promise.reject(error);
@@ -297,18 +387,30 @@ api.interceptors.response.use(
 
     if (isRefreshable && config) {
       config._retried = true;
+      // Join the single in-flight refresh, or start it.
+      const waiter = new Promise<void>((resolve, reject) => {
+        pendingQueue.push({ resolve, reject });
+      });
+      // The rejection is delivered through `waiter` below; swallowing it HERE
+      // stops the shared refresh promise becoming an unhandled rejection when
+      // the refresh itself 401s (which is the ordinary session-expiry path).
+      void runRefresh().catch(() => undefined);
       try {
-        // Join the single in-flight refresh, or start it.
-        const waiter = new Promise<void>((resolve, reject) => {
-          pendingQueue.push({ resolve, reject });
-        });
-        // The rejection is delivered through `waiter` below; swallowing it HERE
-        // stops the shared refresh promise becoming an unhandled rejection when
-        // the refresh itself 401s (which is the ordinary session-expiry path).
-        void runRefresh().catch(() => undefined);
         await waiter;
-        return await api.request(config);
-      } catch {
+      } catch (refreshError) {
+        /*
+         * QA B47 — only a refresh the SERVER refused ends the session. A
+         * refresh that never got an answer (offline, a proxy's 502/503) says
+         * nothing about the session, and signing a merchant out over it sent
+         * them to a WhatsApp code for a session that was still valid.
+         */
+        // The refresh's rejection has already been through this interceptor,
+        // so it is usually an ApiErrorShape; a raw AxiosError is read too.
+        const shaped = refreshError as { status?: number; response?: { status?: number } } | null;
+        const refused = shaped?.status ?? shaped?.response?.status;
+        if (refused !== 401 && refused !== 403) {
+          return Promise.reject(toApiError(refreshError));
+        }
         // EXCEPTION 3 (CR-2026-09-19-E) — refresh failed, so the session is
         // genuinely over. `onSessionExpired` + a redirect to login IS the
         // report; a toast on the way out would be a second one, and the screen
@@ -318,6 +420,15 @@ api.interceptors.response.use(
         redirectToLoginOnce();
         return Promise.reject(toApiError(error));
       }
+      /*
+       * QA B47 — the replay is OUTSIDE the try. It used to share it, so a replay
+       * that failed for any other reason — aborted by a navigation, a 503, the
+       * stale-tab guard — was read as "the refresh failed" and signed a valid
+       * session out to /login, after the refresh had already succeeded. Its own
+       * failure now travels through this interceptor like any other request's
+       * (`_retried` stops it refreshing twice).
+       */
+      return api.request(config);
     }
 
     /**
@@ -334,6 +445,25 @@ api.interceptors.response.use(
       return Promise.reject(toApiError(error));
     }
 
+    /* A file request (`responseType: 'blob'`) gets its REFUSAL as a Blob too,
+       and normalising it unread turned the server's sentence ("You can make
+       this file once the month has ended.") into "Request failed." on every
+       export, because this is the one place an error is normalised and it ran
+       before any service's own unwrap could. Found by the GST portal file's
+       browser pass (7 Oct 2026); jsdom tests mock the service and never saw it. */
+    const blob = error.response?.data;
+    if (
+      error.response &&
+      typeof Blob !== 'undefined' &&
+      blob instanceof Blob &&
+      typeof blob.text === 'function'
+    ) {
+      try {
+        error.response.data = JSON.parse(await blob.text()) as unknown;
+      } catch {
+        // Not JSON (a proxy's page): the normaliser falls back to the status.
+      }
+    }
     const apiError = toApiError(error);
 
     // PLT-15 FR-6 — the plan-limit dialog is the presentation for this code,

@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event';
 import type { UbGridTier } from 'src/design-system/UbDataGrid';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { PermissionCode } from 'src/types/domain.types';
 
-import hi from 'locales/hi.json';
-
+import { TEAM_FLAGS } from '../constants/teamFlags';
 import { resetInvitations } from '../redux/invitationSlice';
 import { resetMembers } from '../redux/memberSlice';
 
@@ -31,6 +31,13 @@ jest.mock('../api/invitationService');
 // member fetch would reject through axios and paint a second error panel for a
 // failure that is not what any assertion here is checking.
 jest.mock('../api/memberService');
+// A13 — the screen asks GET /roles for the add-member picker. Left unmocked the
+// request fails in jsdom as a TRANSPORT error, the network slice goes
+// `degraded`, and every stale refetch after it is withheld — which is how the
+// revoke test's "refetch happened" assertion started failing (fixed in A6).
+jest.mock('../api/roleService');
+
+const roleService = jest.requireMock('../api/roleService') as { fetchRoles: jest.Mock };
 
 const invitationService = jest.requireMock('../api/invitationService') as {
   listInvitations: jest.Mock;
@@ -117,11 +124,25 @@ beforeEach(() => {
   store.dispatch(resetMembers());
   jest.clearAllMocks();
   setTier('cards');
+  roleService.fetchRoles.mockResolvedValue([]);
   signIn(['platform.members.manage']);
   // The members list is a real fetch on this screen now. Left as the bare
   // automock it resolves `undefined`, the slice reads `.rows` off it and every
   // test in the file dies inside a reducer for a reason none of them are about.
   memberService.listMembers.mockResolvedValue(page([]));
+});
+
+describe('TeamPageContent — no email invitations', () => {
+  it('shows no invitations and no invite by email: everyone joins by mobile', async () => {
+    // Owner, 15 Nov 2026: nobody using the app has an email or a password.
+    signIn(['platform.members.manage']);
+    renderWithProviders(<TeamPageContent />);
+    expect((await screen.findAllByRole('heading', { name: 'Team' })).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Invitations')).toBeNull();
+    // Nor is the server asked for invitations nobody will see.
+    expect(invitationService.listInvitations).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Invite/ })).toBeNull();
+  });
 });
 
 describe('TeamPageContent — permission-denied', () => {
@@ -160,6 +181,14 @@ describe('TeamPageContent — permission-denied', () => {
 });
 
 describe('TeamPageContent — the list states', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   it('paints the skeleton first, then the first-use empty state', async () => {
     invitationService.listInvitations.mockResolvedValue(page([]));
 
@@ -205,7 +234,7 @@ describe('TeamPageContent — the list states', () => {
     renderWithProviders(<TeamPageContent />);
 
     expect(await screen.findByText('We could not load your team')).toBeInTheDocument();
-    expect(screen.getByTestId('request-id')).toHaveTextContent('req_42');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
 
     invitationService.listInvitations.mockResolvedValue(page([PENDING]));
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -253,6 +282,14 @@ describe('TeamPageContent — the list states', () => {
 });
 
 describe('TeamPageContent — inviting', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   /**
    * The whole chain, and the two things that are irrecoverable if they are
    * wrong: the POST must carry an `Idempotency-Key` (two 201s for one seat is
@@ -353,6 +390,14 @@ describe('TeamPageContent — inviting', () => {
 });
 
 describe('TeamPageContent — revoking', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   /**
    * Revoke is destructive and irreversible, so it is behind `UbConfirmDialog`
    * and the confirm names the ACT and the PERSON. A confirm that says "OK"

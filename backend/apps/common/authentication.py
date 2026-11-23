@@ -14,6 +14,16 @@ CSRF_COOKIE = "ub_csrf"
 CSRF_HEADER = "X-CSRF-Token"
 
 
+def support_write_allowed(request: Any) -> bool:
+    """True for the few unsafe requests a support session may make (CR-2026-09-29-SEC-A).
+
+    Shared with `HasPermission`, whose own `imp` check (§20.4.8 rule 5) would
+    otherwise refuse the one pure-read POST the allow-list exists for.
+    """
+    path = request.path.rstrip("/") or "/"
+    return path in CookieOrBearerJWTAuthentication.IMPERSONATION_WRITE_ALLOWED
+
+
 class CookieOrBearerJWTAuthentication(JWTAuthentication):
     """Accept the access token from the Authorization header or the `ub_access` cookie.
 
@@ -55,14 +65,41 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         if claimed_epoch is None or int(claimed_epoch) != int(user.token_epoch):
             raise exceptions.AuthenticationFailed("session_revoked")
 
+        # One device signed out from another (Devices → Sign out): its session
+        # row is revoked, and its access token must stop working NOW, not when
+        # its fifteen minutes run out (owner, 18 Nov 2026: the phone stayed
+        # signed in). A session REPLACED by a refresh is revoked too, but its
+        # last access token is still the live device's, so only a revocation
+        # with no successor counts. Support sessions carry their own checks.
+        session_id = validated.payload.get("sid")
+        if session_id and not validated.payload.get("imp") and _session_signed_out(session_id):
+            raise exceptions.AuthenticationFailed("session_revoked")
+
         if cookie_auth and request.method not in SAFE_METHODS:
             self._assert_csrf(request)
+
+        # Preconditions only: the verified token remains the identity authority.
+        expected_user = request.headers.get("X-Expected-User-Id")
+        if expected_user is not None and expected_user != str(user.pk):
+            from apps.common.exceptions import BusinessRuleViolation
+
+            raise BusinessRuleViolation(
+                "session_context_changed", "Your account changed. Reload before continuing."
+            )
 
         self._assert_password_usable(request, user)
 
         # Bind the tenant contextvar as early as the tenant is knowable (§20.4.3).
         request.user = user
         tenant = get_effective_tenant(request)
+        expected_tenant = request.headers.get("X-Expected-Tenant-Id")
+        actual_tenant = str(tenant.pk) if tenant is not None else ""
+        if expected_tenant is not None and expected_tenant != actual_tenant:
+            from apps.common.exceptions import BusinessRuleViolation
+
+            raise BusinessRuleViolation(
+                "tenant_context_changed", "Your business changed. Reload before continuing."
+            )
         if validated.payload.get("imp"):
             self._assert_impersonation_scope(request, tenant)
         if tenant is not None:
@@ -103,12 +140,34 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
             "This business is scheduled for deletion and is read-only. Cancel the deletion to make changes.",
         )
 
-    # ── PLT-14 FR-5: what a support token may NOT do ─────────────────────────
+    # ── PLT-14 / Part 20 §20.4.8 rule 5: a support session is VIEW ONLY ──────
     #
-    # Writes are allowed — reproducing a fault needs them — except deleting the
-    # business, changing who owns or works in it, its bank details, taking the
-    # whole book away, answering its own consent request, and anything in the
-    # console. `/admin/impersonation/end` is the one console route it needs.
+    # The owner consents to a read-only session (the console and the consent
+    # copy both say so), so EVERY unsafe method is refused here, before any
+    # view or permission class runs — one door, for the reason the password
+    # gate lives here too: a view whose permission class forgot the `imp`
+    # check was a write hole (CR-2026-09-29-SEC-A). The allow-list is minimal
+    # and explicit; adding to it is a claim, made in the same commit, that the
+    # route writes nothing a merchant would see:
+    #
+    # * `/admin/impersonation/end` — the way out;
+    # * `/auth/logout` — always possible to sign out;
+    # * `/reminders/preview` — a POST that composes the reminder text and
+    #   writes nothing (`ledger.services.reminders.preview_reminder`); the
+    #   party screen's reminder sheet calls it merely to show the text.
+    #
+    # `/auth/refresh` needs no entry: it is unauthenticated (the refresh cookie
+    # is the operator's own), so this door never sees it.
+    #
+    # Reads stay open except the console, switching, the whole-book export,
+    # the business's own consent requests, and the password/session screens.
+    IMPERSONATION_WRITE_ALLOWED = frozenset(
+        {
+            "/api/v1/admin/impersonation/end",
+            "/api/v1/auth/logout",
+            "/api/v1/reminders/preview",
+        }
+    )
     IMPERSONATION_FORBIDDEN_ANY = (
         "/api/v1/admin/",
         "/api/v1/auth/switch-tenant",
@@ -118,12 +177,6 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         "/api/v1/tenants/current/export",
         "/api/v1/support/",
     )
-    IMPERSONATION_FORBIDDEN_WRITES = (
-        "/api/v1/members",
-        "/api/v1/memberships/",
-        "/api/v1/invitations",
-    )
-    IMPERSONATION_FORBIDDEN_FIELDS = frozenset({"bank_details", "upi_vpa", "pan"})
 
     @classmethod
     def _assert_impersonation_scope(cls, request: Any, tenant: Any) -> None:
@@ -132,23 +185,18 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
             # which brings back the operator's OWN session. Never a fall-through
             # to the `tid` claim.
             raise exceptions.AuthenticationFailed("session_revoked")
-        path = request.path
-        if path == "/api/v1/admin/impersonation/end":
+        if support_write_allowed(request):
             return
-        forbidden = path.startswith(cls.IMPERSONATION_FORBIDDEN_ANY)
-        if not forbidden and request.method not in SAFE_METHODS:
-            forbidden = path.startswith(cls.IMPERSONATION_FORBIDDEN_WRITES)
-            if not forbidden and path.rstrip("/") == "/api/v1/tenants/current":
-                body = getattr(request, "data", None)
-                forbidden = isinstance(body, dict) and bool(
-                    cls.IMPERSONATION_FORBIDDEN_FIELDS & set(body)
-                )
-        if forbidden:
-            from apps.common.exceptions import BusinessRuleViolation
+        if request.method in SAFE_METHODS and not request.path.startswith(
+            cls.IMPERSONATION_FORBIDDEN_ANY
+        ):
+            return
+        from apps.common.exceptions import BusinessRuleViolation
 
-            raise BusinessRuleViolation(
-                "impersonation_forbidden", "Support sessions cannot do this."
-            )
+        raise BusinessRuleViolation(
+            "impersonation_forbidden",
+            "This is a view-only support session. Nothing can be changed.",
+        )
 
     @classmethod
     def _assert_partner_active(cls, request: Any, tenant: Any) -> None:
@@ -242,3 +290,12 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         header = request.headers.get(CSRF_HEADER) or ""
         if not cookie or not header or cookie != header:
             raise exceptions.PermissionDenied("CSRF token missing or incorrect.")
+
+
+def _session_signed_out(session_id: Any) -> bool:
+    """True when this session was ended by a sign-out, not by a refresh."""
+    from apps.platform_app.models import Session
+
+    return Session.objects.filter(
+        pk=session_id, revoked_at__isnull=False, replaced_by__isnull=True
+    ).exists()

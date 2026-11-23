@@ -1,3 +1,4 @@
+import type { TagFormValues } from '../api/tagService';
 /**
  * Domain types for INV-01…INV-08 (camelCase; the service maps the wire).
  *
@@ -48,6 +49,10 @@ export interface CategoryRef {
 export interface Category extends CategoryRef {
   readonly parentId: string | null;
   readonly itemCount: number;
+  /** Withheld (null) when the viewer may not see cost. */
+  readonly stockValue?: string | null;
+  /** The tax code most of its items carry. */
+  readonly taxCode?: string | null;
   readonly children: readonly Category[];
 }
 
@@ -68,7 +73,31 @@ export interface HsnCode {
   readonly isService: boolean;
 }
 
+/** The Items list's one kind-specific column (design D4), chosen by the server. */
+export type KindColumn =
+  | 'jewellery'
+  | 'batches'
+  | 'serials'
+  | 'part_numbers'
+  | 'godowns'
+  | 'alt_units'
+  | 'variants'
+  | 'addons';
+/** First match wins, the same order as the server's `kind_column.ORDER`. */
+export const KIND_COLUMNS: readonly KindColumn[] = [
+  'jewellery',
+  'batches',
+  'serials',
+  'part_numbers',
+  'godowns',
+  'alt_units',
+  'variants',
+  'addons',
+];
+export type KindLine = string | Readonly<Record<string, string | number | null>>;
+
 export interface ItemListRow {
+  readonly kindLine?: KindLine | null;
   readonly id: string;
   readonly name: string;
   readonly sku: string;
@@ -83,6 +112,8 @@ export interface ItemListRow {
   /** SAL-02 FR-2 — the invoice line's HSN and inclusive-price defaults. */
   readonly hsnSac?: string | null;
   readonly taxInclusiveSelling?: boolean;
+  /** WP-07 — today's GST plus cess, sent only with the cost; absent otherwise. */
+  readonly gstPercent?: string | null;
   readonly trackStock: boolean;
   readonly onHand: string | null;
   readonly avgCost: string | null;
@@ -91,7 +122,37 @@ export interface ItemListRow {
   readonly stockValue: string | null;
   readonly status: ItemStatus;
   readonly matchField: MatchField;
+  /** D P1a — the other units it is sold in (1 Box = 20 PCS); empty for most items. */
+  readonly units?: readonly ItemUnitOption[];
+  /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
+  readonly scannedUnit?: string | null;
+  /** D P6 — a café item's add-ons ("Ice cream +₹30"). */
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  /** D P3 — "serial" when every piece has its own IMEI / serial number. */
+  readonly tracking?: 'none' | 'serial' | 'batch';
+  /** D P4 — the batch a sale would take next, for the bill line's caption. */
+  readonly nextBatch?: { readonly batchNo: string; readonly expiry: string } | null;
+  readonly warrantyMonths?: number | null;
+  /** D P2 — the garment this is one size × colour of, and which one. */
+  readonly product?: { readonly id: string; readonly name: string } | null;
+  readonly attributes?: { readonly size?: string; readonly colour?: string };
+  /** D P1b — other part numbers, the rack ("B-4"), the vehicles it fits. */
+  readonly partNumbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fitsVehicle?: string | null;
+  /** G4 — a medicine's salt and drug schedule ("", H, H1, X). */
+  readonly salt?: string | null;
+  readonly schedule?: ItemSchedule;
   readonly updatedAt: string;
+}
+
+/** D P1a — "Also sold as": one box is `factor` of the item's own unit. */
+export interface ItemUnitOption {
+  readonly code: string;
+  readonly factor: string;
+  readonly barcode: string | null;
+  readonly sellingPrice: string | null;
+  readonly allowDecimal: boolean;
 }
 
 export interface StockMovement {
@@ -109,6 +170,10 @@ export interface StockMovement {
     readonly type: string;
     readonly id: string | null;
     readonly number: string | null;
+    /** A sale or purchase document's kind (`invoice`, `purchase_bill`, …), when resolved. */
+    readonly kind?: string;
+    /** That document's status (`void` once cancelled), when resolved. */
+    readonly status?: string;
   };
   readonly reversesId: string | null;
   readonly isBackdated: boolean;
@@ -154,6 +219,8 @@ export interface ItemWarning {
 export interface ItemSaveResult {
   readonly item: Item;
   readonly warnings: readonly ItemWarning[];
+  /** D P2 — how many sizes × colours a new garment became. */
+  readonly variants?: number;
 }
 
 export interface ItemListFilters {
@@ -179,6 +246,11 @@ export interface ItemListResult {
     readonly low: number;
     readonly out: number;
   };
+  /**
+   * The server's `meta.has_any`: any item at all, archived included, whatever
+   * the filters. `false` is an empty catalogue (approved designs, 12 Oct 2026).
+   */
+  readonly hasAny?: boolean;
 }
 
 export interface MovementPage {
@@ -206,6 +278,8 @@ export interface ItemFormValues {
   taxInclusiveSelling: boolean;
   sellingPrice: string | null;
   purchasePrice: string | null;
+  /** WP-07 — shown and edited, never sent: margin is read from the two prices. */
+  margin: string;
   mrp: string | null;
   trackStock: boolean;
   reorderPoint: string;
@@ -213,6 +287,33 @@ export interface ItemFormValues {
   openingQty: string;
   openingCost: string;
   openingAsOf: string;
+  /** D P1a — "Also sold as" rows; sent only when the business sells in boxes. */
+  extraUnits: ExtraUnitValues[];
+  /** D P1b — sent only when the business keeps part numbers. */
+  partNumbers: string[];
+  rack: string;
+  fitsVehicle: string;
+  /** G4 — sent only by a medical store. */
+  salt: string;
+  schedule: ItemSchedule;
+  /** D P2 — a new garment in sizes × colours; sent only when switched on. */
+  hasVariants: boolean;
+  sizes: string[];
+  colours: string[];
+  /** D P6 — a café item's add-ons. */
+  addons: { name: string; price: string }[];
+  /** D3 per kind — batch (medicine) or IMEI (phone) tracking, and warranty. */
+  tracking: 'none' | 'serial' | 'batch';
+  warrantyMonths: number;
+  /** G2a — a jeweller's first tag, saved with the item (design D3 "Tag details"). */
+  tag: TagFormValues;
+}
+
+export interface ExtraUnitValues {
+  unitId: string;
+  factor: string;
+  price: string | null;
+  barcode: string;
 }
 
 export interface AdjustmentLine {
@@ -246,6 +347,13 @@ export interface StockAdjustment {
   readonly createdAt: string;
 }
 
+/**
+ * 09 §8.4 — how a line's quantity is read: added to stock, taken out of it, or
+ * the count found on the shelf. The server receives one signed quantity either
+ * way (`signedQty`); the three words are so nobody types a minus sign.
+ */
+export type AdjustmentMode = 'add' | 'remove' | 'to';
+
 /** One line in the adjustment editor — strings as the controls hold them. */
 export interface AdjustmentFormLine {
   itemId: string;
@@ -254,7 +362,7 @@ export interface AdjustmentFormLine {
   allowDecimal: boolean;
   onHand: string;
   avgCost: string;
-  mode: 'by' | 'to';
+  mode: AdjustmentMode;
   qty: string;
   unitCost: string;
 }
@@ -294,6 +402,8 @@ export interface StockSummaryRow {
 export interface StockSummaryFilters {
   readonly q: string;
   readonly categoryId: string;
+  /** D P1c — one godown; '' (or absent) is the whole business. */
+  readonly locationId?: string;
   readonly status: '' | 'in' | 'low' | 'out' | 'negative';
   readonly hideZero: boolean;
   readonly asOf: string | null;
@@ -310,6 +420,9 @@ export interface StockSummaryResult {
   readonly asOf: string | null;
   readonly historical: boolean;
   readonly valuationVisible: boolean;
+  /** `meta.has_any`: whether the business has ANY tracked item, whatever the
+   *  filters say. Absent from an older server, which then never hides anything. */
+  readonly hasAny?: boolean;
 }
 
 export interface LowStockRow {
@@ -335,3 +448,7 @@ export interface LowStockResult {
   readonly total: number;
   readonly totals: { readonly low: number; readonly out: number };
 }
+
+/** G4 — a medicine's drug schedule; "" is none. */
+export type ItemSchedule = '' | 'H' | 'H1' | 'X';
+export const ITEM_SCHEDULES: readonly ItemSchedule[] = ['', 'H', 'H1', 'X'];

@@ -2,9 +2,10 @@
 
 import { useEffect, type ReactNode } from 'react';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { UbActionLink, UbEmptyState, UbPageSkeleton } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import {
@@ -29,7 +30,7 @@ export function RequireSuperAdmin({
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const impersonating = useAppSelector(selectImpersonation) !== null;
   const mustChangePassword = useAppSelector(selectMustChangePassword);
-  const router = useRouter();
+  const router = useAppRouter();
   const pathname = usePathname();
 
   useEffect(() => {

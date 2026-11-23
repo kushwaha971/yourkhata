@@ -67,7 +67,7 @@ function UbPopoverBase({
           className={cn(
             'z-[60] flex w-ub-popover max-w-[calc(100vw-2rem)] flex-col overflow-hidden',
             'rounded-card border border-border-hairline bg-surface-raised shadow-ub-popover',
-            'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out',
+            'data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in',
             className
           )}
         >

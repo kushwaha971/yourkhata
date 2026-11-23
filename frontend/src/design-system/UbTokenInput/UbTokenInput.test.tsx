@@ -292,13 +292,7 @@ describe('UbTokenInput inside an overlay', () => {
     const onOpenChange = jest.fn();
 
     render(
-      <UbDialog
-        open
-        onOpenChange={onOpenChange}
-        title="Add party"
-        closeLabel="Close"
-        footer={null}
-      >
+      <UbDialog open onOpenChange={onOpenChange} title="Add party" closeLabel="Close" footer={null}>
         <Harness />
       </UbDialog>
     );

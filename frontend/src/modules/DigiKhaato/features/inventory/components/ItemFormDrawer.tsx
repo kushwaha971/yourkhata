@@ -2,43 +2,80 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { yupResolver } from '@hookform/resolvers/yup';
+import { ScanLine } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbAsyncCombobox,
+  UbBox,
   UbButton,
   UbChoiceChips,
   UbCombobox,
+  UbConfirmDialog,
   UbDateInput,
+  UbDialogLoading,
   UbDisclosure,
-  UbDrawer,
   UbField,
+  UbGrid,
   UbForm,
+  UbLink,
   UbMoneyInput,
   UbQuantityInput,
   UbSelect,
   UbStatusBanner,
   UbSwitch,
-  UbText,
   UbTextInput,
   isoFinancialYearStart,
   isoToday,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
+import { usePagedSearch } from 'src/hooks/usePagedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { itemPath } from 'src/routes';
+import { blurIfTyped } from 'src/utils/autofocusBlur';
+import { comboPaging } from 'src/utils/searchPaging';
 
 import { lookupItemByBarcode } from '../api/itemService';
 import { searchHsn } from '../api/mastersService';
+import { EMPTY_TAG } from '../api/tagService';
 import { DEFAULT_TAX_CODE, DEFAULT_UNIT_CODE } from '../constants/inventoryConstants';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useInventorySchemas } from '../validation/inventorySchemas';
 import { looksLikeBarcode, skuPrefix } from '../view-model/itemDisplay';
+import { gstFor, marginOf } from '../view-model/itemPricing';
+
+import { ItemAddonFields } from './ItemAddonFields';
+import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
+import { ItemPartFields } from './ItemPartFields';
+import { ItemPriceFields } from './ItemPriceFields';
+import { ItemTagFields } from './ItemTagFields';
+import { ItemTrackingFields } from './ItemTrackingFields';
+import { ItemVariantFields } from './ItemVariantFields';
 
 import type { UseItemFormResult } from '../hooks/useItemForm';
 import type { HsnCode, ItemFormValues } from '../types/item.types';
 
+// Loaded lazily, so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+
+import 'src/i18n/catalogues/inventory';
+import 'src/i18n/catalogues/itemPicker';
+import 'src/i18n/catalogues/items';
+import 'src/i18n/catalogues/movement';
+import 'src/i18n/catalogues/stock';
+import 'src/i18n/catalogues/validation';
+
 /**
- * INV-01 — create and edit an item, in a drawer (`dynamic()` from the pages
+ * INV-01 — create and edit an item, in a drawer (lazily loaded from the pages
  * that open it: react-hook-form, Yup and a dozen controls belong in the chunk
  * that OPENS the form, not in the list a merchant opens to read).
  *
@@ -47,6 +84,8 @@ import type { HsnCode, ItemFormValues } from '../types/item.types';
  * fills the GST rate unless the merchant already chose one (FR-5); a scanner
  * Enter inside Barcode checks for a duplicate instead of submitting (FR-11).
  */
+const hsnCodeOf = (row: HsnCode): string => row.code;
+
 export function ItemFormDrawer({
   form: itemForm,
 }: Readonly<{ form: UseItemFormResult }>): React.JSX.Element {
@@ -61,6 +100,7 @@ export function ItemFormDrawer({
     isSaving,
     canWrite,
     canAdjust,
+    canSeeCost: mayReadCost,
     formErrors,
     staleVersion,
     close,
@@ -77,6 +117,9 @@ export function ItemFormDrawer({
     [masters.units]
   );
 
+  const keepsTagsDefault = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('jewellery')
+  );
   const defaults = useMemo<ItemFormValues>(
     () => ({
       name: editing?.name ?? prefillName,
@@ -90,6 +133,12 @@ export function ItemFormDrawer({
       taxInclusiveSelling: editing?.taxInclusiveSelling ?? false,
       sellingPrice: editing?.sellingPrice ?? '',
       purchasePrice: editing?.purchasePrice ?? '',
+      margin:
+        marginOf({
+          sellingPrice: editing?.sellingPrice ?? '',
+          cost: editing?.purchasePrice ?? '',
+          ...gstFor(editing?.taxInclusiveSelling ?? false, editing?.taxRate),
+        }) ?? '',
       mrp: editing?.mrp ?? '',
       trackStock: editing?.trackStock ?? true,
       reorderPoint: editing?.reorderPoint ?? '',
@@ -97,8 +146,29 @@ export function ItemFormDrawer({
       openingQty: '',
       openingCost: '',
       openingAsOf: isoToday(),
+      // D P1a — the item's own extra units, so a save sends them back as they were.
+      extraUnits: (editing?.units ?? []).map((row) => ({
+        unitId: masters.units.find((unit) => unit.code === row.code)?.id ?? '',
+        factor: row.factor.replace(/\.?0+$/, ''),
+        price: row.sellingPrice,
+        barcode: row.barcode ?? '',
+      })),
+      partNumbers: [...(editing?.partNumbers ?? [])],
+      rack: editing?.rack ?? '',
+      fitsVehicle: editing?.fitsVehicle ?? '',
+      salt: editing?.salt ?? '',
+      schedule: editing?.schedule ?? '',
+      hasVariants: false,
+      sizes: [],
+      colours: [],
+      addons: (editing?.addons ?? []).map((row) => ({ name: row.name, price: row.price })),
+      // G2a — a jeweller's new item keeps tags from the start (its pieces are
+      // tagged); set here, not by the group on mount, which `reset` undid.
+      tracking: editing?.tracking ?? (keepsTagsDefault ? 'serial' : 'none'),
+      warrantyMonths: editing?.warrantyMonths ?? 0,
+      tag: { ...EMPTY_TAG },
     }),
-    [editing, prefillBarcode, prefillName, defaultUnitId]
+    [editing, prefillBarcode, prefillName, defaultUnitId, masters.units, keepsTagsDefault]
   );
 
   const form = useForm<ItemFormValues>({
@@ -115,38 +185,65 @@ export function ItemFormDrawer({
   const itemType = useWatch({ control, name: 'itemType' });
   const trackStock = useWatch({ control, name: 'trackStock' });
   const unitId = useWatch({ control, name: 'unitId' });
+  const features = useAppSelector(selectActiveTenant)?.features;
+  const sellsInBoxes = Boolean(features?.includes('alt_units'));
+  const keepsPartNumbers = Boolean(features?.includes('part_numbers'));
+  const sellsSizes = Boolean(features?.includes('variants'));
+  const hasAddons = Boolean(features?.includes('addons'));
+  const keepsBatches = Boolean(features?.includes('batches'));
+  const keepsImei = Boolean(features?.includes('serials'));
+  // G2a — a jeweller's item is made with its first tag (design D3 "Tag details").
+  const keepsTags = Boolean(features?.includes('jewellery'));
+  // The server refuses a tracking change once stock has moved; shown locked.
+  const trackingLocked =
+    isEdit &&
+    editing?.onHand !== null &&
+    editing?.onHand !== undefined &&
+    Number(editing.onHand) !== 0;
   const name = useWatch({ control, name: 'name' });
+  const taxCode = useWatch({ control, name: 'taxCode' });
+  const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
   const isService = itemType === 'service';
+  /* The cost is withheld from this member (INV-08 EC-4) — on an edit the item
+     arrives without it too, and an empty box would read as "no cost". */
+  const canSeeCost = mayReadCost && editing?.purchasePrice !== null;
+  const gst = useMemo(
+    () =>
+      gstFor(
+        inclusive,
+        masters.taxRates.find((row) => row.code === taxCode)
+      ),
+    [inclusive, masters.taxRates, taxCode]
+  );
   const unit = masters.units.find((row) => row.id === unitId);
   const decimals = unit?.allowDecimal ? 3 : 0;
+  const tracking = useWatch({ control, name: 'tracking' });
+  // A batch or IMEI item gets its stock through a purchase, which records each
+  // batch / number; an opening quantity has none (the server refuses it).
   const showOpening =
-    !isService && trackStock && (!isEdit || (editing !== null && !editing.trackStock));
+    !isService &&
+    trackStock &&
+    tracking === 'none' &&
+    (!isEdit || (editing !== null && !editing.trackStock));
 
   // ── HSN picker (FR-4/FR-5) ────────────────────────────────────────────────
-  const [hsnQuery, setHsnQuery] = useState('');
-  const [hsnResults, setHsnResults] = useState<readonly HsnCode[]>([]);
+  // Owner, 5 Oct 2026 — the HSN box lists the schedule on open, pages as it
+  // scrolls and narrows as the merchant types (`usePagedSearch`).
+  const hsnSearch = usePagedSearch<HsnCode>({
+    enabled: true,
+    fetchPage: searchHsn,
+    debounceMs: 300,
+    idOf: hsnCodeOf,
+  });
+  const hsnResults = hsnSearch.results;
   const [hsnHint, setHsnHint] = useState<string | null>(null);
-  useEffect(() => {
-    const term = hsnQuery.trim();
-    if (!term) return undefined;
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      searchHsn(term, controller.signal)
-        .then(setHsnResults)
-        .catch(() => undefined);
-    }, 300);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [hsnQuery]);
   const hsnOptions = useMemo(
     () =>
-      (hsnQuery.trim() ? hsnResults : []).map((row) => ({
+      hsnResults.map((row) => ({
         value: row.code,
         label: `${row.code} — ${row.description}`,
       })),
-    [hsnResults, hsnQuery]
+    [hsnResults]
   );
   const pickHsn = useCallback(
     (code: string) => {
@@ -161,19 +258,33 @@ export function ItemFormDrawer({
   );
 
   // ── Barcode duplicate check (FR-11) ───────────────────────────────────────
-  const [barcodeHint, setBarcodeHint] = useState<{ tone: 'ok' | 'taken'; text: string } | null>(
-    null
-  );
+  const [barcodeHint, setBarcodeHint] = useState<{
+    tone: 'ok' | 'taken';
+    text: string;
+    takenId?: string;
+  } | null>(null);
   const checkBarcode = useCallback(async () => {
     const code = getValues('barcode').trim();
     if (code.length < 4) return;
     const hit = await lookupItemByBarcode(code).catch(() => null);
     if (hit && hit.id !== editing?.id) {
-      setBarcodeHint({ tone: 'taken', text: t('items.form.barcode.taken', { name: hit.name }) });
+      setBarcodeHint({
+        tone: 'taken',
+        text: t('items.form.barcode.taken', { name: hit.name }),
+        takenId: hit.id,
+      });
     } else {
       setBarcodeHint({ tone: 'ok', text: t('items.form.barcode.available') });
     }
   }, [getValues, editing, t]);
+
+  // ── Leave without saving? (States) ────────────────────────────────────────
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const requestClose = useCallback(() => {
+    if (formState.isDirty) setConfirmLeave(true);
+    else close();
+  }, [formState.isDirty, close, setConfirmLeave]);
 
   const taxOptions = useMemo(
     () =>
@@ -230,13 +341,14 @@ export function ItemFormDrawer({
   return (
     <UbDrawer
       open={open}
-      onOpenChange={(next) => (next ? undefined : close())}
-      title={isEdit ? t('items.form.title.edit') : t('items.form.title.new')}
+      onOpenChange={(next) => (next ? undefined : requestClose())}
+      title={isEdit ? t('items.form.title.edit') : t('items.form.title.add')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
+      className="lg:w-[560px]"
       footer={
         <>
-          <UbButton variant="secondary" onClick={close} disabled={isSaving}>
+          <UbButton variant="secondary" onClick={requestClose} disabled={isSaving}>
             {t('common.action.cancel')}
           </UbButton>
           <UbButton
@@ -246,7 +358,7 @@ export function ItemFormDrawer({
             busyLabel={t('items.form.saving')}
             disabled={!canWrite}
           >
-            {t('items.form.save')}
+            {isEdit ? t('items.form.save') : t('items.form.saveItem')}
           </UbButton>
         </>
       }
@@ -266,7 +378,15 @@ export function ItemFormDrawer({
           placeholder={t('items.form.name.placeholder')}
           required
         >
-          {(field) => <UbTextInput {...field} autoFocus autoComplete="off" maxLength={160} />}
+          {(field) => (
+            <UbTextInput
+              {...field}
+              onBlur={blurIfTyped(field, form.formState.isSubmitted)}
+              autoFocus
+              autoComplete="off"
+              maxLength={160}
+            />
+          )}
         </UbField>
         {looksLikeBarcode(name ?? '') && !isService && (
           <UbStatusBanner
@@ -287,100 +407,81 @@ export function ItemFormDrawer({
           />
         )}
 
-        <UbField name="itemType" label={t('items.form.type.label')}>
-          {(field) => (
-            <UbChoiceChips<'goods' | 'service'>
-              value={field.value as 'goods' | 'service'}
-              onChange={(next) => {
-                field.onChange(next);
-                if (next === 'service') setValue('trackStock', false);
-                else if (!isEdit) setValue('trackStock', true);
-              }}
-              options={typeOptions}
-              ariaLabel={t('items.form.type.label')}
-              disabled={isEdit}
-            />
+        {/* Design D3: Barcode and Category share a row on a desktop drawer and
+            stack in the phone sheet; the price sits beside its GST, the unit
+            beside the opening stock. Everything else is in "More details". */}
+        <UbGrid columns={{ base: 1, lg: 2 }} gap={4}>
+          {!isService && (
+            <UbField
+              name="barcode"
+              label={t('items.form.barcode.label')}
+              placeholder={t('items.form.barcode.placeholder')}
+              hint={barcodeHint?.text}
+            >
+              {(field) => (
+                /* Design D3: the barcode box carries a scan button. */
+                <UbBox className="relative">
+                  <UbTextInput
+                    {...field}
+                    autoComplete="off"
+                    inputMode="numeric"
+                    className="pr-11"
+                    maxLength={48}
+                    onBlur={() => {
+                      field.onBlur();
+                      void checkBarcode();
+                    }}
+                    onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                      /* FR-11 — the scanner's Enter is not a submit. */
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        (event.target as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
+                  <UbButton
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
+                    icon={<ScanLine aria-hidden className="h-4 w-4" />}
+                    className="ub-hit absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2"
+                    onClick={() => setCameraOpen(true)}
+                    data-testid="item-barcode-scan"
+                  >
+                    {t('items.scan.camera')}
+                  </UbButton>
+                </UbBox>
+              )}
+            </UbField>
           )}
-        </UbField>
-
-        <UbField
-          name="unitId"
-          label={t('items.form.unit.label')}
-          placeholder={t('items.form.unit.placeholder')}
-          required
-        >
-          {(field) => (
-            <UbCombobox
-              {...field}
-              value={field.value as string}
-              options={unitOptions}
-              searchPlaceholder={t('items.form.unit.search')}
-              emptyLabel={t('items.form.unit.empty')}
-              onCreate={masters.canWrite ? createUnitInline : undefined}
-              createLabel={(text) => t('items.form.createInline', { text })}
-              disabled={isEdit && Boolean(editing?.hasMovements)}
-            />
-          )}
-        </UbField>
-
-        <UbField
-          name="sellingPrice"
-          label={t('items.form.sellingPrice.label')}
-          placeholder={t('items.form.price.placeholder')}
-        >
-          {(field) => <UbMoneyInput {...field} />}
-        </UbField>
-
-        <UbField
-          name="categoryId"
-          label={t('items.form.category.label')}
-          placeholder={t('items.form.category.placeholder')}
-        >
-          {(field) => (
-            <UbCombobox
-              {...field}
-              value={field.value as string}
-              options={masters.categoryOptions}
-              searchPlaceholder={t('items.form.category.search')}
-              emptyLabel={t('items.form.category.empty')}
-              onCreate={masters.canWrite ? createCategoryInline : undefined}
-              createLabel={(text) => t('items.form.createInline', { text })}
-            />
-          )}
-        </UbField>
-
-        <UbDisclosure
-          label={t('items.form.section.tax')}
-          open={Boolean(formState.errors.hsnSac || formState.errors.taxCode) || undefined}
-        >
           <UbField
-            name="hsnSac"
-            label={t(isService ? 'items.form.sac.label' : 'items.form.hsn.label')}
-            placeholder={t('items.form.hsn.placeholder')}
+            name="categoryId"
+            label={t('items.form.category.label')}
+            placeholder={t('items.form.category.placeholder')}
           >
             {(field) => (
-              <UbAsyncCombobox
-                id={field.id}
-                value={(field.value as string) || null}
-                selectedLabel={field.value as string}
-                query={hsnQuery}
-                onQueryChange={setHsnQuery}
-                options={hsnOptions}
-                onSelect={(option) => pickHsn(option.value)}
-                onSubmitQuery={(typed) => pickHsn(typed)}
-                onCreate={(typed) => pickHsn(typed)}
-                createLabel={(typed) => t('items.form.hsn.useTyped', { code: typed })}
-                placeholder={t('items.form.hsn.placeholder')}
-                searchPlaceholder={t('items.form.hsn.search')}
-                emptyLabel={t('items.form.hsn.empty')}
-                invalid={field.invalid}
-                aria-describedby={field['aria-describedby']}
+              <UbCombobox
+                {...field}
+                value={field.value as string}
+                options={masters.categoryOptions}
+                searchPlaceholder={t('items.form.category.search')}
+                emptyLabel={t('items.form.category.empty')}
+                onCreate={masters.canWrite ? createCategoryInline : undefined}
+                createLabel={(text) => t('items.form.createInline', { text })}
               />
             )}
           </UbField>
+        </UbGrid>
+        {barcodeHint?.tone === 'taken' && barcodeHint.takenId && (
+          <UbLink href={itemPath(barcodeHint.takenId)} variant="caption">
+            {t('items.form.barcode.open')}
+          </UbLink>
+        )}
+        <UbGrid gap={3} className="min-[360px]:grid-cols-2">
+          <ItemPriceFields part="price" canSeeCost={canSeeCost} gst={gst} />
           <UbField
             name="taxCode"
-            label={t('items.form.tax.label')}
+            label={t('items.form.gst.label')}
             hint={
               hsnHint ??
               (legacyRate
@@ -400,35 +501,97 @@ export function ItemFormDrawer({
               />
             )}
           </UbField>
+        </UbGrid>
+        <UbGrid gap={3} className="min-[360px]:grid-cols-2">
           <UbField
-            name="taxInclusiveSelling"
-            label={t('items.form.taxInclusive.label')}
-            controlOwnsLabel
+            name="unitId"
+            label={t('items.form.unit.label')}
+            placeholder={t('items.form.unit.placeholder')}
+            required
           >
             {(field) => (
-              <UbSwitch
-                id={field.id}
-                checked={Boolean(field.value)}
-                onCheckedChange={field.onChange}
-                label={t('items.form.taxInclusive.label')}
+              <UbCombobox
+                {...field}
+                value={field.value as string}
+                options={unitOptions}
+                searchPlaceholder={t('items.form.unit.search')}
+                emptyLabel={t('items.form.unit.empty')}
+                onCreate={masters.canWrite ? createUnitInline : undefined}
+                createLabel={(text) => t('items.form.createInline', { text })}
+                disabled={isEdit && Boolean(editing?.hasMovements)}
               />
             )}
           </UbField>
-        </UbDisclosure>
-
-        <UbDisclosure label={t('items.form.section.pricing')}>
-          {/* Withheld from this member (INV-08 EC-4): an empty box would read
-              as "no purchase price" and the save leaves it untouched anyway. */}
-          {editing?.purchasePrice !== null && (
+          {showOpening && (isEdit ? canAdjust : true) && (
             <UbField
-              name="purchasePrice"
-              label={t('items.form.purchasePrice.label')}
-              placeholder={t('items.form.price.placeholder')}
-              hint={t('items.form.purchasePrice.hint')}
+              name="openingQty"
+              label={t('items.form.opening.stock')}
+              placeholder={t('items.form.qty.placeholder')}
             >
-              {(field) => <UbMoneyInput {...field} />}
+              {(field) => (
+                <UbQuantityInput
+                  {...field}
+                  value={field.value as string}
+                  decimals={decimals}
+                  unit={unit?.code}
+                />
+              )}
             </UbField>
           )}
+        </UbGrid>
+
+        {/* D P1a — only for a business that sells in boxes, or an item that already does. */}
+        {!isService && (sellsInBoxes || (editing?.units?.length ?? 0) > 0) && (
+          <ItemExtraUnitsFields units={masters.units} baseUnitId={unitId} />
+        )}
+        {/* D P2 — design D3 "SIZES AND COLOURS", for a new garment only. */}
+        {!isService && !isEdit && sellsSizes && <ItemVariantFields />}
+        {/* D3 per kind: MEDICINE DETAILS / PHONE DETAILS. */}
+        {!isService && (keepsBatches || editing?.tracking === 'batch') && (
+          <ItemTrackingFields kind="batch" locked={trackingLocked} />
+        )}
+        {!isService && keepsTags && !isEdit && <ItemTagFields />}
+        {!isService && !keepsTags && (keepsImei || editing?.tracking === 'serial') && (
+          <ItemTrackingFields kind="serial" locked={trackingLocked} />
+        )}
+        {/* D P6 — design D11: add-ons on a café item. */}
+        {(hasAddons || (editing?.addons?.length ?? 0) > 0) && <ItemAddonFields />}
+        {/* D P1b — design D3 "PART DETAILS" for a parts shop. */}
+        {!isService &&
+          (keepsPartNumbers ||
+            (editing?.partNumbers?.length ?? 0) > 0 ||
+            Boolean(editing?.rack)) && <ItemPartFields />}
+
+        <UbDisclosure
+          label={t('items.form.section.details')}
+          hint={t('items.form.section.detailsHint')}
+          open={
+            Boolean(
+              formState.errors.hsnSac ||
+              formState.errors.purchasePrice ||
+              formState.errors.margin ||
+              formState.errors.reorderPoint ||
+              formState.errors.openingCost ||
+              formState.errors.sku
+            ) || undefined
+          }
+        >
+          <UbField name="itemType" label={t('items.form.type.label')}>
+            {(field) => (
+              <UbChoiceChips<'goods' | 'service'>
+                value={field.value as 'goods' | 'service'}
+                onChange={(next) => {
+                  field.onChange(next);
+                  if (next === 'service') setValue('trackStock', false);
+                  else if (!isEdit) setValue('trackStock', true);
+                }}
+                options={typeOptions}
+                ariaLabel={t('items.form.type.label')}
+                disabled={isEdit}
+              />
+            )}
+          </UbField>
+          <ItemPriceFields part="cost" canSeeCost={canSeeCost} gst={gst} />
           {!isService && (
             <UbField
               name="mrp"
@@ -438,60 +601,58 @@ export function ItemFormDrawer({
               {(field) => <UbMoneyInput {...field} />}
             </UbField>
           )}
-        </UbDisclosure>
-
-        {!isService && (
-          <UbDisclosure
-            label={t('items.form.section.stock')}
-            open={
-              Boolean(
-                formState.errors.reorderPoint ||
-                formState.errors.openingQty ||
-                formState.errors.openingCost
-              ) || undefined
-            }
+          <UbField
+            name="hsnSac"
+            label={t(isService ? 'items.form.sac.label' : 'items.form.hsn.label')}
+            placeholder={t('items.form.hsn.placeholder')}
           >
-            <UbField name="trackStock" label={t('items.form.trackStock.label')} controlOwnsLabel>
-              {(field) => (
-                <UbSwitch
-                  id={field.id}
-                  checked={Boolean(field.value)}
-                  onCheckedChange={field.onChange}
-                  label={t('items.form.trackStock.label')}
-                  description={t('items.form.trackStock.hint')}
-                  disabled={
-                    isEdit &&
-                    editing?.trackStock === true &&
-                    editing.onHand !== null &&
-                    Number(editing.onHand) !== 0
-                  }
-                />
-              )}
-            </UbField>
-            {trackStock && (
-              <UbField
-                name="reorderPoint"
-                label={t('items.form.reorderPoint.label')}
-                placeholder={t('items.form.qty.placeholder')}
-                hint={t('items.form.reorderPoint.hint')}
-              >
+            {(field) => (
+              <UbAsyncCombobox
+                id={field.id}
+                value={(field.value as string) || null}
+                selectedLabel={field.value as string}
+                query={hsnSearch.query}
+                onQueryChange={hsnSearch.setQuery}
+                onOpen={hsnSearch.activate}
+                paging={comboPaging(hsnSearch, t)}
+                options={hsnOptions}
+                onSelect={(option) => pickHsn(option.value)}
+                onSubmitQuery={(typed) => pickHsn(typed)}
+                onCreate={(typed) => pickHsn(typed)}
+                createLabel={(typed) => t('items.form.hsn.useTyped', { code: typed })}
+                placeholder={t('items.form.hsn.placeholder')}
+                searchPlaceholder={t('items.form.hsn.search')}
+                emptyLabel={t('items.form.hsn.empty')}
+                invalid={field.invalid}
+                aria-describedby={field['aria-describedby']}
+              />
+            )}
+          </UbField>
+          {!isService && (
+            <>
+              <UbField name="trackStock" label={t('items.form.trackStock.label')} controlOwnsLabel>
                 {(field) => (
-                  <UbQuantityInput
-                    {...field}
-                    value={field.value as string}
-                    decimals={decimals}
-                    unit={unit?.code}
+                  <UbSwitch
+                    id={field.id}
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label={t('items.form.trackStock.label')}
+                    description={t('items.form.trackStock.hint')}
+                    disabled={
+                      isEdit &&
+                      editing?.trackStock === true &&
+                      editing.onHand !== null &&
+                      Number(editing.onHand) !== 0
+                    }
                   />
                 )}
               </UbField>
-            )}
-            {showOpening && (isEdit ? canAdjust : true) && (
-              <>
-                <UbText variant="body-sm-medium">{t('items.opening.title')}</UbText>
+              {trackStock && (
                 <UbField
-                  name="openingQty"
-                  label={t('items.form.opening.qty')}
+                  name="reorderPoint"
+                  label={t('items.form.reorderPoint.label')}
                   placeholder={t('items.form.qty.placeholder')}
+                  hint={t('items.form.reorderPoint.hint')}
                 >
                   {(field) => (
                     <UbQuantityInput
@@ -502,41 +663,39 @@ export function ItemFormDrawer({
                     />
                   )}
                 </UbField>
-                <UbField
-                  name="openingCost"
-                  label={t('items.form.opening.cost')}
-                  placeholder={t('items.form.opening.cost.placeholder')}
-                  hint={t('items.form.opening.cost.hint', { unit: unit?.code ?? '' })}
-                >
-                  {(field) => <UbMoneyInput {...field} decimalPlaces={4} />}
-                </UbField>
-                <UbField
-                  name="openingAsOf"
-                  label={t('items.form.opening.asOf')}
-                  placeholder={t('items.form.date.placeholder')}
-                >
-                  {(field) => (
-                    <UbDateInput
-                      {...field}
-                      value={field.value as string}
-                      max={isoToday()}
-                      quickChoicesLabel={t('items.form.opening.quickDates')}
-                      quickChoices={[
-                        { label: t('items.form.opening.today'), date: isoToday() },
-                        { label: t('items.form.opening.fyStart'), date: isoFinancialYearStart() },
-                      ]}
-                    />
-                  )}
-                </UbField>
-              </>
-            )}
-          </UbDisclosure>
-        )}
-
-        <UbDisclosure
-          label={t('items.form.section.identifiers')}
-          open={Boolean(formState.errors.sku || formState.errors.barcode) || undefined}
-        >
+              )}
+            </>
+          )}
+          {showOpening && (isEdit ? canAdjust : true) && (
+            <>
+              <UbField
+                name="openingCost"
+                label={t('items.form.opening.cost')}
+                placeholder={t('items.form.opening.cost.placeholder')}
+                hint={t('items.form.opening.cost.hint', { unit: unit?.code ?? '' })}
+              >
+                {(field) => <UbMoneyInput {...field} decimalPlaces={4} />}
+              </UbField>
+              <UbField
+                name="openingAsOf"
+                label={t('items.form.opening.asOf')}
+                placeholder={t('items.form.date.placeholder')}
+              >
+                {(field) => (
+                  <UbDateInput
+                    {...field}
+                    value={field.value as string}
+                    max={isoToday()}
+                    quickChoicesLabel={t('items.form.opening.quickDates')}
+                    quickChoices={[
+                      { label: t('items.form.opening.today'), date: isoToday() },
+                      { label: t('items.form.opening.fyStart'), date: isoFinancialYearStart() },
+                    ]}
+                  />
+                )}
+              </UbField>
+            </>
+          )}
           <UbField
             name="sku"
             label={t('items.form.sku.label')}
@@ -547,37 +706,6 @@ export function ItemFormDrawer({
               <UbTextInput {...field} autoComplete="off" maxLength={48} className="ds-mono" />
             )}
           </UbField>
-          {!isService && (
-            <UbField
-              name="barcode"
-              label={t('items.form.barcode.label')}
-              placeholder={t('items.form.barcode.placeholder')}
-              hint={barcodeHint?.text}
-            >
-              {(field) => (
-                <UbTextInput
-                  {...field}
-                  autoComplete="off"
-                  inputMode="numeric"
-                  maxLength={48}
-                  onBlur={() => {
-                    field.onBlur();
-                    void checkBarcode();
-                  }}
-                  onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                    /* FR-11 — the scanner's Enter is not a submit. */
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      (event.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              )}
-            </UbField>
-          )}
-        </UbDisclosure>
-
-        <UbDisclosure label={t('items.form.section.more')}>
           <UbField
             name="description"
             label={t('items.form.description.label')}
@@ -587,6 +715,43 @@ export function ItemFormDrawer({
           </UbField>
         </UbDisclosure>
       </UbForm>
+      {cameraOpen && (
+        <UbScanSheet
+          open
+          onClose={() => setCameraOpen(false)}
+          onCode={(code: string) => {
+            setCameraOpen(false);
+            setValue('barcode', code, { shouldDirty: true });
+            void checkBarcode();
+          }}
+          title={t('items.scan.camera.title')}
+          hint={t('items.scan.camera.hint')}
+          labels={{
+            close: t('common.action.close'),
+            torch: t('items.scan.camera.torch'),
+            done: t('common.action.close'),
+            blockedTitle: t('items.scan.camera.blockedTitle'),
+            blockedBody: t('items.scan.camera.blockedBody'),
+            barcode: t('items.scan.camera.barcode'),
+            add: t('items.scan.camera.find'),
+            keepsWorking: t('items.scan.camera.keepsWorking'),
+          }}
+        />
+      )}
+      <UbConfirmDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title={t('items.form.leave.title')}
+        description={t('items.form.leave.body')}
+        confirmLabel={t('items.form.leave.confirm')}
+        cancelLabel={t('items.form.leave.stay')}
+        closeLabel={t('common.action.close')}
+        destructive
+        onConfirm={() => {
+          setConfirmLeave(false);
+          close();
+        }}
+      />
     </UbDrawer>
   );
 }

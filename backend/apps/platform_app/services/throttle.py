@@ -39,18 +39,23 @@ SCOPE_LOGIN_IP = "login_ip_fail"  # 100 failures per IP per hour → locked for 
 SCOPE_RESET_EMAIL = "reset_email"  # 5 per address per hour, 60 s apart
 SCOPE_RESET_IP = "reset_ip"  # 20 per IP per hour
 SCOPE_REGISTER_IP = "register_ip"  # 20 sign-ups per IP per hour
+SCOPE_RESET_CONFIRM_IP = "reset_confirm_ip"  # 30 link confirmations per IP per hour
 SCOPE_VERIFY_USER = "verify_user"  # 5 verification links per user per hour, 60 s apart
 
 # Reachable only when `UB_AUTH_OTP_ENABLED=1` (DEC-010).
-SCOPE_OTP_MOBILE = "otp_mobile"  # 5 per mobile per 10 min
+SCOPE_OTP_MOBILE = "otp_mobile"  # 5 per mobile per hour, 60 s apart
 SCOPE_OTP_IP = "otp_ip"  # 20 per IP per hour
 SCOPE_OTP_FAILURES = "otp_fail"  # 5 failed challenges/hour → 30 min lockout
 
 OTP_REQUESTS_PER_MOBILE = 5
-OTP_REQUEST_WINDOW_SECONDS = 600
+# An hour: with resends two minutes apart, five in ten minutes was unreachable.
+OTP_REQUEST_WINDOW_SECONDS = 3600
 OTP_REQUESTS_PER_IP = 20
 OTP_IP_WINDOW_SECONDS = 3600
-OTP_RESEND_GAP_SECONDS = 30  # PLT-01 FR-7 "Resend is allowed after retry_after"
+# PLT-01 FR-7 "Resend is allowed after retry_after" — two minutes (owner, 9 Oct
+# 2026: "proper resend OTP logic … timer of 2 min"). The server enforces it; the
+# screen's countdown only shows it.
+OTP_RESEND_GAP_SECONDS = 60
 
 OTP_FAILURES_BEFORE_LOCKOUT = 5
 OTP_FAILURE_WINDOW_SECONDS = 3600
@@ -71,6 +76,13 @@ RESET_IP_WINDOW_SECONDS = 3600
 
 REGISTRATIONS_PER_IP = 20
 REGISTER_IP_WINDOW_SECONDS = 3600
+
+# `POST /auth/password/reset/confirm` was the one unauthenticated auth route
+# with no budget. A 256-bit link is not guessable, so this is not about
+# guessing: each accepted confirm costs a full password hash, and each refused
+# one a token lookup, so it bounds what one address can make the server do.
+RESET_CONFIRMS_PER_IP = 30
+RESET_CONFIRM_IP_WINDOW_SECONDS = 3600
 
 # `POST /auth/email/verify/request` mints a link and invalidates the previous
 # one, so an unthrottled loop is both a mail amplifier and a way to keep a

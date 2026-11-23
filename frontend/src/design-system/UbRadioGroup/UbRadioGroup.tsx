@@ -28,7 +28,7 @@ export interface UbRadioGroupProps<T extends string> {
    * coloured header (§23's rule that red and green are never the only signal
    * holds either way, because both rows carry their words).
    */
-  readonly variant?: 'plain' | 'card';
+  readonly variant?: 'plain' | 'card' | 'list';
   readonly ariaLabel?: string;
   readonly invalid?: boolean;
   readonly describedBy?: string;

@@ -24,8 +24,27 @@ class TenantStatus(models.TextChoices):
 
 
 class BusinessType(models.TextChoices):
-    """Part 21 §21.3.1 `platform_tenant.business_type`."""
+    """Part 21 §21.3.1 `platform_tenant.business_type`.
 
+    R-DEC-63 (owner, 30 Oct 2026): the sign-up tiles' shop kinds are stored
+    types of their own, each with its own preset, so a feature is switched on
+    by one preset rather than by a second field that could disagree with this
+    one. Electrical, electronics and mobile are one kind; hardware and paint
+    are one kind. Sweets/bakery/café is the existing `food`, and the Wholesale
+    tile is `wholesale`. The older broad types stay valid.
+    """
+
+    HARDWARE = "hardware", _("Hardware & paint")
+    KIRANA = "kirana", _("Kirana")
+    MEDICAL = "medical", _("Medical")
+    ELECTRONICS = "electronics", _("Electrical, electronics & mobile")
+    GARMENTS = "garments", _("Clothes & shoes")
+    AUTO_PARTS = "auto_parts", _("Auto parts")
+    JEWELLERY = "jewellery", _("Jewellery")
+    # R-DEC-66 / design G12 — "Other" asks "What kind of shop?".
+    STATIONERY = "stationery", _("Stationery, books, xerox")
+    AGRI = "agri", _("Agri inputs")
+    FURNITURE = "furniture", _("Furniture, home")
     RETAIL = "retail", _("Retail")
     WHOLESALE = "wholesale", _("Wholesale")
     DISTRIBUTION = "distribution", _("Distribution")
@@ -80,3 +99,20 @@ class AuthTokenPurpose(models.TextChoices):
 
     PASSWORD_RESET = "password_reset", _("Password reset")
     EMAIL_VERIFY = "email_verify", _("Email verification")
+
+
+# ── A1 ── The release gate (ADR-041, contracts §1.1, FRD 00 PLT-X11) ─────────
+#: Module codes that exist in `ModuleCode` but are not yet released to
+#: merchants. A module code lands with its app's first migration, long before
+#: the module is built; while it is listed here no server response names it,
+#: no API accepts it and `ModuleEnabled` refuses it — unless the environment
+#: sets `UB_UNRELEASED_MODULES=1` (development, CI and the e2e stack only; the
+#: production settings refuse the flag at start-up).
+#:
+#: A module leaves this set only through its release CR, in the same commit as
+#: its plan/partner data migration and its `seed_plans.MVP_MODULES` line
+#: (PLT-X11 BR-4), so a fresh database and an old one converge.
+#:
+#: `lending` and `library` were released on 10 Oct 2026 (owner, in the project
+#: thread), by `lending/migrations/*_release.py` and `library/migrations/*_release.py`.
+UNRELEASED_MODULES: frozenset[str] = frozenset({"gym", "hospitality"})

@@ -179,7 +179,7 @@ describe('AdminTenantDetailPageContent', () => {
     );
     await userEvent.click(await screen.findByRole('button', { name: 'Enter business' }));
     await userEvent.type(
-      await screen.findByPlaceholderText('e.g. Owner reported a wrong balance on 3 Sep'),
+      await screen.findByPlaceholderText('Enter the reason'),
       'Reproduce the wrong balance'
     );
     const enterButtons = screen.getAllByRole('button', { name: 'Enter business' });
@@ -204,7 +204,7 @@ describe('ImpersonationBanner', () => {
     service.endImpersonation.mockResolvedValue('t1');
     renderWithProviders(<ImpersonationBanner />);
     expect(
-      screen.getByText(/Support session — Ops Person acting in Sharma Kirana/)
+      screen.getByText(/Support session · view only — Ops Person acting in Sharma Kirana/)
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'End session' }));
     await waitFor(() =>

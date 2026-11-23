@@ -2604,7 +2604,7 @@ After allocating, each touched document's `amount_paid` and `amount_due` caches 
 
 Part 21 does not specify the storage table (SAL-02 §15 flags this as CR-SAL-3); §22.1 specifies the behaviour. **This chapter closes the gap: the table is `platform_idempotency_key`, owned by the `platform` app.**
 
-| Column | Type | Meaning |
+| Column | Type | What it holds |
 |---|---|---|
 | `id` | uuid (v7) PK | |
 | `tenant_id` | uuid NN, FK RESTRICT | Keys are scoped per tenant (§22.1) |

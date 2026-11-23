@@ -1,4 +1,5 @@
 import type { UbAmountTone } from 'src/design-system';
+import { DAY_MS } from 'src/utils/calendarDays';
 import { absMoney, compareMoney, isZeroAmount, sumMoney } from 'src/utils/money';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
@@ -65,8 +66,6 @@ export interface PartyActivityView {
   readonly values?: Readonly<Record<string, number>>;
 }
 
-const DAY_MS = 86_400_000;
-
 /** Whole calendar days between two instants, floored to the day boundary. */
 const daysBetween = (fromIso: string, nowMs: number): number => {
   const then = new Date(fromIso).getTime();
@@ -120,4 +119,9 @@ export const partyTotals = (rows: readonly Party[]): PartyListTotals => {
  * ("+919876543210", "09812345678"), which is three spellings for one number.
  */
 export const contactLine = (party: Party): string =>
-  [party.displayCode, formatPhoneForDisplay(party.mobile)].filter(Boolean).join(' · ');
+  // The number's own spaces do not break (U+00A0): a narrow column wrapped
+  // "+91 90000 | 00074" mid-number (A7, 1280 at the Shop's 24 % share); the
+  // line may still wrap before "+91", which reads.
+  [party.displayCode, formatPhoneForDisplay(party.mobile)?.replace(/ /g, '\u00a0')]
+    .filter(Boolean)
+    .join(' · ');
