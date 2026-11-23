@@ -20,6 +20,7 @@ import { LANDING_CONTAINER, LANDING_SCALE } from '../config/layout';
 import { searchTermsFor } from '../config/searchTerms';
 import { SOLUTIONS, solutionBySlug, type Solution, type SolutionGuide } from '../config/solutions';
 import { HINDI_SLUGS, hindiSolutionBySlug } from '../config/solutions.hi';
+import { isoDateTime } from '../utils/landingJsonLd';
 
 import { BusinessSection } from './BusinessSection';
 import { GuideFold } from './GuideFold';
@@ -576,7 +577,7 @@ export function SolutionsPage({
               description: video.description,
               thumbnailUrl: absoluteUrl(`${video.base}-desktop.jpg`),
               contentUrl: absoluteUrl(`${video.base}-desktop.mp4`),
-              uploadDate: video.recorded,
+              uploadDate: isoDateTime(video.recorded),
               duration: `PT${video.seconds}S`,
               inLanguage: 'en-IN',
             },

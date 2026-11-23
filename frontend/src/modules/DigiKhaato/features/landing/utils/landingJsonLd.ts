@@ -74,6 +74,11 @@ export interface LandingVideo {
 const absolute = (siteUrl: string, url: string): string =>
   /^https?:\/\//.test(url) ? url : `${siteUrl}${url}`;
 
+/** `2026-11-17` → `2026-11-17T00:00:00+05:30`. Google refuses a bare date for
+ * a video's `uploadDate`: it wants a time and a timezone (Search Console, 23 Nov 2026). */
+export const isoDateTime = (date: string): string =>
+  /T/.test(date) ? date : `${date}T00:00:00+05:30`;
+
 /** `185` → `PT3M5S`. */
 export const isoDuration = (seconds: number): string => {
   const whole = Math.max(0, Math.round(seconds));
@@ -173,7 +178,7 @@ export const buildLandingJsonLd = ({
         thumbnailUrl: [absolute(siteUrl, video.thumbnailUrl)],
         contentUrl: absolute(siteUrl, video.contentUrl),
         ...(video.embedUrl ? { embedUrl: video.embedUrl } : {}),
-        uploadDate: video.uploadDate,
+        uploadDate: isoDateTime(video.uploadDate),
         duration: isoDuration(video.durationSeconds),
         inLanguage: video.language,
         transcript: video.transcript,

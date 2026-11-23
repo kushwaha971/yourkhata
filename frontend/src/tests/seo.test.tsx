@@ -388,7 +388,7 @@ describe('the landing page JSON-LD', () => {
       description: 'A tour.',
       contentUrl: 'https://yourkhata.com/media/landing/demo-hi.mp4',
       thumbnailUrl: ['https://yourkhata.com/media/landing/demo-hi-poster.jpg'],
-      uploadDate: '2026-10-10',
+      uploadDate: '2026-10-10T00:00:00+05:30',
       duration: 'PT3M38S',
       inLanguage: 'hi',
       transcript: 'Words.',
