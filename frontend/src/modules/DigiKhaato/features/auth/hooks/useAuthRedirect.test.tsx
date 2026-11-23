@@ -43,6 +43,9 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/login',
 }));
 
+jest.mock('src/analytics/track', () => ({ track: jest.fn() }));
+const { track } = jest.requireMock('src/analytics/track') as { track: jest.Mock };
+
 jest.mock('src/utils/documentNavigation', () => ({ replaceDocument: jest.fn() }));
 const { replaceDocument } = jest.requireMock('src/utils/documentNavigation') as {
   replaceDocument: jest.Mock;
@@ -229,5 +232,27 @@ describe('the flag behind it', () => {
     store.dispatch(fetchSession.rejected(null, 'probe', undefined));
     endSessionLocally(store.dispatch); // the transport's failed-refresh path
     expect(store.getState().session.heldInThisDocument).toBe(false);
+  });
+});
+
+describe('where a sign-in was sent (owner, 23 Nov 2026)', () => {
+  /**
+   * A new account once landed on business setup and nothing said why. The
+   * event names the landing and the screens; it must never carry the query
+   * (`?q=sharma` is a customer's name) or anything that identifies a person.
+   */
+  it('records the landing kind and screens, and no query or personal data', () => {
+    const store = makeStore();
+    mount(store);
+    signIn(store);
+    const call = track.mock.calls.find(([name]) => name === 'signin_landed');
+    expect(call?.[1]).toEqual({
+      landing: 'app',
+      is_new: false,
+      tenants: 1,
+      next: 'parties',
+      to: 'parties',
+    });
+    expect(JSON.stringify(call)).not.toMatch(/sharma|anita|user-a/i);
   });
 });

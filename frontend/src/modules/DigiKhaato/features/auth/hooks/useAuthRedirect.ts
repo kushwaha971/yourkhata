@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { track } from 'src/analytics/track';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { resetAllFeatureState } from 'src/redux/actions';
@@ -17,6 +18,9 @@ import { authResultConsumed, selectAuthResult } from '../redux/authSlice';
 import { fetchSession } from '../redux/sessionThunk';
 import { safeNextPath } from '../view-model/authDisplay';
 import { entryRoute, landingRoute } from '../view-model/landing';
+
+/** `/money-book/report` → `money-book`: the part of an address that names a screen and nothing else. */
+const firstSegment = (path: string): string => path.replace(/[?#].*$/, '').split('/')[1] ?? '';
 
 /**
  * Part 19 §19.1.1 layer 4 — the single place a successful authentication turns
@@ -132,6 +136,16 @@ export const useAuthRedirect = (): UseAuthRedirectResult => {
       });
     // Owner, 18 Nov 2026: the starred business, else Money Book.
     const path = entryRoute(landing, result.tenants, nextPath);
+    // Owner, 23 Nov 2026: a new account was once sent to business setup and
+    // nothing recorded why. Only kinds and first path segments go out: no
+    // number, no id, no query.
+    track('signin_landed', {
+      landing: landing.kind,
+      is_new: result.isNew,
+      tenants: result.tenants.length,
+      next: firstSegment(nextPath),
+      to: firstSegment(path),
+    });
     if (heldBefore) replaceDocument(path);
     else router.replace(path);
     dispatch(authResultConsumed());
